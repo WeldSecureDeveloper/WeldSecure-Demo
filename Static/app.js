@@ -22,6 +22,16 @@ const MessageStatus = {
   REJECTED: "rejected"
 };
 
+const NAV_ITEMS = [
+  { label: "Journey picker", route: "landing" },
+  { label: "Outlook add-in", route: "addin" },
+  { label: "Customer Journey", route: "customer", role: "customer" },
+  { label: "Client Dashboard", route: "client-dashboard", role: "client" },
+  { label: "Client Reporting", route: "client-reporting", role: "client" },
+  { label: "Weld Admin", route: "weld-admin", role: "admin" },
+  { label: "Achievements", route: "achievements" }
+];
+
 const ICONS = {
   medal: `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
@@ -33,13 +43,17 @@ const ICONS = {
   `,
   outlook: `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <rect x="12" y="14" width="30" height="36" rx="6" fill="#0b5fd4" />
-      <rect x="18" y="20" width="18" height="24" rx="4" fill="#0a4da6" />
-      <path fill="#0c6ce8" d="M12 22 32 36 42 28V14H18z" opacity="0.8" />
-      <path fill="#124272" d="M42 28 32 36 22 30 12 38v6c0 3.3 2.7 6 6 6h24c3.3 0 6-2.7 6-6V28z" opacity="0.82" />
-      <rect x="30" y="20" width="22" height="24" rx="6" fill="#0e3a63" />
-      <path fill="#fff" d="M36 24h10v16H36z" />
-      <path fill="#1c64f2" d="M38 24v16h2v-6h2c3.4 0 5.2-1.6 5.2-4.9 0-3.4-1.8-5.1-5.2-5.1zM40 34v-6h2c2 0 3 0.7 3 3s-1 3-3 3z" />
+      <defs>
+        <linearGradient id="outlookGradient" x1="12" y1="52" x2="52" y2="12" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#0078d4" />
+          <stop offset="1" stop-color="#5a5df0" />
+        </linearGradient>
+      </defs>
+      <rect x="12" y="14" width="28" height="36" rx="6" fill="url(#outlookGradient)" />
+      <path d="M20 18h24l12 12-12 12H20z" fill="#0b1f4b" opacity="0.2" />
+      <rect x="24" y="24" width="16" height="16" rx="4" fill="#fff" />
+      <path fill="#0f4c81" d="M34 38h-4l-4-6 4-6h4l4 6z" />
+      <circle cx="32" cy="32" r="4" fill="#0f172a" opacity="0.1" />
     </svg>
   `,
   hourglass: `
@@ -288,51 +302,6 @@ const ICONS = {
     </svg>
   `
 };
-
-const NAV_ITEMS = [
-  { label: "Home", route: "landing" },
-  { label: "Outlook add-in", route: "addin" },
-  { label: "Customer Journey", route: "customer", role: "customer" },
-  { label: "Client Dashboard", route: "client-dashboard", role: "client" },
-  { label: "Client Reporting", route: "client-reporting", role: "client" },
-  { label: "Weld Admin", route: "weld-admin", role: "admin" },
-  { label: "Achievements", route: "achievements" }
-];
-
-function renderGlobalNav(activeRoute) {
-  return `
-    <nav class="global-nav" aria-label="Primary navigation">
-      ${NAV_ITEMS.map(item => {
-        const isActive = activeRoute === item.route;
-        return `
-          <button class="global-nav__item ${isActive ? "global-nav__item--active" : ""}"
-            data-route="${item.route}" ${item.role ? `data-role="${item.role}"` : ""}>
-            ${item.label}
-          </button>
-        `;
-      }).join("")}
-    </nav>
-  `;
-}
-
-function attachGlobalNav(container) {
-  container.querySelectorAll(".global-nav [data-route]").forEach(button => {
-    button.addEventListener("click", () => {
-      const route = button.getAttribute("data-route");
-      const role = button.getAttribute("data-role");
-
-      if (route === "addin") {
-        state.meta.addinScreen = "report";
-      }
-
-      if (role) {
-        setRole(role, route);
-      } else {
-        navigate(route);
-      }
-    });
-  });
-}
 
 function renderIcon(name, size = "md") {
   const svg = ICONS[name];
@@ -635,8 +604,7 @@ function initialState() {
       route: "landing",
       addinScreen: "report",
       lastReportedSubject: null,
-      lastReportPoints: null,
-      achievementFilter: null
+      lastReportPoints: null
     },
     customer: {
       id: 501,
@@ -983,7 +951,19 @@ function relativeTime(iso) {
 }
 
 function openDialog({ title, description, content, confirmLabel, onConfirm, cancelLabel, onCancel, tone = "primary" }) {
-  const root = document.getElementById("dialog-root");
+  let root = document.getElementById("dialog-root");
+  if (!root) {
+    root = document.createElement("div");
+    root.id = "dialog-root";
+  }
+  if (root.parentElement !== document.body) {
+    document.body.appendChild(root);
+  }
+
+  const previousOverflow = document.body.style.overflow;
+  document.body.dataset.previousOverflow = previousOverflow;
+  document.body.style.overflow = "hidden";
+
   root.innerHTML = `
     <div class="dialog-backdrop" role="dialog" aria-modal="true">
       <div class="dialog-surface">
@@ -1002,6 +982,9 @@ function openDialog({ title, description, content, confirmLabel, onConfirm, canc
 
   function close() {
     root.innerHTML = "";
+    const storedOverflow = document.body.dataset.previousOverflow;
+    document.body.style.overflow = storedOverflow !== undefined ? storedOverflow : "";
+    delete document.body.dataset.previousOverflow;
     root.removeEventListener("click", handleBackdrop);
     document.removeEventListener("keydown", handleKey);
   }
@@ -1042,50 +1025,33 @@ function openDialog({ title, description, content, confirmLabel, onConfirm, canc
 }
 
 function closeDialog() {
-  document.getElementById("dialog-root").innerHTML = "";
+  const root = document.getElementById("dialog-root");
+  if (root) {
+    root.innerHTML = "";
+  }
+  const storedOverflow = document.body.dataset.previousOverflow;
+  document.body.style.overflow = storedOverflow !== undefined ? storedOverflow : "";
+  delete document.body.dataset.previousOverflow;
+}
+
+function renderGlobalNav(activeRoute) {
+  return `
+    <nav class="global-nav" aria-label="Primary navigation">
+      ${NAV_ITEMS.map(item => {
+        const isActive = activeRoute === item.route;
+        const ariaCurrent = isActive ? 'aria-current="page"' : "";
+        const roleAttr = item.role ? ` data-role="${item.role}"` : "";
+        return `
+          <button type="button" class="global-nav__item ${isActive ? "global-nav__item--active" : ""}" data-route="${item.route}"${roleAttr} ${ariaCurrent}>
+            ${item.label}
+          </button>
+        `;
+      }).join("")}
+    </nav>
+  `;
 }
 
 function renderLanding() {
-  const journeyCards = [
-    {
-      title: "Outlook add-in journey",
-      description: "Simulate the task pane experience that sparks every report.",
-      tone: "linear-gradient(135deg, #0ea5e9, #4f46e5)",
-      route: "addin",
-      chipClass: "chip--addin",
-      chipLabel: "Outlook add-in"
-    },
-    {
-      title: "Customer rewards journey",
-      description: "Show how employees spot suspicious emails, earn points, and redeem curated rewards.",
-      tone: "linear-gradient(135deg, #6f47ff, #3623de)",
-      role: "customer",
-      route: "customer"
-    },
-    {
-      title: "Client admin journey",
-      description: "Demonstrate analytics, reporting cadence, and insights client security leads rely on.",
-      tone: "linear-gradient(135deg, #ff8a80, #ff4d6d)",
-      role: "client",
-      route: "client-dashboard"
-    },
-    {
-      title: "Weld admin journey",
-      description: "Highlight how Weld curates multi-tenant success with client health signals and playbooks.",
-      tone: "linear-gradient(135deg, #0ea5e9, #2563eb)",
-      role: "admin",
-      route: "weld-admin"
-    },
-    {
-      title: "Achievement gallery",
-      description: "Tour the full set of WeldSecure milestones and gamified rewards.",
-      tone: "linear-gradient(135deg, #ec4899, #4c1d95)",
-      route: "achievements",
-      chipClass: "chip--achievements",
-      chipLabel: "Achievements"
-    }
-  ];
-
   return `
     <div class="landing">
       ${renderGlobalNav("landing")}
@@ -1097,7 +1063,45 @@ function renderLanding() {
         </div>
       </section>
       <section class="landing__grid">
-        ${journeyCards
+        ${[
+          {
+            title: "Outlook add-in journey",
+            description: "Walk through the task pane reporters use to flag threats and earn recognition on the spot.",
+            tone: "linear-gradient(135deg, #2563eb, #4f46e5)",
+            route: "addin",
+            chipClass: "chip--addin",
+            chipLabel: "Outlook add-in"
+          },
+          {
+            title: "Customer rewards journey",
+            description: "Show how employees spot suspicious emails, earn points, and redeem curated rewards.",
+            tone: "linear-gradient(135deg, #6f47ff, #3623de)",
+            role: "customer",
+            route: "customer"
+          },
+          {
+            title: "Client admin journey",
+            description: "Demonstrate analytics, reporting cadence, and insights client security leads rely on.",
+            tone: "linear-gradient(135deg, #ff8a80, #ff4d6d)",
+            role: "client",
+            route: "client-dashboard"
+          },
+          {
+            title: "Weld admin journey",
+            description: "Highlight how Weld curates multi-tenant success with client health signals and playbooks.",
+            tone: "linear-gradient(135deg, #0ea5e9, #2563eb)",
+            role: "admin",
+            route: "weld-admin"
+          },
+          {
+            title: "Achievement gallery journey",
+            description: "Tour the full set of WeldSecure milestones and gamified rewards.",
+            tone: "linear-gradient(135deg, #ec4899, #4c1d95)",
+            route: "achievements",
+            chipClass: "chip--achievements",
+            chipLabel: "Achievement gallery"
+          }
+        ]
           .map(card => {
             const roleMeta = card.role ? ROLE_LABELS[card.role] : null;
             const chipClass = card.chipClass || (roleMeta ? roleMeta.chip : "");
@@ -1113,7 +1117,9 @@ function renderLanding() {
             }
             <h3>${card.title}</h3>
             <p>${card.description}</p>
-            <span class="journey-card__action">${card.route === "achievements" ? "Explore achievements" : "Launch journey"}</span>
+            <span class="journey-card__action">${
+              card.route === "achievements" ? "Explore achievements" : card.route === "addin" ? "Launch task pane" : "Launch journey"
+            }</span>
           </button>
         `;
           })
@@ -1126,24 +1132,47 @@ function renderLanding() {
 function renderAchievementsPage() {
   const totalPoints = ACHIEVEMENTS.reduce((sum, achievement) => sum + achievement.points, 0);
   const categories = Array.from(new Set(ACHIEVEMENTS.map(achievement => achievement.category)));
+  const categoryTags = categories
+    .map(category => `<span class="achievements-tag">${category}</span>`)
+    .join("");
+
+  const cards = ACHIEVEMENTS.map((achievement, index) => {
+    const tone = ACHIEVEMENT_TONES[achievement.tone] || ACHIEVEMENT_TONES.violet;
+    return `
+      <article class="achievement-card" style="--achievement-tone:${tone};">
+        <div class="achievement-card__icon">
+          ${renderIcon(achievement.icon, "md")}
+        </div>
+        <div class="achievement-card__body">
+          <span class="achievement-card__category">${achievement.category}</span>
+          <h3>${achievement.title}</h3>
+          <p>${achievement.description}</p>
+        </div>
+        <div class="achievement-card__footer">
+          <span class="achievement-card__points">+${achievement.points} pts</span>
+          <span class="achievement-card__index">#${String(index + 1).padStart(2, "0")}</span>
+        </div>
+      </article>
+    `;
+  });
+
   return `
     <div class="page page--achievements">
       ${renderGlobalNav("achievements")}
       <section class="achievements-hero">
         <div class="achievements-hero__top">
           <button class="brand" id="achievements-brand">
-            <span class="brand__glyph">&#9889;</span>
+            <span class="brand__glyph">W</span>
             <span>WeldSecure</span>
-            <span class="brand__descriptor">Achievements Deck</span>
           </button>
           <div class="achievements-hero__actions">
-            <button class="button-pill button-pill--ghost" id="achievements-back">Back to journeys</button>
-            <button class="button-pill button-pill--primary" id="achievements-reset">Reset demo data</button>
+            <button class="button-pill button-pill--ghost" id="achievements-reset">Reset demo data</button>
+            <button class="button-pill button-pill--primary" id="achievements-journey">Journey picker</button>
           </div>
         </div>
         <div class="achievements-hero__copy">
           <span class="achievements-hero__eyebrow">Gamified milestones</span>
-          <h1 class="achievements-hero__headline">Celebrate vigilance with achievements.</h1>
+          <h1 class="achievements-hero__headline">Celebrate vigilance with 30 achievement badges.</h1>
           <p class="achievements-hero__lead">
             Mix and match these badges to show how WeldSecure rewards frontline reporters for keeping the organisation safe.
           </p>
@@ -1161,14 +1190,9 @@ function renderAchievementsPage() {
               <span>Points on offer</span>
             </div>
           </div>
-        </div>
-        <div class="achievements-filter">
-          <button class="achievements-filter__item ${
-            state.meta.achievementFilter ? "" : "achievements-filter__item--active"
-          }" data-filter="all">
-            All
-          </button>
-          ${filterButtons}
+          <div class="achievements-hero__tags">
+            ${categoryTags}
+          </div>
         </div>
       </section>
       <main class="achievements-content">
@@ -1691,13 +1715,9 @@ function renderAddIn() {
       </div>
       <p>The security team will review your report shortly. Your points are available immediately.</p>
       <div class="addin-actions">
-        <button class="addin-cta addin-cta--primary" id="addin-view-achievements">
-          ${renderIcon("trophy", "xs")}
-          <span>My Achievements</span>
-        </button>
-        <button class="addin-cta addin-cta--secondary" id="addin-view-rewards">
+        <button class="addin-cta addin-cta--primary" id="addin-view-rewards">
           ${renderIcon("gift", "xs")}
-          <span>My Rewards</span>
+          <span>Rewards</span>
         </button>
       </div>
     </div>
@@ -1705,19 +1725,18 @@ function renderAddIn() {
 
   return `
     <div class="addin-page">
-      ${renderGlobalNav("addin")}
       <div class="addin-shell">
         <header class="addin-header">
           <div class="addin-logo">W</div>
-          <div>
+          <div class="addin-header__body">
             <h1>Report with Weld</h1>
             <p>Flag anything suspicious, earn recognition, and protect your team.</p>
           </div>
-      <div class="addin-status">
-        <span>Signed in</span>
-        <strong>${state.customer.name}</strong>
-      </div>
-    </header>
+          <div class="addin-status">
+            <span>Signed in</span>
+            <strong>${state.customer.name}</strong>
+          </div>
+        </header>
         ${statsStrip}
         ${screen === "report" ? reportForm : successView}
       </div>
@@ -1730,13 +1749,11 @@ function renderHeader() {
     return "";
   }
   const role = state.meta.role;
-  const activeRoute = state.meta.route;
   return `
     <header class="header">
       <button class="brand" id="brand-button">
-        <span class="brand__glyph">?-?</span>
-        <span>Weld</span>
-        <span class="brand__descriptor">Security Intelligence Platform</span>
+        <span class="brand__glyph">W</span>
+        <span>WeldSecure</span>
       </button>
       <div class="header__actions">
         ${
@@ -1748,9 +1765,11 @@ function renderHeader() {
         <button class="button-pill button-pill--primary" id="journey-picker">Journey picker</button>
       </div>
     </header>
-    ${renderGlobalNav(activeRoute)}
+    ${renderGlobalNav(state.meta.route)}
   `;
-}function renderSidebar() {
+}
+
+function renderSidebar() {
   if (!state.meta.role) {
     return `
       <aside class="sidebar">
@@ -1786,6 +1805,11 @@ function renderHeader() {
   return `
     <aside class="sidebar">
       <nav class="sidebar__nav">${navLinks}</nav>
+      <a class="sidebar__addin" data-route="addin">
+        <span class="sidebar__addin-eyebrow">Also in this demo</span>
+        <h4>Outlook add-in</h4>
+        <p>Open the task pane experience that seeded the customer journey.</p>
+      </a>
     </aside>
   `;
 }
@@ -1811,9 +1835,9 @@ function attachAchievementsEvents(container) {
     brandBtn.addEventListener("click", () => navigate("landing"));
   }
 
-  const backBtn = container.querySelector("#achievements-back");
-  if (backBtn) {
-    backBtn.addEventListener("click", () => navigate("landing"));
+  const journeyBtn = container.querySelector("#achievements-journey");
+  if (journeyBtn) {
+    journeyBtn.addEventListener("click", () => navigate("landing"));
   }
 
   const resetBtn = container.querySelector("#achievements-reset");
@@ -1832,19 +1856,184 @@ function attachAchievementsEvents(container) {
       });
     });
   }
-  const filterContainer = container.querySelector(".achievements-filter");
-  if (filterContainer) {
-    filterContainer.addEventListener("click", event => {
-      const target = event.target.closest("[data-filter]");
-      if (!target) return;
-      const value = target.getAttribute("data-filter");
-      const nextFilter = value === "all" ? null : value;
-      if (state.meta.achievementFilter === nextFilter) return;
-      state.meta.achievementFilter = nextFilter;
-      persist();
-      renderApp();
+}
+
+function attachGlobalNav(container) {
+  container.querySelectorAll(".global-nav [data-route]").forEach(button => {
+    button.addEventListener("click", () => {
+      const route = button.getAttribute("data-route");
+      const role = button.getAttribute("data-role");
+
+      if (route === "addin") {
+        state.meta.addinScreen = "report";
+      }
+
+      if (role) {
+        setRole(role, route || role);
+      } else if (route) {
+        navigate(route);
+      }
+    });
+  });
+}
+
+function attachLandingEvents(container) {
+  container.querySelectorAll(".journey-card[data-route]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const route = btn.getAttribute("data-route");
+      const role = btn.getAttribute("data-role");
+      if (route === "addin") {
+        state.meta.addinScreen = "report";
+        navigate("addin");
+        return;
+      }
+      if (role) {
+        setRole(role, route);
+      } else {
+        navigate(route);
+      }
+    });
+  });
+}
+
+function attachHeaderEvents(container) {
+  const brandBtn = container.querySelector("#brand-button");
+  if (brandBtn) {
+    brandBtn.addEventListener("click", () => navigate("landing"));
+  }
+  const resetBtn = container.querySelector("#reset-demo");
+  if (resetBtn) {
+    resetBtn.addEventListener("click", () => {
+      openDialog({
+        title: "Reset demo data?",
+        description: "This will return every journey to the default product narrative.",
+        confirmLabel: "Reset now",
+        cancelLabel: "Cancel",
+        tone: "critical",
+        onConfirm: close => {
+          resetDemo();
+          close();
+        }
+      });
     });
   }
+  const pickerBtn = container.querySelector("#journey-picker");
+  if (pickerBtn) {
+    pickerBtn.addEventListener("click", () => navigate("landing"));
+  }
+}
+
+function attachSidebarEvents(container) {
+  container.querySelectorAll("[data-route]").forEach(link => {
+    link.addEventListener("click", event => {
+      event.preventDefault();
+      const route = link.getAttribute("data-route");
+      if (route === "addin") {
+        state.meta.addinScreen = "report";
+        navigate("addin");
+      } else {
+        navigate(route);
+      }
+    });
+  });
+}
+
+function attachCustomerEvents(container) {
+  const reportBtn = container.querySelector("#customer-report-button");
+  if (reportBtn) {
+    reportBtn.addEventListener("click", () => {
+      state.meta.addinScreen = "report";
+      navigate("addin");
+    });
+  }
+  container.querySelectorAll(".reward-card").forEach(card => {
+    card.addEventListener("click", () => {
+      const rewardId = Number(card.getAttribute("data-reward"));
+      const reward = rewardById(rewardId);
+      if (!reward) return;
+
+      openDialog({
+        title: "Redeem this reward?",
+        description: `This will use ${reward.pointsCost} of your available points.`,
+        content: `<strong>${reward.name}</strong><p>${reward.description}</p><span>${reward.provider}</span>`,
+        confirmLabel: "Confirm redemption",
+        cancelLabel: "Cancel",
+        onConfirm: close => {
+          const result = redeemReward(rewardId);
+          close();
+          if (result.success) {
+            openDialog({
+              title: "Reward queued for fulfilment",
+              description: `${reward.name} has been added to your rewards queue.`,
+              confirmLabel: "Back to rewards",
+              onConfirm: closeDialog
+            });
+          } else {
+            openDialog({
+              title: "Unable to redeem",
+              description: result.reason || "Please try again.",
+              confirmLabel: "Close"
+            });
+          }
+        }
+      });
+    });
+  });
+}
+
+function attachReportingEvents(container) {
+  const csvBtn = container.querySelector("#download-csv-button");
+  if (csvBtn) {
+    csvBtn.addEventListener("click", () => {
+      openDialog({
+        title: "CSV export ready",
+        description: "In the real product this downloads a CSV. For the demo, use this cue to talk through the audit trail.",
+        confirmLabel: "Got it"
+      });
+    });
+  }
+  container.querySelectorAll(".table-actions button").forEach(button => {
+    button.addEventListener("click", () => {
+      const action = button.getAttribute("data-action");
+      const messageId = Number(button.getAttribute("data-message"));
+      updateMessageStatus(messageId, action === "approve" ? MessageStatus.APPROVED : MessageStatus.REJECTED);
+    });
+  });
+}
+
+function attachAdminEvents(container) {
+  const triggerBtn = container.querySelector("#trigger-playbook");
+  if (triggerBtn) {
+    triggerBtn.addEventListener("click", () => {
+      openDialog({
+        title: "Playbook scheduled",
+        description: "Use this cue to explain how Weld orchestrates interventions across tenants.",
+        confirmLabel: "Nice"
+      });
+    });
+  }
+
+  container.querySelectorAll("[data-action='view-journey'], [data-action='share-insights']").forEach(button => {
+    button.addEventListener("click", () => {
+      const clientId = Number(button.getAttribute("data-client"));
+      const client = state.clients.find(c => c.id === clientId);
+      if (!client) return;
+      if (button.getAttribute("data-action") === "view-journey") {
+        openDialog({
+          title: `Switch to ${client.name}?`,
+          description: "For the demo, remind stakeholders each client gets a dedicated journey view with custom insights.",
+          confirmLabel: "Return",
+          onConfirm: closeDialog
+        });
+      } else {
+        openDialog({
+          title: "Insights shared",
+          description: `Customer Success receives a packaged summary for ${client.name}.`,
+          confirmLabel: "Great"
+        });
+      }
+    });
+  });
 }
 
 function attachAddInEvents(container) {
@@ -1882,12 +2071,6 @@ function attachAddInEvents(container) {
       });
     }
   } else {
-    const viewAchievements = container.querySelector("#addin-view-achievements");
-    if (viewAchievements) {
-      viewAchievements.addEventListener("click", () => {
-        navigate("achievements");
-      });
-    }
     const viewRewards = container.querySelector("#addin-view-rewards");
     if (viewRewards) {
       viewRewards.addEventListener("click", () => {
@@ -1924,17 +2107,27 @@ function renderApp() {
     return;
   }
 
-  if (route === "addin") {
-    app.innerHTML = renderAddIn();
-    attachAddInEvents(app);
-    attachGlobalNav(app);
-    return;
-  }
-
   if (route === "achievements") {
     app.innerHTML = renderAchievementsPage();
     attachAchievementsEvents(app);
     attachGlobalNav(app);
+    return;
+  }
+
+  if (route === "addin") {
+    app.innerHTML = `
+      <div class="page page--addin">
+        ${renderHeader()}
+        <div class="page__inner page__inner--single">
+          <main class="layout-content layout-content--flush" id="main-content">${renderAddIn()}</main>
+        </div>
+      </div>
+    `;
+
+    attachHeaderEvents(app);
+    attachGlobalNav(app);
+    const mainContent = app.querySelector("#main-content");
+    if (mainContent) attachAddInEvents(mainContent);
     return;
   }
 
@@ -1975,20 +2168,6 @@ window.addEventListener("hashchange", () => {
     renderApp();
   }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

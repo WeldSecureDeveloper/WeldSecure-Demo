@@ -8,6 +8,15 @@
     sans-serif;
   color: #0f172a;
   background: #f7f8fb;
+  --btn-radius: 999px;
+  --btn-shadow-soft: 0 12px 24px rgba(15, 23, 42, 0.08);
+  --btn-shadow-strong: 0 18px 32px rgba(79, 70, 229, 0.25);
+  --btn-gradient-primary: linear-gradient(135deg, #6f47ff, #3623de);
+  --btn-gradient-accent: linear-gradient(135deg, #6366f1, #0ea5e9);
+  --btn-gradient-danger: linear-gradient(135deg, #fb7185, #ef4444);
+  --btn-ring-color: rgba(56, 189, 248, 0.42);
+  --btn-light-border: rgba(15, 23, 42, 0.08);
+  --btn-dark-border: rgba(248, 250, 252, 0.32);
 }
 *,
 *::before,
@@ -41,6 +50,10 @@ button {
   padding: 1.5rem 2.5rem 4rem;
   display: flex;
   gap: 2rem;
+}
+.page__inner--single {
+  justify-content: center;
+  gap: 0;
 }
 .header {
   width: 100%;
@@ -127,7 +140,7 @@ button {
   margin-bottom: 2rem;
 }
 .page--achievements .global-nav,
-.addin-page .global-nav {
+.page--addin .global-nav {
   background: rgba(15, 23, 42, 0.35);
   border: 1px solid rgba(148, 163, 184, 0.25);
   box-shadow: 0 20px 40px rgba(15, 23, 42, 0.32);
@@ -136,27 +149,22 @@ button {
   margin-top: 1.5rem;
 }
 .page--achievements .global-nav__item,
-.addin-page .global-nav__item {
-  border: none;
-  background: transparent;
-  color: #1f2937;
-  padding: 0.45rem 1rem;
-  border-radius: 999px;
-  font-weight: 600;
-  font-size: 0.85rem;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+.page--addin .global-nav__item {
+  color: #e2e8f0;
 }
-.global-nav__item:hover {
-  background: rgba(59, 130, 246, 0.12);
-  color: #1d4ed8;
+.page--achievements .global-nav__item:hover,
+.page--addin .global-nav__item:hover {
+  background: rgba(99, 102, 241, 0.22);
+  color: #fff;
 }
-.global-nav__item:focus-visible {
-  outline: 2px solid rgba(59, 130, 246, 0.45);
+.page--achievements .global-nav__item:focus-visible,
+.page--addin .global-nav__item:focus-visible {
+  outline: 2px solid rgba(148, 163, 184, 0.45);
   outline-offset: 2px;
 }
-.global-nav__item--active {\n  background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(14, 165, 233, 0.9));
+.page--achievements .global-nav__item--active,
+.page--addin .global-nav__item--active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(14, 165, 233, 0.9));
   box-shadow: 0 16px 36px rgba(14, 165, 233, 0.28);
 }
 .chip {
@@ -243,27 +251,117 @@ button {
   box-shadow: 0 10px 20px rgba(76, 29, 149, 0.22);
   flex-shrink: 0;
 }
-.button-pill {
-  border-radius: 999px;
-  border: none;
-  padding: 0.65rem 1.4rem;
+.button-pill,
+.journey-card__action,
+.addin-primary,
+.addin-cta,
+.table-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--btn-radius);
+  border: 1px solid transparent;
+  padding: 0.7rem 1.6rem;
   font-weight: 600;
+  letter-spacing: 0.02em;
   cursor: pointer;
+  text-decoration: none;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease;
+  min-height: 2.75rem;
 }
-.button-pill--primary {
-  background: rgba(93, 59, 255, 0.12);
-  color: #4b2cff;
+
+.button-pill:focus-visible,
+.journey-card__action:focus-visible,
+.addin-primary:focus-visible,
+.addin-cta:focus-visible,
+.table-actions button:focus-visible {
+  outline: 3px solid var(--btn-ring-color);
+  outline-offset: 2px;
 }
-.button-pill--primary:hover {
-  background: rgba(93, 59, 255, 0.2);
-}
-.button-pill--ghost {
-  background: rgba(15, 23, 42, 0.06);
-  color: #0f172a;
-}
-.button-pill--critical {
-  background: linear-gradient(135deg, #fb7185, #ef4444);
+
+.button-pill--primary,
+.journey-card__action,
+.addin-primary,
+.addin-cta {
+  background: var(--btn-gradient-primary);
   color: #fff;
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: var(--btn-shadow-strong);
+}
+
+.button-pill--primary:hover,
+.journey-card__action:hover,
+.addin-primary:hover,
+.addin-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 22px 38px rgba(79, 70, 229, 0.32);
+}
+
+.button-pill--primary:active,
+.journey-card__action:active,
+.addin-primary:active,
+.addin-cta:active {
+  transform: translateY(0);
+  box-shadow: 0 12px 24px rgba(79, 70, 229, 0.22);
+}
+
+.button-pill--ghost {
+  background: rgba(255, 255, 255, 0.82);
+  color: #1f2937;
+  border-color: var(--btn-light-border);
+  box-shadow: var(--btn-shadow-soft);
+}
+
+.button-pill--ghost:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 32px rgba(148, 163, 184, 0.25);
+}
+
+.button-pill--ghost:active {
+  transform: translateY(0);
+  box-shadow: 0 10px 20px rgba(148, 163, 184, 0.22);
+}
+
+.button-pill--critical,
+.table-actions button:last-child {
+  background: var(--btn-gradient-danger);
+  color: #fff;
+  border-color: rgba(248, 113, 113, 0.45);
+  box-shadow: 0 18px 32px rgba(248, 113, 113, 0.2);
+}
+
+.button-pill--critical:hover,
+.table-actions button:last-child:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 22px 42px rgba(239, 68, 68, 0.28);
+}
+
+.button-pill--critical:active,
+.table-actions button:last-child:active {
+  transform: translateY(0);
+  box-shadow: 0 12px 24px rgba(239, 68, 68, 0.2);
+}
+
+.achievements-hero .button-pill--ghost,
+.timeline .button-pill--ghost,
+.client-card .button-pill--ghost {
+  background: rgba(15, 23, 42, 0.28);
+  color: #f8fafc;
+  border-color: var(--btn-dark-border);
+  box-shadow: 0 20px 40px rgba(2, 6, 23, 0.35);
+}
+
+.achievements-hero .button-pill--primary,
+.timeline .button-pill--primary,
+.client-card .table-actions button:first-child,
+.client-card .table-actions button:last-child {
+  border-color: var(--btn-dark-border);
 }
 .sidebar {
   width: 280px;
@@ -309,6 +407,12 @@ button {
   flex-direction: column;
   gap: 2rem;
   box-shadow: 0 20px 60px rgba(21, 34, 66, 0.08);
+}
+.layout-content--flush {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  border-radius: 0;
 }
 .landing {
   max-width: 1100px;
@@ -385,15 +489,12 @@ button {
 }
 .journey-card__action {
   margin-top: auto;
+  align-self: flex-start;
   position: relative;
   z-index: 1;
-  border-radius: 999px;
-  border: none;
-  padding: 0.7rem 1.6rem;
-  font-weight: 600;
-  background: var(--tone, linear-gradient(135deg, #6f47ff, #3623de));
+  background: var(--tone, var(--btn-gradient-primary));
+  border-color: rgba(255, 255, 255, 0.32);
   color: #fff;
-  cursor: pointer;
 }
 .metrics-grid {
   display: grid;
@@ -640,7 +741,7 @@ button {
 }
 
 .achievements-grid {
-  margin-top: -3.2rem;
+  margin-top: 2rem;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 1.5rem;
@@ -756,7 +857,7 @@ button {
   }
 
   .achievements-grid {
-    margin-top: -2.4rem;
+    margin-top: 1.25rem;
     gap: 1.25rem;
   }
 }
@@ -938,19 +1039,28 @@ button {
   gap: 0.6rem;
 }
 .table-actions button {
-  border-radius: 999px;
-  border: none;
-  padding: 0.45rem 1rem;
-  font-weight: 600;
-  cursor: pointer;
+  padding: 0.55rem 1.1rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.01em;
+  min-height: 0;
+  box-shadow: var(--btn-shadow-soft);
 }
 .table-actions button:first-child {
-  background: rgba(79, 70, 229, 0.12);
-  color: #4338ca;
+  background: var(--btn-gradient-accent);
+  color: #fff;
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: var(--btn-shadow-strong);
+}
+.table-actions button:first-child:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 22px 38px rgba(79, 70, 229, 0.32);
+}
+.table-actions button:first-child:active {
+  transform: translateY(0);
+  box-shadow: 0 12px 24px rgba(79, 70, 229, 0.22);
 }
 .table-actions button:last-child {
-  background: rgba(248, 113, 113, 0.18);
-  color: #b91c1c;
+  color: #fff;
 }
 .note {
   background: rgba(15, 23, 42, 0.05);
@@ -1004,7 +1114,8 @@ button {
   max-width: 300px;
 }
 .addin-page {
-  min-height: 100vh;
+  width: 100%;
+  min-height: 100%;
   background: radial-gradient(circle at top, #1f2937, #0b1220 55%);
   display: flex;
   flex-direction: column;
@@ -1013,7 +1124,7 @@ button {
   gap: 1.5rem;
   padding: 3rem 1rem 4rem;
 }
-.addin-page .global-nav {
+.page--addin .global-nav {
   margin: 0 auto 1.5rem;
 }
 .addin-shell {
@@ -1035,6 +1146,12 @@ button {
   flex-direction: column;
   gap: 1.2rem;
   color: #fff;
+}
+.addin-header__body h1 {
+  margin: 0 0 0.25rem;
+}
+.addin-header__body p {
+  margin: 0;
 }
 .addin-logo {
   width: 40px;
@@ -1138,14 +1255,8 @@ button {
   color: #475569;
 }
 .addin-primary {
-  border-radius: 999px;
-  border: none;
-  padding: 0.85rem 1.4rem;
-  font-weight: 600;
-  background: linear-gradient(135deg, #6f47ff, #3623de);
-  color: #fff;
-  cursor: pointer;
   margin-top: auto;
+  background: var(--btn-gradient-accent);
 }
 .addin-success {
   padding: 2.5rem 1.8rem;
@@ -1323,35 +1434,25 @@ button {
   align-items: stretch;
 }
 .addin-cta {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.55rem;
-  padding: 0.85rem 1.35rem;
-  border-radius: 999px;
-  border: none;
   font-weight: 700;
   letter-spacing: 0.04em;
-  cursor: pointer;
-  background: linear-gradient(135deg, #6f47ff, #0ea5e9);
-  color: #fff;
-  box-shadow: 0 18px 32px rgba(99, 102, 241, 0.28);
-  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+  gap: 0.55rem;
+  padding: 0.9rem 1.5rem;
+  background: var(--btn-gradient-accent);
 }
 .addin-cta span {
   line-height: 1;
 }
 .addin-cta:hover {
   transform: translateY(-2px);
-  box-shadow: 0 20px 42px rgba(99, 102, 241, 0.36);
+  box-shadow: 0 24px 44px rgba(79, 70, 229, 0.36);
 }
 .addin-cta:active {
   transform: translateY(0);
-  box-shadow: 0 14px 24px rgba(99, 102, 241, 0.26);
-  filter: brightness(0.96);
+  box-shadow: 0 16px 28px rgba(79, 70, 229, 0.26);
 }
 .addin-cta--secondary {
-  background: linear-gradient(135deg, #5a5df0, #0ea5e9);
+  background: linear-gradient(135deg, #5a5df0, #10b981);
 }
 .addin-cta .icon-token {
   width: 34px;
@@ -1418,6 +1519,8 @@ button {
   }
 }
 .addin-actions {
+
+
 
 
 
