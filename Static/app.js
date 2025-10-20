@@ -1,9 +1,9 @@
 const STORAGE_KEY = "weldStaticDemoStateV1";
 
 const ROLE_LABELS = {
-  customer: { label: "Customer Journey", chip: "chip--customer" },
-  client: { label: "Client Admin Journey", chip: "chip--client" },
-  admin: { label: "Weld Admin Journey", chip: "chip--admin" }
+  customer: { label: "Reporter", chip: "chip--customer" },
+  client: { label: "Organisation", chip: "chip--client" },
+  admin: { label: "WeldSecure", chip: "chip--admin" }
 };
 
 const ROUTES = {
@@ -13,6 +13,7 @@ const ROUTES = {
   "client-reporting": { requiresRole: "client" },
   "weld-admin": { requiresRole: "admin" },
   achievements: { requiresRole: false },
+  quizzes: { requiresRole: false },
   addin: { requiresRole: false }
 };
 
@@ -22,14 +23,27 @@ const MessageStatus = {
   REJECTED: "rejected"
 };
 
-const NAV_ITEMS = [
-  { label: "Journey picker", route: "landing" },
-  { label: "Outlook add-in", route: "addin" },
-  { label: "Customer Journey", route: "customer", role: "customer" },
-  { label: "Client Dashboard", route: "client-dashboard", role: "client" },
-  { label: "Client Reporting", route: "client-reporting", role: "client" },
-  { label: "Weld Admin", route: "weld-admin", role: "admin" },
-  { label: "Achievements", route: "achievements" }
+const NAV_GROUPS = [
+  {
+    label: "Reporter",
+    items: [
+      { label: "Reporter Journey", route: "addin", role: "customer" },
+      { label: "Reporter Profile", route: "customer", role: "customer" },
+      { label: "Quests", route: "quizzes", role: "customer" },
+      { label: "Badges", route: "achievements", role: "customer" }
+    ]
+  },
+  {
+    label: "Organisation",
+    items: [
+      { label: "Organisation Dashboard", route: "client-dashboard", role: "client" },
+      { label: "Security Team Dashboard", route: "client-reporting", role: "client" }
+    ]
+  },
+  {
+    label: "WeldSecure",
+    items: [{ label: "Weld Admin", route: "weld-admin", role: "admin" }]
+  }
 ];
 
 const ICONS = {
@@ -312,16 +326,16 @@ function renderIcon(name, size = "md") {
 }
 
 const ACHIEVEMENT_TONES = {
-  violet: "linear-gradient(135deg, #7c3aed, #4c1d95)",
-  cobalt: "linear-gradient(135deg, #2563eb, #1e3a8a)",
-  coral: "linear-gradient(135deg, #fb7185, #f97316)",
-  emerald: "linear-gradient(135deg, #10b981, #0f766e)",
-  amber: "linear-gradient(135deg, #fbbf24, #f59e0b)",
-  aqua: "linear-gradient(135deg, #22d3ee, #0ea5e9)",
-  midnight: "linear-gradient(135deg, #0f172a, #312e81)",
-  blush: "linear-gradient(135deg, #ec4899, #7c3aed)",
-  gold: "linear-gradient(135deg, #facc15, #f97316)",
-  slate: "linear-gradient(135deg, #475569, #1f2937)"
+  violet: "linear-gradient(135deg, #ede9fe, #ddd6fe)",
+  cobalt: "linear-gradient(135deg, #dbeafe, #bfdbfe)",
+  coral: "linear-gradient(135deg, #ffe4e6, #fecdd3)",
+  emerald: "linear-gradient(135deg, #d1fae5, #a7f3d0)",
+  amber: "linear-gradient(135deg, #fde68a, #fcd34d)",
+  aqua: "linear-gradient(135deg, #cffafe, #bae6fd)",
+  midnight: "linear-gradient(135deg, #e0f2fe, #c7d2fe)",
+  blush: "linear-gradient(135deg, #fce7f3, #e9d5ff)",
+  gold: "linear-gradient(135deg, #fef9c3, #fde68a)",
+  slate: "linear-gradient(135deg, #f8fafc, #e2e8f0)"
 };
 
 const ACHIEVEMENTS = [
@@ -604,7 +618,10 @@ function initialState() {
       route: "landing",
       addinScreen: "report",
       lastReportedSubject: null,
-      lastReportPoints: null
+      lastReportPoints: null,
+      achievementFilter: null,
+      quizFilter: null,
+      quizStatus: {}
     },
     customer: {
       id: 501,
@@ -677,6 +694,7 @@ function initialState() {
         subject: "Updated supplier bank details",
         reporterName: "Rachel Summers",
         reporterEmail: "rachel.summers@example.com",
+        clientId: 101,
         reportedAt: "2025-10-07T08:45:00Z",
         status: MessageStatus.APPROVED,
         reasons: [1, 3],
@@ -690,6 +708,7 @@ function initialState() {
         subject: "Benefits enrolment confirmation",
         reporterName: "Rachel Summers",
         reporterEmail: "rachel.summers@example.com",
+        clientId: 101,
         reportedAt: "2025-10-02T17:12:00Z",
         status: MessageStatus.PENDING,
         reasons: [2],
@@ -702,6 +721,7 @@ function initialState() {
         subject: "CEO request for quick payment",
         reporterName: "Will Adams",
         reporterEmail: "will.adams@example.com",
+        clientId: 101,
         reportedAt: "2025-09-26T11:06:00Z",
         status: MessageStatus.APPROVED,
         reasons: [4, 5],
@@ -775,13 +795,40 @@ function loadState() {
 
   try {
     const parsed = JSON.parse(raw);
+    const baseState = initialState();
+    const normalizedClients = Array.isArray(parsed.clients)
+      ? parsed.clients.map(client => {
+          const baseClient = baseState.clients.find(item => item.id === client.id);
+          return {
+            ...client,
+            pointsPerMessage: baseClient ? baseClient.pointsPerMessage : 20,
+            pointsOnApproval: baseClient ? baseClient.pointsOnApproval : 80
+          };
+        })
+      : baseState.clients;
+    const normalizedMessages = Array.isArray(parsed.messages)
+      ? parsed.messages.map(message => {
+          const clientId = message.clientId ?? baseState.customer.clientId;
+          const clientConfig =
+            normalizedClients.find(client => client.id === clientId) ??
+            baseState.clients.find(client => client.id === clientId);
+          return {
+            ...message,
+            clientId,
+            pointsOnMessage: message.pointsOnMessage ?? clientConfig?.pointsPerMessage ?? 20,
+            pointsOnApproval: message.pointsOnApproval ?? clientConfig?.pointsOnApproval ?? 80
+          };
+        })
+      : baseState.messages;
     return {
-      ...initialState(),
+      ...baseState,
       ...parsed,
       meta: {
-        ...initialState().meta,
+        ...baseState.meta,
         ...parsed.meta
-      }
+      },
+      messages: normalizedMessages,
+      clients: normalizedClients
     };
   } catch {
     return initialState();
@@ -789,6 +836,22 @@ function loadState() {
 }
 
 let state = loadState();
+
+function initializeRoute() {
+  const hashRoute = window.location.hash.replace("#", "");
+  if (hashRoute && ROUTES[hashRoute]) {
+    state.meta.route = hashRoute;
+    state.meta.role = ROUTES[hashRoute].requiresRole || null;
+    if (hashRoute === "addin") {
+      state.meta.addinScreen = "report";
+    }
+  } else {
+    state.meta.route = "landing";
+    state.meta.role = null;
+  }
+}
+
+initializeRoute();
 
 function persist() {
   if (!storageAvailable()) return;
@@ -815,8 +878,25 @@ function setRole(role, route) {
 }
 
 function resetDemo() {
-  state = initialState();
+  const defaultState = initialState();
+  state.meta = clone(defaultState.meta);
+  state.customer = clone(defaultState.customer);
+  state.rewards = clone(defaultState.rewards);
+  state.rewardRedemptions = clone(defaultState.rewardRedemptions);
+  state.reportReasons = clone(defaultState.reportReasons);
+  state.messages = clone(defaultState.messages);
+  state.clients = clone(defaultState.clients);
+  if (storageAvailable()) {
+    localStorage.removeItem(STORAGE_KEY);
+  }
   persist();
+  if (window.location.hash) {
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    } else {
+      window.location.hash = "";
+    }
+  }
   renderApp();
 }
 
@@ -826,6 +906,14 @@ function rewardById(id) {
 
 function reasonById(id) {
   return state.reportReasons.find(item => item.id === id);
+}
+
+function quizById(id) {
+  return QUIZZES.find(item => item.id === id);
+}
+
+function messageBelongsToCustomer(message) {
+  return message?.reporterEmail === state.customer.email;
 }
 
 function redeemReward(rewardId) {
@@ -857,24 +945,30 @@ function redeemReward(rewardId) {
 }
 
 function reportMessage(payload) {
+  const client = state.clients.find(c => c.id === state.customer.clientId);
+  const pointsOnMessage = 20;
+  const pointsOnApproval = client?.pointsOnApproval ?? 80;
+  const beforePoints = state.customer.currentPoints;
   const message = {
     id: Date.now(),
     messageId: payload.messageId,
     subject: payload.subject,
     reporterName: payload.reporterName,
     reporterEmail: payload.reporterEmail,
+    clientId: state.customer.clientId,
     reportedAt: new Date().toISOString(),
     status: MessageStatus.PENDING,
     reasons: payload.reasons,
-    pointsOnMessage: 20,
-    pointsOnApproval: 80,
+    pointsOnMessage,
+    pointsOnApproval,
     additionalNotes: payload.notes || null
   };
 
   state.messages.unshift(message);
-  state.customer.currentPoints += message.pointsOnMessage;
+  state.customer.currentPoints += pointsOnMessage;
+  const awardedPoints = state.customer.currentPoints - beforePoints;
+  message.pointsOnMessage = awardedPoints;
 
-  const client = state.clients.find(c => c.id === state.customer.clientId);
   if (client) {
     client.openCases += 1;
     client.healthScore = Math.min(client.healthScore + 1, 100);
@@ -883,9 +977,45 @@ function reportMessage(payload) {
 
   state.meta.addinScreen = "success";
   state.meta.lastReportedSubject = payload.subject;
-  state.meta.lastReportPoints = message.pointsOnMessage;
+  state.meta.lastReportPoints = awardedPoints;
   persist();
   renderApp();
+}
+
+function setupCelebrationReplay(container) {
+  const celebration = container.querySelector(".points-celebration");
+  if (!celebration) return;
+  const bubble = celebration.querySelector(".points-celebration__bubble");
+  if (!bubble || bubble.dataset.replayBound === "true") return;
+
+  bubble.dataset.replayBound = "true";
+  bubble.classList.add("points-celebration__bubble--interactive");
+  bubble.setAttribute("role", "button");
+  bubble.setAttribute("tabindex", "0");
+  bubble.setAttribute("aria-label", "Replay celebration animation");
+
+  const restart = () => {
+    const replacement = celebration.cloneNode(true);
+    celebration.replaceWith(replacement);
+    setupCelebrationReplay(container);
+    const nextBubble = container.querySelector(".points-celebration__bubble");
+    if (nextBubble) {
+      nextBubble.focus();
+    }
+  };
+
+  const handleTrigger = event => {
+    if (
+      event.type === "click" ||
+      (event.type === "keydown" && (event.key === "Enter" || event.key === " "))
+    ) {
+      event.preventDefault();
+      restart();
+    }
+  };
+
+  bubble.addEventListener("click", handleTrigger);
+  bubble.addEventListener("keydown", handleTrigger);
 }
 
 function updateMessageStatus(messageId, status) {
@@ -895,17 +1025,26 @@ function updateMessageStatus(messageId, status) {
   const previousStatus = target.status;
   const wasPending = previousStatus === MessageStatus.PENDING;
   const willBePending = status === MessageStatus.PENDING;
+  const affectsCustomer = messageBelongsToCustomer(target);
+  if (target.clientId === undefined && affectsCustomer) {
+    target.clientId = state.customer.clientId;
+  }
 
   if (previousStatus === MessageStatus.APPROVED && status !== MessageStatus.APPROVED) {
-    state.customer.currentPoints = Math.max(state.customer.currentPoints - target.pointsOnApproval, 0);
+    if (affectsCustomer) {
+      state.customer.currentPoints = Math.max(state.customer.currentPoints - target.pointsOnApproval, 0);
+    }
   }
   target.status = status;
   if (status === MessageStatus.APPROVED && previousStatus !== MessageStatus.APPROVED) {
-    state.customer.currentPoints += target.pointsOnApproval;
+    if (affectsCustomer) {
+      state.customer.currentPoints += target.pointsOnApproval;
+    }
   }
 
   if (wasPending && !willBePending) {
-    const client = state.clients.find(c => c.id === state.customer.clientId);
+    const clientId = target.clientId ?? (affectsCustomer ? state.customer.clientId : null);
+    const client = clientId ? state.clients.find(c => c.id === clientId) : null;
     if (client && client.openCases > 0) {
       client.openCases -= 1;
     }
@@ -1037,106 +1176,318 @@ function closeDialog() {
 function renderGlobalNav(activeRoute) {
   return `
     <nav class="global-nav" aria-label="Primary navigation">
-      ${NAV_ITEMS.map(item => {
-        const isActive = activeRoute === item.route;
-        const ariaCurrent = isActive ? 'aria-current="page"' : "";
-        const roleAttr = item.role ? ` data-role="${item.role}"` : "";
-        return `
-          <button type="button" class="global-nav__item ${isActive ? "global-nav__item--active" : ""}" data-route="${item.route}"${roleAttr} ${ariaCurrent}>
-            ${item.label}
-          </button>
-        `;
-      }).join("")}
+      <div class="global-nav__groups">
+        ${NAV_GROUPS.map(group => {
+          const isGroupActive = group.items.some(item => item.route === activeRoute);
+          return `
+            <div class="global-nav__group ${isGroupActive ? "global-nav__group--active" : ""}">
+              <button type="button" class="global-nav__trigger" data-group="${group.label}">
+                ${group.label}
+                <span class="global-nav__caret" aria-hidden="true"></span>
+              </button>
+              <div class="global-nav__menu" role="menu">
+                ${group.items
+                  .map(item => {
+                    const isActive = activeRoute === item.route;
+                    const ariaCurrent = isActive ? 'aria-current="page"' : "";
+                    const roleAttr = item.role ? ` data-role="${item.role}"` : "";
+                    return `
+                      <button type="button" role="menuitem" class="global-nav__item ${isActive ? "global-nav__item--active" : ""}" data-route="${item.route}"${roleAttr} ${ariaCurrent}>
+                        ${item.label}
+                      </button>
+                    `;
+                  })
+                  .join("")}
+              </div>
+            </div>
+          `;
+        }).join("")}
+      </div>
+      <button type="button" class="button-pill button-pill--primary global-nav__journey" id="global-journey">
+        Home
+      </button>
     </nav>
   `;
 }
 
 function renderLanding() {
+  const journeyCards = [
+    {
+      title: "Reporter Journey",
+      description: "Show how frontline reporters spot suspicious emails, earn points, and redeem curated rewards.",
+      tone: "linear-gradient(135deg, #6f47ff, #3623de)",
+      role: "customer",
+      route: "addin"
+    },
+    {
+      title: "Organisation Journey",
+      description: "Demonstrate analytics, reporting cadence, and insights security leaders rely on.",
+      tone: "linear-gradient(135deg, #ff8a80, #ff4d6d)",
+      role: "client",
+      route: "client-dashboard"
+    },
+    {
+      title: "WeldSecure Journey",
+      description: "Highlight how Weld curates multi-tenant success with organisation health signals and playbooks.",
+      tone: "linear-gradient(135deg, #0ea5e9, #2563eb)",
+      role: "admin",
+      route: "weld-admin"
+    }
+  ]
+    .map(card => {
+      const roleMeta = card.role ? ROLE_LABELS[card.role] : null;
+      const chipClass = card.chipClass || (roleMeta ? roleMeta.chip : "");
+      const chipLabel = card.chipLabel || (roleMeta ? roleMeta.label : "");
+      return `
+        <button class="journey-card" style="--tone:${card.tone}" data-role="${card.role || ""}" data-route="${card.route}">
+          ${
+            chipLabel
+              ? `<div class="chip ${chipClass}">
+                  <span class="chip__dot"></span>${chipLabel}
+                </div>`
+              : ""
+          }
+          <h3>${card.title}</h3>
+          <p>${card.description}</p>
+          <span class="journey-card__action">${
+            card.route === "achievements" ? "Explore badges" : card.route === "addin" ? "Launch task pane" : "Launch journey"
+          }</span>
+        </button>
+      `;
+    })
+    .join("");
+
   return `
     <div class="landing">
-      ${renderGlobalNav("landing")}
       <section class="landing__hero">
-        <div>
+        <div class="landing__intro">
           <span class="landing__eyebrow">Product tour</span>
           <h1 class="landing__headline">Weld keeps human vigilance rewarding.<span>Walk through every journey in minutes.</span></h1>
           <p class="landing__lead">Select the experience you want to explore. Each journey mirrors the shipping SaaS surfaces with live-feeling interactions and updated metrics--no backend required.</p>
         </div>
+        <button class="button-pill button-pill--primary landing-reset" id="landing-reset">Reset</button>
       </section>
-      <section class="landing__grid">
-        ${[
-          {
-            title: "Outlook add-in journey",
-            description: "Walk through the task pane reporters use to flag threats and earn recognition on the spot.",
-            tone: "linear-gradient(135deg, #2563eb, #4f46e5)",
-            route: "addin",
-            chipClass: "chip--addin",
-            chipLabel: "Outlook add-in"
-          },
-          {
-            title: "Customer rewards journey",
-            description: "Show how employees spot suspicious emails, earn points, and redeem curated rewards.",
-            tone: "linear-gradient(135deg, #6f47ff, #3623de)",
-            role: "customer",
-            route: "customer"
-          },
-          {
-            title: "Client admin journey",
-            description: "Demonstrate analytics, reporting cadence, and insights client security leads rely on.",
-            tone: "linear-gradient(135deg, #ff8a80, #ff4d6d)",
-            role: "client",
-            route: "client-dashboard"
-          },
-          {
-            title: "Weld admin journey",
-            description: "Highlight how Weld curates multi-tenant success with client health signals and playbooks.",
-            tone: "linear-gradient(135deg, #0ea5e9, #2563eb)",
-            role: "admin",
-            route: "weld-admin"
-          },
-          {
-            title: "Achievement gallery journey",
-            description: "Tour the full set of WeldSecure milestones and gamified rewards.",
-            tone: "linear-gradient(135deg, #ec4899, #4c1d95)",
-            route: "achievements",
-            chipClass: "chip--achievements",
-            chipLabel: "Achievement gallery"
-          }
-        ]
-          .map(card => {
-            const roleMeta = card.role ? ROLE_LABELS[card.role] : null;
-            const chipClass = card.chipClass || (roleMeta ? roleMeta.chip : "");
-            const chipLabel = card.chipLabel || (roleMeta ? roleMeta.label : "");
-            return `
-          <button class="journey-card" style="--tone: ${card.tone}" data-role="${card.role || ""}" data-route="${card.route}">
-            ${
-              chipLabel
-                ? `<div class="chip ${chipClass}">
-                <span class="chip__dot"></span>${chipLabel}
-              </div>`
-                : ""
-            }
-            <h3>${card.title}</h3>
-            <p>${card.description}</p>
-            <span class="journey-card__action">${
-              card.route === "achievements" ? "Explore achievements" : card.route === "addin" ? "Launch task pane" : "Launch journey"
-            }</span>
-          </button>
-        `;
-          })
-          .join("")}
+      <section class="landing__section landing__section--journeys">
+        <header class="landing__section-header">
+          <div>
+            <span class="landing__section-eyebrow">Journeys</span>
+            <h2>Explore WeldSecure from every stakeholder lens.</h2>
+            <p>Select a view to tailor the narrative to reporters, organisation leaders, or Weld operators.</p>
+          </div>
+        </header>
+        <div class="landing__tiles">
+          ${journeyCards}
+        </div>
+      </section>
+      <section class="landing__section landing__section--features">
+        <header class="landing__section-header">
+          <div>
+            <span class="landing__section-eyebrow">Feature showcase</span>
+            <h2>Jump straight to the demo moments that resonate.</h2>
+            <p>Use these cards to spotlight the metrics, recognition, and automation flows that close deals.</p>
+          </div>
+        </header>
+        <div class="landing__tiles landing__tiles--features">
+          ${renderFeatureShowcase()}
+        </div>
       </section>
     </div>
   `;
 }
 
+function renderFeatureShowcase() {
+  const featureCards = [
+    {
+      title: "Reporter journey",
+      description: "Launch the task pane to demonstrate reporting, instant recognition, and success animations.",
+      icon: "outlook",
+      action: { label: "Launch add-in", route: "addin" }
+    },
+    {
+      title: "Badge gallery",
+      description: "Browse all 30 WeldSecure badges with filters, points, and storytelling angles.",
+      icon: "medal",
+      action: { label: "View badges", route: "achievements", role: "customer" }
+    },
+    {
+      title: "Quest challenges",
+      description: "Show how five-minute scenario quests award instant vigilance points and streak bonuses.",
+      icon: "lightbulb",
+      action: { label: "Run quest experience", route: "quizzes", role: "customer" }
+    },
+    {
+      title: "Recognition metrics",
+      description: "Preview reporter points, pending approvals, and redemption data in one glance.",
+      icon: "medal",
+      action: { label: "Open reporter profile", route: "customer", role: "customer" }
+    },
+    {
+      title: "Automation playbooks",
+      description: "Explain how Weld orchestrates cross-tenant interventions during risk spikes.",
+      icon: "gear",
+      action: { label: "Show admin controls", route: "weld-admin", role: "admin" }
+    },
+    {
+      title: "Reporting insights",
+      description: "Dive into dashboards and exports that give security teams weekly confidence.",
+      icon: "target",
+      action: { label: "Open security dashboard", route: "client-reporting", role: "client" }
+    }
+  ];
+
+  return featureCards
+    .map(card => {
+      return `
+        <article class="feature-card">
+          <div class="feature-card__icon">${renderIcon(card.icon, "sm")}</div>
+          <div class="feature-card__body">
+            <h3>${card.title}</h3>
+            <p>${card.description}</p>
+          </div>
+          <button type="button" class="feature-card__action" data-route="${card.action.route}" data-role="${card.action.role || ""}">
+            ${card.action.label}
+          </button>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+const QUIZZES = [
+  {
+    id: "phish-flash",
+    title: "Phish or Friend?",
+    category: "Phishing defence",
+    difficulty: "Starter",
+    duration: 5,
+    questions: 6,
+    points: 120,
+    format: "Inbox lightning round",
+    focus: ["Spot high-risk signals", "Practice one-click reporting", "Coach escalation confidence"],
+    bonus: "+20 streak bonus",
+    bonusDetail: "Complete this quiz two weeks in a row to unlock a ready-made recognition shout-out.",
+    description: "Review real inbox screenshots and choose whether to report, ignore, or escalate in under 20 seconds.",
+    sampleQuestion:
+      "A supplier email mirrors your branding and asks for credential re-entry. What is the next WeldSecure-approved step?"
+  },
+  {
+    id: "password-gauntlet",
+    title: "Password Gauntlet",
+    category: "Password hygiene",
+    difficulty: "Intermediate",
+    duration: 6,
+    questions: 8,
+    points: 140,
+    format: "Drag-and-drop mission",
+    focus: ["Strengthen passphrases", "Prioritise MFA usage", "Promote password managers"],
+    bonus: "Double points on perfect run",
+    bonusDetail: "Score 100% to unlock an extra 140 bonus points for the participant.",
+    description: "Launch a timed challenge comparing passphrases, MFA prompts, and vault best practice.",
+    sampleQuestion:
+      "Which combination gives the strongest defence for a finance approver approving payments on the go?"
+  },
+  {
+    id: "shadow-it-sweep",
+    title: "Shadow IT Sweep",
+    category: "Shadow IT awareness",
+    difficulty: "Intermediate",
+    duration: 7,
+    questions: 7,
+    points: 150,
+    format: "Choose-your-path",
+    focus: ["Surface risky tools", "Coach safer swaps", "Reinforce reporting habits"],
+    bonus: "+30 guidance bonus",
+    bonusDetail: "Award additional points when teammates suggest Weld-approved replacements.",
+    description: "Guide employees through murky productivity tool choices without slowing their workflow.",
+    sampleQuestion:
+      "A colleague uploads customer data into an unsanctioned notes app. How do you protect the deal and momentum?"
+  },
+  {
+    id: "remote-first-response",
+    title: "Remote-First Response",
+    category: "Remote work hygiene",
+    difficulty: "Starter",
+    duration: 4,
+    questions: 5,
+    points: 100,
+    format: "Tap-to-reveal story",
+    focus: ["Secure home setups", "Spot shoulder-surfing risk", "Keep VPN habits healthy"],
+    bonus: "+15 fast finish",
+    bonusDetail: "Wrap the quiz under four minutes to trigger a real-time kudos animation.",
+    description: "Short stories recreate remote mishaps from global deployments with choose-your-fix prompts.",
+    sampleQuestion:
+      "Your teammate joins a call from a cafe with customer dashboards on screen. What is the fastest mitigation?"
+  },
+  {
+    id: "gen-ai-guardrails",
+    title: "GenAI Guardrails Lab",
+    category: "AI safety",
+    difficulty: "Advanced",
+    duration: 8,
+    questions: 9,
+    points: 180,
+    format: "Scenario lab",
+    focus: ["Detect sensitive prompts", "Classify training data", "Escalate AI misuse"],
+    bonus: "+40 policy boost",
+    bonusDetail: "Completing awards an instant badge plus a personalised follow-up module.",
+    description: "Experience modern GenAI prompts and decide which ones violate policy before they spread.",
+    sampleQuestion:
+      "An engineer pastes client logs into an AI chat to debug an issue. What is the WeldSecure-approved response?"
+  },
+  {
+    id: "incident-escalation-sprint",
+    title: "Incident Escalation Sprint",
+    category: "Incident response",
+    difficulty: "Advanced",
+    duration: 9,
+    questions: 8,
+    points: 200,
+    format: "Timer-based tabletop",
+    focus: ["Draft escalation updates", "Coordinate with SOC", "Protect comms channels"],
+    bonus: "+60 crisis mastery",
+    bonusDetail: "Finish under the time limit to unlock a post-incident debrief template.",
+    description: "Run a tight tabletop simulation that flexes response muscles without needing the SOC team online.",
+    sampleQuestion:
+      "Finance reports a compromised CFO mailbox. Who do you notify first and which channel keeps legal synced?"
+  }
+];
+
 function renderAchievementsPage() {
   const totalPoints = ACHIEVEMENTS.reduce((sum, achievement) => sum + achievement.points, 0);
-  const categories = Array.from(new Set(ACHIEVEMENTS.map(achievement => achievement.category)));
-  const categoryTags = categories
-    .map(category => `<span class="achievements-tag">${category}</span>`)
+  const categories = Array.from(new Set(ACHIEVEMENTS.map(achievement => achievement.category))).sort((a, b) =>
+    a.localeCompare(b)
+  );
+  const filteredAchievements = state.meta.achievementFilter
+    ? ACHIEVEMENTS.filter(achievement => achievement.category === state.meta.achievementFilter)
+    : ACHIEVEMENTS;
+  const visiblePoints = filteredAchievements.reduce((sum, achievement) => sum + achievement.points, 0);
+
+  const filterButtons = [
+    {
+      label: "All themes",
+      value: "all",
+      active: state.meta.achievementFilter === null
+    },
+    ...categories.map(category => ({
+      label: category,
+      value: category,
+      active: state.meta.achievementFilter === category
+    }))
+  ]
+    .map(
+      filter => `
+        <button
+          type="button"
+          class="achievements-filter__item ${filter.active ? "achievements-filter__item--active" : ""}"
+          data-filter="${filter.value}"
+          aria-pressed="${filter.active ? "true" : "false"}">
+          ${filter.label}
+        </button>
+      `
+    )
     .join("");
 
-  const cards = ACHIEVEMENTS.map((achievement, index) => {
+  const cards = filteredAchievements.map((achievement, index) => {
     const tone = ACHIEVEMENT_TONES[achievement.tone] || ACHIEVEMENT_TONES.violet;
     return `
       <article class="achievement-card" style="--achievement-tone:${tone};">
@@ -1158,48 +1509,210 @@ function renderAchievementsPage() {
 
   return `
     <div class="page page--achievements">
-      ${renderGlobalNav("achievements")}
-      <section class="achievements-hero">
-        <div class="achievements-hero__top">
-          <button class="brand" id="achievements-brand">
-            <span class="brand__glyph">W</span>
-            <span>WeldSecure</span>
-          </button>
-          <div class="achievements-hero__actions">
-            <button class="button-pill button-pill--ghost" id="achievements-reset">Reset demo data</button>
-            <button class="button-pill button-pill--primary" id="achievements-journey">Journey picker</button>
-          </div>
-        </div>
-        <div class="achievements-hero__copy">
-          <span class="achievements-hero__eyebrow">Gamified milestones</span>
-          <h1 class="achievements-hero__headline">Celebrate vigilance with 30 achievement badges.</h1>
-          <p class="achievements-hero__lead">
-            Mix and match these badges to show how WeldSecure rewards frontline reporters for keeping the organisation safe.
-          </p>
-          <div class="achievements-hero__stats">
-            <div>
-              <strong>${ACHIEVEMENTS.length}</strong>
-              <span>Total achievements</span>
+      ${renderHeader()}
+      <div class="page__inner page__inner--single">
+        <main class="layout-content" id="main-content">
+          <section class="hero-section hero-section--achievements">
+            <div class="hero-section__header">
+              <div class="hero-section__intro">
+                <span class="hero-section__eyebrow">Badge milestones</span>
+                <h1 class="hero-section__headline">Celebrate vigilance with 30 WeldSecure badges.</h1>
+                <p class="hero-section__lead">
+                  Mix and match these badges to show how WeldSecure rewards frontline reporters for keeping the organisation safe.
+                </p>
+              </div>
+              <div class="hero-stats">
+                <div class="hero-stats__item">
+                  <strong>${ACHIEVEMENTS.length}</strong>
+                  <span>Total badges</span>
+                </div>
+                <div class="hero-stats__item">
+                  <strong>${categories.length}</strong>
+                  <span>Badge themes</span>
+                </div>
+                <div class="hero-stats__item">
+                  <strong>${filteredAchievements.length}</strong>
+                  <span>Visible badges</span>
+                </div>
+                <div class="hero-stats__item">
+                  <strong>${visiblePoints}</strong>
+                  <span>Points on offer</span>
+                </div>
+              </div>
             </div>
-            <div>
-              <strong>${categories.length}</strong>
-              <span>Reporter themes</span>
+            <div class="hero-section__filters achievements-filter" role="toolbar" aria-label="Filter badges by theme">
+              ${filterButtons}
             </div>
-            <div>
-              <strong>${totalPoints}</strong>
-              <span>Points on offer</span>
+          </section>
+          <div class="achievements-content">
+            <section class="achievements-grid">
+              ${cards.join("")}
+            </section>
+          </div>
+        </main>
+      </div>
+    </div>
+  `;
+}
+
+function renderQuizzesPage() {
+  const quizStatus = state.meta.quizStatus || {};
+  const categories = Array.from(new Set(QUIZZES.map(quiz => quiz.category))).sort((a, b) => a.localeCompare(b));
+  const filteredQuizzes = state.meta.quizFilter ? QUIZZES.filter(quiz => quiz.category === state.meta.quizFilter) : QUIZZES;
+  const scheduledCount = filteredQuizzes.filter(quiz => {
+    const status = quizStatus[quiz.id];
+    return status === "scheduled" || status === "completed";
+  }).length;
+  const completedCount = filteredQuizzes.filter(quiz => quizStatus[quiz.id] === "completed").length;
+  const completedPoints = filteredQuizzes.reduce(
+    (sum, quiz) => sum + (quizStatus[quiz.id] === "completed" ? quiz.points : 0),
+    0
+  );
+  const averageDuration = filteredQuizzes.length
+    ? Math.round(filteredQuizzes.reduce((sum, quiz) => sum + quiz.duration, 0) / filteredQuizzes.length)
+    : 0;
+
+  const filterButtons = [
+    {
+      label: "All themes",
+      value: "all",
+      active: state.meta.quizFilter === null
+    },
+    ...categories.map(category => ({
+      label: category,
+      value: category,
+      active: state.meta.quizFilter === category
+    }))
+  ]
+    .map(
+      filter => `
+        <button
+          type="button"
+          class="quizzes-filter__item ${filter.active ? "quizzes-filter__item--active" : ""}"
+          data-filter="${filter.value}"
+          aria-pressed="${filter.active ? "true" : "false"}">
+          ${filter.label}
+        </button>
+      `
+    )
+    .join("");
+
+  const cardsMarkup = filteredQuizzes.length
+    ? filteredQuizzes
+        .map(quiz => {
+          const status = quizStatus[quiz.id] || "new";
+          const isScheduled = status === "scheduled" || status === "completed";
+          const isCompleted = status === "completed";
+          const scheduleLabel = isScheduled ? "Scheduled" : "Add to rollout";
+          const completeLabel = isCompleted ? "Completed" : `Mark completed (+${quiz.points} pts)`;
+          const focusTags = quiz.focus.map(item => `<span class="quiz-card__tag">${item}</span>`).join("");
+          return `
+            <article class="quiz-card" data-quiz-id="${quiz.id}">
+              <header class="quiz-card__header">
+                <span class="quiz-card__category">${quiz.category}</span>
+                <span class="quiz-card__points">+${quiz.points} pts</span>
+              </header>
+              <div class="quiz-card__body">
+                <h3>${quiz.title}</h3>
+                <p>${quiz.description}</p>
+                <ul class="quiz-card__meta">
+                  <li>
+                    <span>Duration</span>
+                    <strong>${quiz.duration} min</strong>
+                  </li>
+                  <li>
+                    <span>Questions</span>
+                    <strong>${quiz.questions}</strong>
+                  </li>
+                  <li>
+                    <span>Difficulty</span>
+                    <strong>${quiz.difficulty}</strong>
+                  </li>
+                  <li>
+                    <span>Format</span>
+                    <strong>${quiz.format}</strong>
+                  </li>
+                </ul>
+                <div class="quiz-card__tags">
+                  ${focusTags}
+                </div>
+                <div class="quiz-card__sample">
+                  <span>Sample question</span>
+                  <p>${quiz.sampleQuestion}</p>
+                </div>
+              </div>
+              <footer class="quiz-card__footer">
+                <div class="quiz-card__bonus">
+                  <strong>${quiz.bonus}</strong>
+                  <span>${quiz.bonusDetail}</span>
+                </div>
+                <div class="quiz-card__actions">
+                  <button
+                    type="button"
+                    class="quiz-card__action quiz-card__action--schedule"
+                    data-action="schedule"
+                    ${isScheduled ? 'aria-pressed="true" disabled' : ""}>
+                    ${scheduleLabel}
+                  </button>
+                  <button
+                    type="button"
+                    class="quiz-card__action quiz-card__action--complete"
+                    data-action="complete"
+                    ${isCompleted ? 'aria-pressed="true" disabled' : ""}>
+                    ${completeLabel}
+                  </button>
+                </div>
+              </footer>
+            </article>
+          `;
+        })
+        .join("")
+    : `<p class="quests-empty">No quests match this filter yet. Try selecting another theme.</p>`;
+
+  return `
+    <div class="page page--quizzes">
+      ${renderHeader()}
+      <div class="page__inner page__inner--single">
+        <main class="layout-content" id="main-content">
+          <section class="hero-section hero-section--quizzes">
+            <div class="hero-section__header">
+              <div class="hero-section__intro">
+                <span class="hero-section__eyebrow">Micro-learning quests</span>
+                <h1 class="hero-section__headline">Award points for five-minute vigilance quests.</h1>
+                <p class="hero-section__lead">
+                  Roll these scenario-based quests out to squads and watch points land the moment a player crosses the finish line.
+                </p>
+              </div>
+              <div class="hero-stats">
+                <div class="hero-stats__item">
+                  <strong>${filteredQuizzes.length}</strong>
+                  <span>Quests live</span>
+                </div>
+                <div class="hero-stats__item">
+                  <strong>${scheduledCount}</strong>
+                  <span>Assigned to squads</span>
+                </div>
+                <div class="hero-stats__item">
+                  <strong>${completedPoints}</strong>
+                  <span>Points awarded</span>
+                </div>
+                <div class="hero-stats__item">
+                  <strong>${averageDuration || 0} min</strong>
+                  <span>Avg duration</span>
+                </div>
+              </div>
             </div>
+            <div class="hero-section__filters quizzes-filter" role="toolbar" aria-label="Filter quests by theme">
+              ${filterButtons}
+            </div>
+          </section>
+          <div class="quizzes-content">
+            <section class="quizzes-grid">
+              ${cardsMarkup}
+            </section>
           </div>
-          <div class="achievements-hero__tags">
-            ${categoryTags}
-          </div>
-        </div>
-      </section>
-      <main class="achievements-content">
-        <section class="achievements-grid">
-          ${cards.join("")}
-        </section>
-      </main>
+        </main>
+      </div>
     </div>
   `;
 }
@@ -1223,11 +1736,13 @@ function renderPointsCard(label, value, tone, icon) {
 }
 
 function renderCustomer() {
-  const pendingApprovals = state.messages.filter(msg => msg.status === MessageStatus.PENDING).length;
+  const customerMessages = state.messages.filter(messageBelongsToCustomer);
+  const pendingMessages = customerMessages.filter(msg => msg.status === MessageStatus.PENDING);
+  const pendingApprovalPoints = pendingMessages.reduce((sum, msg) => sum + (msg.pointsOnApproval || 0), 0);
   const rewardsHtml = state.rewards
     .map(
       reward => `
-      <button class="reward-card" data-reward="${reward.id}">
+      <article class="reward-card" data-reward="${reward.id}">
         <div class="reward-card__artwork" style="background:${reward.image};">
           ${renderIcon(reward.icon || "medal", "lg")}
         </div>
@@ -1241,12 +1756,13 @@ function renderCustomer() {
           <strong>${reward.pointsCost} pts</strong>
           <span>${reward.remaining} left</span>
         </div>
-      </button>
+        <button type="button" class="reward-card__cta button-pill button-pill--primary">Redeem reward</button>
+      </article>
     `
     )
     .join("");
 
-  const recentMessages = state.messages.filter(msg => msg.reporterEmail === state.customer.email).slice(0, 3);
+  const recentMessages = customerMessages.slice(0, 3);
   const timelineItems = recentMessages
     .map(msg => {
       const reasons = msg.reasons.map(reasonById).filter(Boolean);
@@ -1289,7 +1805,7 @@ function renderCustomer() {
     </header>
     <section class="points-strip">
       ${renderPointsCard("Available to spend", state.customer.currentPoints, "purple", "medal")}
-      ${renderPointsCard("Pending approval", pendingApprovals * 80, "orange", "hourglass")}
+      ${renderPointsCard("Pending approval", pendingApprovalPoints, "orange", "hourglass")}
       ${renderPointsCard("Already redeemed", state.customer.redeemedPoints, "slate", "gift")}
     </section>
     <section>
@@ -1303,7 +1819,7 @@ function renderCustomer() {
       <article class="timeline">
         <div>
           <h3>Recent reports</h3>
-          <p>Fresh from the Outlook add-in.</p>
+          <p>Fresh from the Reporter journey.</p>
         </div>
         <ul class="timeline__list">${timelineItems}</ul>
       </article>
@@ -1412,7 +1928,7 @@ function renderClientDashboard() {
 
   return `
     <header>
-      <h1>Evergreen Capital - security pulse</h1>
+      <h1>Organisation dashboard – security pulse</h1>
       <p>Track how your team spots threats, and spotlight the behaviour change security leaders care about.</p>
       <span class="chip chip--client">Updated ${relativeTime(weeklyMessages[0]?.reportedAt || new Date().toISOString())}</span>
     </header>
@@ -1531,7 +2047,7 @@ function renderClientReporting() {
 
   return `
     <header>
-      <h1>Reporting & export</h1>
+      <h1>Security team dashboard</h1>
       <p>Filter every reported email, approve them live, and download a CSV ready for compliance or SOC reviews.</p>
       <button class="button-pill button-pill--primary" id="download-csv-button">Download CSV</button>
     </header>
@@ -1646,6 +2162,10 @@ function renderWeldAdmin() {
 
 function renderAddIn() {
   const screen = state.meta.addinScreen;
+  const pendingApprovalPoints = state.messages
+    .filter(messageBelongsToCustomer)
+    .filter(msg => msg.status === MessageStatus.PENDING)
+    .reduce((sum, msg) => sum + (msg.pointsOnApproval || 0), 0);
   const statsStrip = `
     <div class="addin-stats">
       <article class="addin-stat">
@@ -1661,7 +2181,7 @@ function renderAddIn() {
           ${renderIcon("hourglass", "xs")}
           <div>
             <span>Pending</span>
-            <strong>${state.messages.filter(msg => msg.status === MessageStatus.PENDING).length * 80}</strong>
+            <strong>${pendingApprovalPoints}</strong>
           </div>
         </div>
       </article>
@@ -1694,16 +2214,42 @@ function renderAddIn() {
   `;
 
   const lastPoints = state.meta.lastReportPoints ?? 20;
+  const auroraLayers = [
+    { angle: 18, hue: 258, delay: "0s" },
+    { angle: -22, hue: 200, delay: "0.08s" },
+    { angle: 36, hue: 42, delay: "0.16s" }
+  ];
+  const shimmerLayers = [
+    { delay: "0.4s" },
+    { delay: "0.6s" },
+    { delay: "0.8s" }
+  ];
+  const auroraMarkup = auroraLayers
+    .map(
+      layer => `
+        <span class="points-aurora__ribbon" style="--aurora-angle:${layer.angle}deg;--aurora-hue:${layer.hue};--aurora-delay:${layer.delay};"></span>
+      `
+    )
+    .join("");
+  const shimmerMarkup = shimmerLayers
+    .map(layer => `<span class="points-shimmer" style="--shimmer-delay:${layer.delay};"></span>`)
+    .join("");
   const successView = `
     <div class="addin-success">
-      <div class="points-celebration">
+      <div class="points-celebration points-celebration--aurora">
         <div class="points-celebration__halo"></div>
+        <div class="points-aurora" aria-hidden="true">
+          ${auroraMarkup}
+        </div>
         <div class="points-celebration__bubble">
           <span class="points-celebration__label">Great catch</span>
           <div class="points-celebration__points">
             ${renderIcon("medal", "xs")}
-            <strong>+${lastPoints} pts</strong>
+            <strong class="points-celebration__points-value">+${lastPoints} pts</strong>
           </div>
+        </div>
+        <div class="points-shimmer-group" aria-hidden="true">
+          ${shimmerMarkup}
         </div>
         <div class="points-celebration__confetti">
           <span></span>
@@ -1749,7 +2295,9 @@ function renderHeader() {
     return "";
   }
   const role = state.meta.role;
+  const navMarkup = renderGlobalNav(state.meta.route);
   return `
+    ${navMarkup}
     <header class="header">
       <button class="brand" id="brand-button">
         <span class="brand__glyph">W</span>
@@ -1761,56 +2309,8 @@ function renderHeader() {
             ? `<span class="chip ${ROLE_LABELS[role].chip}"><span class="chip__dot"></span>${ROLE_LABELS[role].label}</span>`
             : ""
         }
-        <button class="button-pill button-pill--ghost" id="reset-demo">Reset demo data</button>
-        <button class="button-pill button-pill--primary" id="journey-picker">Journey picker</button>
       </div>
     </header>
-    ${renderGlobalNav(state.meta.route)}
-  `;
-}
-
-function renderSidebar() {
-  if (!state.meta.role) {
-    return `
-      <aside class="sidebar">
-        <div class="card">
-          <p>Please choose a journey to begin.</p>
-        </div>
-      </aside>
-    `;
-  }
-
-  const links = [];
-  if (state.meta.role === "customer") {
-    links.push({ route: "customer", label: "Customer rewards" });
-  }
-  if (state.meta.role === "client") {
-    links.push({ route: "client-dashboard", label: "Client admin dashboard" });
-    links.push({ route: "client-reporting", label: "Client admin reporting" });
-  }
-  if (state.meta.role === "admin") {
-    links.push({ route: "weld-admin", label: "Weld admin clients" });
-  }
-
-  const navLinks = links
-    .map(
-      link => `
-        <button class="sidebar__link ${state.meta.route === link.route ? "sidebar__link--active" : ""}" data-route="${link.route}">
-          ${link.label}
-        </button>
-      `
-    )
-    .join("");
-
-  return `
-    <aside class="sidebar">
-      <nav class="sidebar__nav">${navLinks}</nav>
-      <a class="sidebar__addin" data-route="addin">
-        <span class="sidebar__addin-eyebrow">Also in this demo</span>
-        <h4>Outlook add-in</h4>
-        <p>Open the task pane experience that seeded the customer journey.</p>
-      </a>
-    </aside>
   `;
 }
 
@@ -1830,39 +2330,115 @@ function renderContent() {
 }
 
 function attachAchievementsEvents(container) {
-  const brandBtn = container.querySelector("#achievements-brand");
-  if (brandBtn) {
-    brandBtn.addEventListener("click", () => navigate("landing"));
-  }
-
-  const journeyBtn = container.querySelector("#achievements-journey");
-  if (journeyBtn) {
-    journeyBtn.addEventListener("click", () => navigate("landing"));
-  }
-
-  const resetBtn = container.querySelector("#achievements-reset");
-  if (resetBtn) {
-    resetBtn.addEventListener("click", () => {
-      openDialog({
-        title: "Reset demo data?",
-        description: "This will return every journey to the default product narrative.",
-        confirmLabel: "Reset now",
-        cancelLabel: "Cancel",
-        tone: "critical",
-        onConfirm: close => {
-          resetDemo();
-          close();
-        }
-      });
+  const filterContainer = container.querySelector(".achievements-filter");
+  if (filterContainer) {
+    filterContainer.addEventListener("click", event => {
+      const button = event.target.closest("[data-filter]");
+      if (!button) return;
+      const value = button.getAttribute("data-filter");
+      const nextFilter = value === "all" ? null : value;
+      if (state.meta.achievementFilter === nextFilter) return;
+      state.meta.achievementFilter = nextFilter;
+      persist();
+      renderApp();
     });
   }
 }
 
+function attachQuizzesEvents(container) {
+  const filterContainer = container.querySelector(".quizzes-filter");
+  if (filterContainer) {
+    filterContainer.addEventListener("click", event => {
+      const button = event.target.closest("[data-filter]");
+      if (!button) return;
+      const value = button.getAttribute("data-filter");
+      const nextFilter = value === "all" ? null : value;
+      if (state.meta.quizFilter === nextFilter) return;
+      state.meta.quizFilter = nextFilter;
+      persist();
+      renderApp();
+    });
+  }
+
+  container.addEventListener("click", event => {
+    const actionButton = event.target.closest(".quiz-card__action");
+    if (!actionButton || actionButton.disabled) return;
+    const action = actionButton.getAttribute("data-action");
+    const card = actionButton.closest(".quiz-card");
+    if (!card) return;
+    const quizId = card.getAttribute("data-quiz-id");
+    if (!quizId) return;
+    const currentStatus = state.meta.quizStatus || {};
+
+    if (action === "schedule") {
+      if (currentStatus[quizId] === "scheduled" || currentStatus[quizId] === "completed") return;
+      state.meta.quizStatus = { ...currentStatus, [quizId]: "scheduled" };
+      persist();
+      renderApp();
+      return;
+    }
+
+    if (action === "complete") {
+      if (currentStatus[quizId] === "completed") return;
+      const quiz = quizById(quizId);
+      state.meta.quizStatus = { ...currentStatus, [quizId]: "completed" };
+      if (quiz) {
+        state.customer.currentPoints += quiz.points;
+      }
+      persist();
+      renderApp();
+      if (quiz) {
+        openDialog({
+          title: "Points awarded",
+          description: `+${quiz.points} points credited for finishing "${quiz.title}".`,
+          confirmLabel: "Close"
+        });
+      }
+    }
+  });
+}
+
 function attachGlobalNav(container) {
+  const groups = Array.from(container.querySelectorAll(".global-nav__group"));
+
+  const closeGroups = () => {
+    groups.forEach(group => {
+      group.classList.remove("global-nav__group--open");
+      const triggerEl = group.querySelector(".global-nav__trigger");
+      if (triggerEl) triggerEl.setAttribute("aria-expanded", "false");
+    });
+  };
+
+  groups.forEach(group => {
+    const trigger = group.querySelector(".global-nav__trigger");
+    if (!trigger) return;
+    trigger.setAttribute("aria-expanded", "false");
+    trigger.setAttribute("aria-haspopup", "true");
+    const toggleGroup = event => {
+      event.stopPropagation();
+      const isOpen = group.classList.contains("global-nav__group--open");
+      closeGroups();
+      if (!isOpen) {
+        group.classList.add("global-nav__group--open");
+        trigger.setAttribute("aria-expanded", "true");
+      }
+    };
+
+    trigger.addEventListener("click", toggleGroup);
+    trigger.addEventListener("keydown", event => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      toggleGroup(event);
+    });
+  });
+
   container.querySelectorAll(".global-nav [data-route]").forEach(button => {
-    button.addEventListener("click", () => {
+    button.addEventListener("click", event => {
+      event.stopPropagation();
       const route = button.getAttribute("data-route");
       const role = button.getAttribute("data-role");
+
+      closeGroups();
 
       if (route === "addin") {
         state.meta.addinScreen = "report";
@@ -1875,33 +2451,70 @@ function attachGlobalNav(container) {
       }
     });
   });
+
+  const journeyButton = container.querySelector("#global-journey");
+  if (journeyButton) {
+    journeyButton.addEventListener("click", event => {
+      event.stopPropagation();
+      closeGroups();
+      navigate("landing");
+    });
+  }
+
+  container.addEventListener("focusout", event => {
+    if (!event.relatedTarget || !container.contains(event.relatedTarget)) {
+      closeGroups();
+    }
+  });
+
+  if (!window.__weldNavDismiss__) {
+    document.addEventListener("click", () => {
+      document.querySelectorAll(".global-nav__group").forEach(group => {
+        group.classList.remove("global-nav__group--open");
+        const triggerEl = group.querySelector(".global-nav__trigger");
+        if (triggerEl) triggerEl.setAttribute("aria-expanded", "false");
+      });
+    });
+    window.__weldNavDismiss__ = true;
+  }
+
+  if (!window.__weldNavEscape__) {
+    document.addEventListener("keydown", event => {
+      if (event.key !== "Escape") return;
+      document.querySelectorAll(".global-nav__group").forEach(group => {
+        group.classList.remove("global-nav__group--open");
+        const triggerEl = group.querySelector(".global-nav__trigger");
+        if (triggerEl) triggerEl.setAttribute("aria-expanded", "false");
+      });
+    });
+    window.__weldNavEscape__ = true;
+  }
 }
 
 function attachLandingEvents(container) {
-  container.querySelectorAll(".journey-card[data-route]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const route = btn.getAttribute("data-route");
-      const role = btn.getAttribute("data-role");
-      if (route === "addin") {
-        state.meta.addinScreen = "report";
-        navigate("addin");
-        return;
-      }
-      if (role) {
-        setRole(role, route);
-      } else {
-        navigate(route);
-      }
-    });
-  });
-}
+  const handleRouteClick = element => {
+    const route = element.getAttribute("data-route");
+    const role = element.getAttribute("data-role");
+    if (!route) return;
+    if (route === "addin") {
+      state.meta.addinScreen = "report";
+    }
+    if (role) {
+      setRole(role, route);
+    } else {
+      navigate(route);
+    }
+  };
 
-function attachHeaderEvents(container) {
-  const brandBtn = container.querySelector("#brand-button");
-  if (brandBtn) {
-    brandBtn.addEventListener("click", () => navigate("landing"));
-  }
-  const resetBtn = container.querySelector("#reset-demo");
+  container.querySelectorAll(".journey-card[data-route]").forEach(btn => {
+    btn.addEventListener("click", () => handleRouteClick(btn));
+  });
+
+  container.querySelectorAll(".feature-card__action[data-route]").forEach(btn => {
+    btn.addEventListener("click", () => handleRouteClick(btn));
+  });
+
+  const resetBtn = container.querySelector("#landing-reset");
   if (resetBtn) {
     resetBtn.addEventListener("click", () => {
       openDialog({
@@ -1917,25 +2530,13 @@ function attachHeaderEvents(container) {
       });
     });
   }
-  const pickerBtn = container.querySelector("#journey-picker");
-  if (pickerBtn) {
-    pickerBtn.addEventListener("click", () => navigate("landing"));
-  }
 }
 
-function attachSidebarEvents(container) {
-  container.querySelectorAll("[data-route]").forEach(link => {
-    link.addEventListener("click", event => {
-      event.preventDefault();
-      const route = link.getAttribute("data-route");
-      if (route === "addin") {
-        state.meta.addinScreen = "report";
-        navigate("addin");
-      } else {
-        navigate(route);
-      }
-    });
-  });
+function attachHeaderEvents(container) {
+  const brandBtn = container.querySelector("#brand-button");
+  if (brandBtn) {
+    brandBtn.addEventListener("click", () => navigate("landing"));
+  }
 }
 
 function attachCustomerEvents(container) {
@@ -1946,8 +2547,10 @@ function attachCustomerEvents(container) {
       navigate("addin");
     });
   }
-  container.querySelectorAll(".reward-card").forEach(card => {
-    card.addEventListener("click", () => {
+  container.querySelectorAll(".reward-card__cta").forEach(button => {
+    button.addEventListener("click", () => {
+      const card = button.closest(".reward-card");
+      if (!card) return;
       const rewardId = Number(card.getAttribute("data-reward"));
       const reward = rewardById(rewardId);
       if (!reward) return;
@@ -2071,6 +2674,9 @@ function attachAddInEvents(container) {
       });
     }
   } else {
+    if (state.meta.addinScreen === "success") {
+      setupCelebrationReplay(container);
+    }
     const viewRewards = container.querySelector("#addin-view-rewards");
     if (viewRewards) {
       viewRewards.addEventListener("click", () => {
@@ -2099,18 +2705,28 @@ function renderApp() {
   if (route === "landing") {
     app.innerHTML = `
       <div class="page page--landing">
-        ${renderLanding()}
+        <div class="page__inner page__inner--single">
+          <main class="layout-content" id="main-content">${renderLanding()}</main>
+        </div>
       </div>
     `;
     attachLandingEvents(app);
-    attachGlobalNav(app);
     return;
   }
 
   if (route === "achievements") {
     app.innerHTML = renderAchievementsPage();
-    attachAchievementsEvents(app);
+    attachHeaderEvents(app);
     attachGlobalNav(app);
+    attachAchievementsEvents(app);
+    return;
+  }
+
+  if (route === "quizzes") {
+    app.innerHTML = renderQuizzesPage();
+    attachHeaderEvents(app);
+    attachGlobalNav(app);
+    attachQuizzesEvents(app);
     return;
   }
 
@@ -2121,21 +2737,20 @@ function renderApp() {
         <div class="page__inner page__inner--single">
           <main class="layout-content layout-content--flush" id="main-content">${renderAddIn()}</main>
         </div>
-      </div>
-    `;
+    </div>
+  `;
 
-    attachHeaderEvents(app);
-    attachGlobalNav(app);
-    const mainContent = app.querySelector("#main-content");
-    if (mainContent) attachAddInEvents(mainContent);
-    return;
-  }
+  attachHeaderEvents(app);
+  attachGlobalNav(app);
+  const mainContent = app.querySelector("#main-content");
+  if (mainContent) attachAddInEvents(mainContent);
+  return;
+}
 
   app.innerHTML = `
     <div class="page">
       ${renderHeader()}
       <div class="page__inner">
-        ${renderSidebar()}
         <main class="layout-content" id="main-content">${renderContent()}</main>
       </div>
     </div>
@@ -2143,8 +2758,6 @@ function renderApp() {
 
   attachHeaderEvents(app);
   attachGlobalNav(app);
-  const sidebar = app.querySelector(".sidebar");
-  if (sidebar) attachSidebarEvents(sidebar);
 
   const mainContent = app.querySelector("#main-content");
   if (!mainContent) return;
