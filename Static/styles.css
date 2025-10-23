@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   font-family:
     "Rubik",
     system-ui,
@@ -3142,18 +3142,7 @@ button {
     margin-left: 0;
   }
 }
-.addin-actions {
-
-
-
-
-
-
-
-
-
-
-
+.addin-actions {}
 .points-celebration--aurora .points-celebration__halo {
   width: 180px;
   height: 180px;

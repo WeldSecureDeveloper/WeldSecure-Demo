@@ -16,7 +16,7 @@ const ROUTES = {
   "client-rewards": { requiresRole: "client" },
   "client-quests": { requiresRole: "client" },
   "weld-admin": { requiresRole: "admin" },
-  achievements: { requiresRole: false },
+  achievements: { requiresRole: "client" },
   addin: { requiresRole: false }
 };
 
@@ -31,8 +31,7 @@ const NAV_GROUPS = [
     label: "Reporter",
     items: [
       { label: "Reporter Journey", route: "addin", role: "customer" },
-      { label: "Hub", route: "customer", role: "customer" },
-      { label: "Badges", route: "achievements", role: "customer" }
+      { label: "Hub", route: "customer", role: "customer" }
     ]
   },
   {
@@ -40,6 +39,7 @@ const NAV_GROUPS = [
     items: [
       { label: "Organisation Dashboard", route: "client-dashboard", role: "client" },
       { label: "Security Team Dashboard", route: "client-reporting", role: "client" },
+      { label: "Badge Catalogue", route: "achievements", role: "client" },
       { label: "Quest Catalogue", route: "client-quests", role: "client" },
       { label: "Rewards Catalogue", route: "client-rewards", role: "client" }
     ]
@@ -51,6 +51,35 @@ const NAV_GROUPS = [
 ];
 
 const QUEST_DIFFICULTY_ORDER = ["starter", "intermediate", "advanced"];
+
+function generateId(prefix = "id") {
+  const idPrefix = typeof prefix === "string" && prefix.length > 0 ? `${prefix}-` : "";
+  const cryptoSource = typeof globalThis !== "undefined" ? globalThis.crypto : null;
+  if (cryptoSource && typeof cryptoSource.randomUUID === "function") {
+    return `${idPrefix}${cryptoSource.randomUUID()}`;
+  }
+  const now = Date.now().toString(36);
+  const random = Math.floor(Math.random() * 1e9)
+    .toString(36)
+    .padStart(6, "0");
+  return `${idPrefix}${now}-${random}`;
+}
+
+function normalizeId(value, prefix) {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+  if (Number.isFinite(value)) {
+    return String(value);
+  }
+  const stringValue = typeof value.toString === "function" ? value.toString() : "";
+  if (stringValue && stringValue !== "[object Object]") {
+    return stringValue;
+  }
+  return generateId(prefix);
+}
 
 function questDifficultyRank(value) {
   if (typeof value !== "string") return QUEST_DIFFICULTY_ORDER.length;
@@ -888,12 +917,12 @@ function initialState() {
       },
       {
         id: 3,
-        name: "Margot & Montañez Chocolate Hamper",
+        name: "Margot & Montanez Chocolate Hamper",
         description: "Limited edition artisan chocolate selection to celebrate vigilance.",
         pointsCost: 120,
         icon: "gift",
         category: "merchandise",
-        provider: "Margot & Montañez",
+        provider: "Margot & Montanez",
         image: "linear-gradient(135deg, #ffbe0b 0%, #fb5607 100%)",
         remaining: 20,
         published: false
@@ -1159,25 +1188,59 @@ function loadState() {
           const clientConfig =
             normalizedClients.find(client => client.id === clientId) ??
             baseState.clients.find(client => client.id === clientId);
+          const normalizedMessageId = normalizeId(message.id, "message") ?? generateId("message");
+          const externalMessageId =
+            typeof message.messageId === "string" && message.messageId.trim().length > 0
+              ? message.messageId.trim()
+              : generateId("MSG").toUpperCase();
           return {
             ...message,
+            id: normalizedMessageId,
+            messageId: externalMessageId,
             clientId,
             pointsOnMessage: message.pointsOnMessage ?? clientConfig?.pointsPerMessage ?? 20,
             pointsOnApproval: message.pointsOnApproval ?? clientConfig?.pointsOnApproval ?? 80
           };
         })
-      : baseState.messages;
+      : baseState.messages.map(message => ({
+          ...message,
+          id: normalizeId(message.id, "message") ?? generateId("message"),
+          messageId:
+            typeof message.messageId === "string" && message.messageId.trim().length > 0
+              ? message.messageId.trim()
+              : generateId("MSG").toUpperCase()
+        }));
+    const normalizedRewardRedemptions = Array.isArray(parsed.rewardRedemptions)
+      ? parsed.rewardRedemptions.map(entry => ({
+          ...entry,
+          id: normalizeId(entry.id, "redemption") ?? generateId("redemption")
+        }))
+      : baseState.rewardRedemptions.map(entry => ({
+          ...entry,
+          id: normalizeId(entry.id, "redemption") ?? generateId("redemption")
+        }));
+    const mergedMeta = {
+      ...baseState.meta,
+      ...parsed.meta
+    };
+    if (mergedMeta.lastMessageId === null || mergedMeta.lastMessageId === undefined) {
+      mergedMeta.lastMessageId = null;
+    } else if (typeof mergedMeta.lastMessageId === "string") {
+      mergedMeta.lastMessageId = mergedMeta.lastMessageId.trim() || null;
+    } else if (Number.isFinite(mergedMeta.lastMessageId)) {
+      mergedMeta.lastMessageId = String(mergedMeta.lastMessageId);
+    } else {
+      mergedMeta.lastMessageId = null;
+    }
     return {
       ...baseState,
       ...parsed,
-      meta: {
-        ...baseState.meta,
-        ...parsed.meta
-      },
+      meta: mergedMeta,
       rewards: normalizedRewards,
       quests: normalizedQuests,
       messages: normalizedMessages,
-      clients: normalizedClients
+      clients: normalizedClients,
+      rewardRedemptions: normalizedRewardRedemptions
     };
   } catch {
     return initialState();
@@ -1293,7 +1356,7 @@ function redeemReward(rewardId) {
   }
 
   const redemption = {
-    id: Date.now(),
+    id: generateId("redemption"),
     rewardId: reward.id,
     redeemedAt: new Date().toISOString(),
     status: "pending"
@@ -1366,9 +1429,14 @@ function reportMessage(payload) {
   const pointsOnMessage = 20;
   const pointsOnApproval = client?.pointsOnApproval ?? 80;
   const beforePoints = state.customer.currentPoints;
+  const internalMessageId = generateId("message");
+  const messageIdValue =
+    typeof payload.messageId === "string" && payload.messageId.trim().length > 0
+      ? payload.messageId.trim()
+      : generateId("MSG").toUpperCase();
   const message = {
-    id: Date.now(),
-    messageId: payload.messageId,
+    id: internalMessageId,
+    messageId: messageIdValue,
     subject: payload.subject,
     reporterName: payload.reporterName,
     reporterEmail: payload.reporterEmail,
@@ -1384,7 +1452,7 @@ function reportMessage(payload) {
   state.messages.unshift(message);
   state.customer.currentPoints += pointsOnMessage;
   message.pointsOnMessage = pointsOnMessage;
-  state.meta.lastMessageId = message.id;
+  state.meta.lastMessageId = internalMessageId;
 
   const selectedBadge = selectRandomBadge(state.meta.lastBadgeId);
   const badgePoints = selectedBadge ? selectedBadge.points : 0;
@@ -1474,9 +1542,9 @@ function revertLastReportAward() {
     state.customer.currentPoints = Math.max(0, state.customer.currentPoints - totalAwarded);
   }
 
-  const lastMessageId = Number(state.meta.lastMessageId);
-  if (Number.isFinite(lastMessageId)) {
-    const index = state.messages.findIndex(msg => msg.id === lastMessageId);
+  const lastMessageId = state.meta.lastMessageId;
+  if (lastMessageId) {
+    const index = state.messages.findIndex(msg => String(msg.id) === String(lastMessageId));
     if (index !== -1) {
       state.messages.splice(index, 1);
     }
@@ -1565,7 +1633,7 @@ function animatePointsTicker(root) {
 }
 
 function updateMessageStatus(messageId, status) {
-  const target = state.messages.find(msg => msg.id === messageId);
+  const target = state.messages.find(msg => String(msg.id) === String(messageId));
   if (!target || target.status === status) return;
 
   const previousStatus = target.status;
@@ -1635,7 +1703,16 @@ function relativeTime(iso) {
   return target.toLocaleDateString();
 }
 
-function openDialog({ title, description, content, confirmLabel, onConfirm, cancelLabel, onCancel, tone = "primary" }) {
+function openDialog({
+  title,
+  description,
+  content,
+  confirmLabel,
+  onConfirm,
+  cancelLabel,
+  onCancel,
+  tone = "primary"
+}) {
   let root = document.getElementById("dialog-root");
   if (!root) {
     root = document.createElement("div");
@@ -1649,29 +1726,72 @@ function openDialog({ title, description, content, confirmLabel, onConfirm, canc
   document.body.dataset.previousOverflow = previousOverflow;
   document.body.style.overflow = "hidden";
 
-  root.innerHTML = `
-    <div class="dialog-backdrop" role="dialog" aria-modal="true">
-      <div class="dialog-surface">
-        <header>
-          <h2>${title}</h2>
-          ${description ? `<p>${description}</p>` : ""}
-        </header>
-        <section>${content || ""}</section>
-        <footer class="dialog-actions">
-          ${cancelLabel ? `<button class="button-pill button-pill--ghost" data-dialog-action="cancel">${cancelLabel}</button>` : ""}
-          ${confirmLabel ? `<button class="button-pill ${tone === "critical" ? "button-pill--critical" : "button-pill--primary"}" data-dialog-action="confirm">${confirmLabel}</button>` : ""}
-        </footer>
-      </div>
-    </div>
-  `;
+  root.innerHTML = "";
+
+  const backdrop = document.createElement("div");
+  backdrop.className = "dialog-backdrop";
+  backdrop.setAttribute("role", "dialog");
+  backdrop.setAttribute("aria-modal", "true");
+
+  const surface = document.createElement("div");
+  surface.className = "dialog-surface";
+
+  const header = document.createElement("header");
+  const heading = document.createElement("h2");
+  heading.textContent = title || "";
+  header.appendChild(heading);
+  if (description) {
+    const descriptionEl = document.createElement("p");
+    descriptionEl.textContent = description;
+    header.appendChild(descriptionEl);
+  }
+
+  const bodySection = document.createElement("section");
+  appendDialogContent(bodySection, content);
+  const hasContent = bodySection.childNodes.length > 0;
+
+  const footer = document.createElement("footer");
+  footer.className = "dialog-actions";
+
+  let cancelButton = null;
+  if (cancelLabel) {
+    cancelButton = document.createElement("button");
+    cancelButton.className = "button-pill button-pill--ghost";
+    cancelButton.dataset.dialogAction = "cancel";
+    cancelButton.textContent = cancelLabel;
+    footer.appendChild(cancelButton);
+  }
+
+  let confirmButton = null;
+  if (confirmLabel) {
+    confirmButton = document.createElement("button");
+    const toneClass = tone === "critical" ? "button-pill--critical" : "button-pill--primary";
+    confirmButton.className = `button-pill ${toneClass}`;
+    confirmButton.dataset.dialogAction = "confirm";
+    confirmButton.textContent = confirmLabel;
+    footer.appendChild(confirmButton);
+  }
+
+  surface.appendChild(header);
+  if (hasContent) {
+    surface.appendChild(bodySection);
+  }
+  surface.appendChild(footer);
+  backdrop.appendChild(surface);
+  root.appendChild(backdrop);
+
+  function cleanup() {
+    backdrop.removeEventListener("click", handleBackdrop);
+    document.removeEventListener("keydown", handleKey);
+    delete root.__weldDialogCleanup__;
+  }
 
   function close() {
+    cleanup();
     root.innerHTML = "";
     const storedOverflow = document.body.dataset.previousOverflow;
     document.body.style.overflow = storedOverflow !== undefined ? storedOverflow : "";
     delete document.body.dataset.previousOverflow;
-    root.removeEventListener("click", handleBackdrop);
-    document.removeEventListener("keydown", handleKey);
   }
 
   function handleBackdrop(event) {
@@ -1688,21 +1808,38 @@ function openDialog({ title, description, content, confirmLabel, onConfirm, canc
     }
   }
 
-  root.addEventListener("click", handleBackdrop);
+  function appendDialogContent(parent, value) {
+    if (value === null || value === undefined) return;
+    if (typeof value === "function") {
+      appendDialogContent(parent, value());
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.forEach(item => appendDialogContent(parent, item));
+      return;
+    }
+    if (typeof Node !== "undefined" && value instanceof Node) {
+      parent.appendChild(value);
+      return;
+    }
+    const wrapper = document.createElement("p");
+    wrapper.textContent = String(value);
+    parent.appendChild(wrapper);
+  }
+
+  backdrop.addEventListener("click", handleBackdrop);
   document.addEventListener("keydown", handleKey);
+  root.__weldDialogCleanup__ = cleanup;
 
-  const confirmBtn = root.querySelector('[data-dialog-action="confirm"]');
-  const cancelBtn = root.querySelector('[data-dialog-action="cancel"]');
-
-  if (confirmBtn) {
-    confirmBtn.addEventListener("click", () => {
+  if (confirmButton) {
+    confirmButton.addEventListener("click", () => {
       if (onConfirm) onConfirm(close);
       else close();
     });
   }
 
-  if (cancelBtn) {
-    cancelBtn.addEventListener("click", () => {
+  if (cancelButton) {
+    cancelButton.addEventListener("click", () => {
       if (onCancel) onCancel();
       close();
     });
@@ -1711,9 +1848,11 @@ function openDialog({ title, description, content, confirmLabel, onConfirm, canc
 
 function closeDialog() {
   const root = document.getElementById("dialog-root");
-  if (root) {
-    root.innerHTML = "";
+  if (!root) return;
+  if (typeof root.__weldDialogCleanup__ === "function") {
+    root.__weldDialogCleanup__();
   }
+  root.innerHTML = "";
   const storedOverflow = document.body.dataset.previousOverflow;
   document.body.style.overflow = storedOverflow !== undefined ? storedOverflow : "";
   delete document.body.dataset.previousOverflow;
@@ -1815,6 +1954,29 @@ function renderLanding() {
           <span class="landing__eyebrow">Product tour</span>
           <h1 class="landing__headline">Weld keeps human vigilance rewarding.<span>Walk through every journey in minutes.</span></h1>
           <p class="landing__lead">Select the experience you want to explore. Each journey mirrors the shipping SaaS surfaces with live-feeling interactions and updated metrics--no backend required.</p>
+        </div>
+        <div class="landing__visual">
+          <div
+            class="landing__badge-sample"
+            role="button"
+            tabindex="0"
+            aria-label="Replay badge animation"
+            data-landing-badge
+          >
+            <svg class="badge" xmlns="http://www.w3.org/2000/svg" height="440" width="440" viewBox="-40 -40 440 440">
+              <circle class="outer" fill="#F9D535" stroke="#fff" stroke-width="8" stroke-linecap="round" cx="180" cy="180" r="157"></circle>
+              <circle class="inner" fill="#DFB828" stroke="#fff" stroke-width="8" cx="180" cy="180" r="108.3"></circle>
+              <path class="inline" d="M89.4 276.7c-26-24.2-42.2-58.8-42.2-97.1 0-22.6 5.6-43.8 15.5-62.4m234.7.1c9.9 18.6 15.4 39.7 15.4 62.2 0 38.3-16.2 72.8-42.1 97" stroke="#CAA61F" stroke-width="7" stroke-linecap="round" fill="none"></path>
+              <g class="star">
+                <path fill="#F9D535" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="M180 107.8l16.9 52.1h54.8l-44.3 32.2 16.9 52.1-44.3-32.2-44.3 32.2 16.9-52.1-44.3-32.2h54.8z"></path>
+                <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="180" cy="107.8" r="4.4"></circle>
+                <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="223.7" cy="244.2" r="4.4"></circle>
+                <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="135.5" cy="244.2" r="4.4"></circle>
+                <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="108.3" cy="160.4" r="4.4"></circle>
+                <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="251.7" cy="160.4" r="4.4"></circle>
+              </g>
+            </svg>
+          </div>
         </div>
       </section>
       <section class="landing__section landing__section--journeys">
@@ -2453,37 +2615,44 @@ function renderClientDashboard() {
 }
 
 function renderClientReporting() {
-  const tableRows = state.messages.slice(0, 20).map(
-    msg => `
+  const tableRows = state.messages.slice(0, 20).map(msg => {
+    const subject = escapeHtml(msg.subject || "");
+    const messageIdentifier = escapeHtml(String(msg.id));
+    const externalId = escapeHtml(String(msg.messageId || ""));
+    const reporterName = escapeHtml(msg.reporterName || "");
+    const reporterEmail = escapeHtml(msg.reporterEmail || "");
+    const statusLabel = escapeHtml(msg.status || "");
+    const reasonsMarkup = msg.reasons
+      .map(reasonById)
+      .filter(Boolean)
+      .map(reason => `<span>${escapeHtml(reason.description)}</span>`)
+      .join("");
+    return `
       <tr>
         <td>${formatDateTime(msg.reportedAt)}</td>
         <td>
-          <strong>${msg.subject}</strong>
-          <div class="timeline__chips"><span>${msg.messageId}</span></div>
+          <strong>${subject}</strong>
+          <div class="timeline__chips"><span>${externalId}</span></div>
         </td>
         <td>
-          ${msg.reporterName}
-          <div class="timeline__chips"><span>${msg.reporterEmail}</span></div>
+          ${reporterName}
+          <div class="timeline__chips"><span>${reporterEmail}</span></div>
         </td>
         <td>
           <div class="timeline__chips">
-            ${msg.reasons
-              .map(reasonById)
-              .filter(Boolean)
-              .map(reason => `<span>${reason.description}</span>`)
-              .join("")}
+            ${reasonsMarkup}
           </div>
         </td>
-        <td><span class="badge" data-state="${msg.status}">${msg.status}</span></td>
+        <td><span class="badge" data-state="${statusLabel}">${statusLabel}</span></td>
         <td>
           <div class="table-actions">
-            <button data-action="approve" data-message="${msg.id}">Approve</button>
-            <button data-action="reject" data-message="${msg.id}">Reject</button>
+            <button data-action="approve" data-message="${messageIdentifier}">Approve</button>
+            <button data-action="reject" data-message="${messageIdentifier}">Reject</button>
           </div>
         </td>
       </tr>
-    `
-  );
+    `;
+  });
 
   return `
     <header>
@@ -3535,6 +3704,24 @@ function attachLandingEvents(container) {
     btn.addEventListener("click", () => handleRouteClick(btn));
   });
 
+  const landingBadge = container.querySelector("[data-landing-badge]");
+  if (landingBadge) {
+    const restartAnimation = () => {
+      const svg = landingBadge.querySelector("svg");
+      if (!svg) return;
+      const clone = svg.cloneNode(true);
+      svg.replaceWith(clone);
+    };
+    landingBadge.addEventListener("click", () => {
+      restartAnimation();
+    });
+    landingBadge.addEventListener("keydown", event => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      restartAnimation();
+    });
+  }
+
   const resetBtn = container.querySelector("#landing-reset");
   if (resetBtn) {
     resetBtn.addEventListener("click", () => {
@@ -3576,10 +3763,25 @@ function attachCustomerEvents(container) {
       const reward = rewardById(rewardId);
       if (!reward) return;
 
+      const dialogContent = document.createElement("div");
+      const nameElement = document.createElement("strong");
+      nameElement.textContent = reward.name || "Reward";
+      dialogContent.appendChild(nameElement);
+      if (reward.description) {
+        const descriptionElement = document.createElement("p");
+        descriptionElement.textContent = reward.description;
+        dialogContent.appendChild(descriptionElement);
+      }
+      if (reward.provider) {
+        const providerElement = document.createElement("span");
+        providerElement.textContent = reward.provider;
+        dialogContent.appendChild(providerElement);
+      }
+
       openDialog({
         title: "Redeem this reward?",
         description: `This will use ${reward.pointsCost} of your available points.`,
-        content: `<strong>${reward.name}</strong><p>${reward.description}</p><span>${reward.provider}</span>`,
+        content: dialogContent,
         confirmLabel: "Confirm redemption",
         cancelLabel: "Cancel",
         onConfirm: close => {
@@ -3779,8 +3981,7 @@ function attachAddInEvents(container) {
           : notesValue
           ? `Suspicious email: ${notesValue.slice(0, 60)}`
           : "Suspicious email reported";
-        const generatedMessageId =
-          "MSG-" + Date.now() + "-" + Math.floor(Math.random() * 10000).toString().padStart(4, "0");
+        const generatedMessageId = generateId("MSG").toUpperCase();
 
         const emergencySelections = Array.from(container.querySelectorAll('.addin-emergency input[type="checkbox"]'))
           .filter(input => input.checked)
@@ -3920,14 +4121,3 @@ window.addEventListener("hashchange", () => {
     renderApp();
   }
 });
-
-
-
-
-
-
-
-
-
-
-
