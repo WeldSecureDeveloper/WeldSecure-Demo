@@ -9,11 +9,14 @@ const ROLE_LABELS = {
 const ROUTES = {
   landing: { requiresRole: false },
   customer: { requiresRole: "customer" },
+  "customer-reports": { requiresRole: "customer" },
+  "customer-redemptions": { requiresRole: "customer" },
   "client-dashboard": { requiresRole: "client" },
   "client-reporting": { requiresRole: "client" },
+  "client-rewards": { requiresRole: "client" },
+  "client-quests": { requiresRole: "client" },
   "weld-admin": { requiresRole: "admin" },
   achievements: { requiresRole: false },
-  quizzes: { requiresRole: false },
   addin: { requiresRole: false }
 };
 
@@ -28,8 +31,7 @@ const NAV_GROUPS = [
     label: "Reporter",
     items: [
       { label: "Reporter Journey", route: "addin", role: "customer" },
-      { label: "Reporter Profile", route: "customer", role: "customer" },
-      { label: "Quests", route: "quizzes", role: "customer" },
+      { label: "Hub", route: "customer", role: "customer" },
       { label: "Badges", route: "achievements", role: "customer" }
     ]
   },
@@ -37,7 +39,9 @@ const NAV_GROUPS = [
     label: "Organisation",
     items: [
       { label: "Organisation Dashboard", route: "client-dashboard", role: "client" },
-      { label: "Security Team Dashboard", route: "client-reporting", role: "client" }
+      { label: "Security Team Dashboard", route: "client-reporting", role: "client" },
+      { label: "Quest Catalogue", route: "client-quests", role: "client" },
+      { label: "Rewards Catalogue", route: "client-rewards", role: "client" }
     ]
   },
   {
@@ -45,6 +49,23 @@ const NAV_GROUPS = [
     items: [{ label: "Weld Admin", route: "weld-admin", role: "admin" }]
   }
 ];
+
+const QUEST_DIFFICULTY_ORDER = ["starter", "intermediate", "advanced"];
+
+function questDifficultyRank(value) {
+  if (typeof value !== "string") return QUEST_DIFFICULTY_ORDER.length;
+  const normalized = value.trim().toLowerCase();
+  const index = QUEST_DIFFICULTY_ORDER.indexOf(normalized);
+  return index === -1 ? QUEST_DIFFICULTY_ORDER.length : index;
+}
+
+function compareQuestsByDifficulty(a, b) {
+  const rankDiff = questDifficultyRank(a && a.difficulty) - questDifficultyRank(b && b.difficulty);
+  if (rankDiff !== 0) return rankDiff;
+  const aTitle = a && typeof a.title === "string" ? a.title : "";
+  const bTitle = b && typeof b.title === "string" ? b.title : "";
+  return aTitle.localeCompare(bTitle, undefined, { sensitivity: "base" });
+}
 
 const ICONS = {
   medal: `
@@ -338,6 +359,98 @@ const ACHIEVEMENT_TONES = {
   slate: "linear-gradient(135deg, #f8fafc, #e2e8f0)"
 };
 
+const ACHIEVEMENT_ICON_BACKDROPS = {
+  violet: {
+    background: "linear-gradient(135deg, #c4b5fd, #a855f7)",
+    shadow: "rgba(124, 58, 237, 0.36)"
+  },
+  cobalt: {
+    background: "linear-gradient(135deg, #bfdbfe, #2563eb)",
+    shadow: "rgba(37, 99, 235, 0.32)"
+  },
+  coral: {
+    background: "linear-gradient(135deg, #fbcfe8, #f97316)",
+    shadow: "rgba(249, 115, 22, 0.34)"
+  },
+  emerald: {
+    background: "linear-gradient(135deg, #bbf7d0, #10b981)",
+    shadow: "rgba(16, 185, 129, 0.34)"
+  },
+  amber: {
+    background: "linear-gradient(135deg, #fde68a, #f59e0b)",
+    shadow: "rgba(245, 158, 11, 0.36)"
+  },
+  aqua: {
+    background: "linear-gradient(135deg, #bae6fd, #0ea5e9)",
+    shadow: "rgba(14, 165, 233, 0.32)"
+  },
+  midnight: {
+    background: "linear-gradient(135deg, #c7d2fe, #1e3a8a)",
+    shadow: "rgba(30, 58, 138, 0.38)"
+  },
+  blush: {
+    background: "linear-gradient(135deg, #fbcfe8, #ec4899)",
+    shadow: "rgba(236, 72, 153, 0.34)"
+  },
+  gold: {
+    background: "linear-gradient(135deg, #fef08a, #f59e0b)",
+    shadow: "rgba(217, 119, 6, 0.36)"
+  },
+  slate: {
+    background: "linear-gradient(135deg, #e2e8f0, #64748b)",
+    shadow: "rgba(100, 116, 139, 0.3)"
+  }
+};
+
+const POINTS_CARD_ICONS = {
+  medal: {
+    background: "linear-gradient(135deg, #facc15, #f97316)",
+    svg: `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="13" fill="rgba(255,255,255,0.16)" />
+        <circle cx="16" cy="16" r="9.5" fill="#fde68a" />
+        <path d="M16 10.2 17.6 14h4.2l-3.3 2.3 1.2 3.8L16 18.8l-3.7 2.3 1.2-3.8L10.2 14h4.2z" fill="#f97316"/>
+        <path d="M12.4 7h2.8l1.2 2.8H13.6zM18.8 7h2.8l-1.1 2.8h-2.8z" fill="#fde68a" opacity="0.6"/>
+      </svg>
+    `
+  },
+  hourglass: {
+    background: "linear-gradient(135deg, #60a5fa, #0ea5e9)",
+    svg: `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
+        <rect x="10" y="6.5" width="12" height="2.8" rx="1.4" fill="#ffffff"/>
+        <rect x="10" y="22.7" width="12" height="2.8" rx="1.4" fill="#ffffff"/>
+        <path d="M11.8 10.6h8.4c0 2.4-1.9 4.2-4.2 5.7 2.3 1.4 4.2 3.3 4.2 5.7h-8.4c0-2.4 1.9-4.2 4.2-5.7-2.3-1.4-4.2-3.3-4.2-5.7z" fill="#bae6fd"/>
+        <path d="M12.8 14h6.4c0 1.1-0.9 2.1-2.6 2.7-1.7-0.6-2.6-1.6-2.6-2.7z" fill="#38bdf8"/>
+        <path d="M12.8 18.9c0-1.1 0.9-2.1 2.6-2.7 1.7 0.6 2.6 1.6 2.6 2.7z" fill="#0ea5e9"/>
+      </svg>
+    `
+  },
+  gift: {
+    background: "linear-gradient(135deg, #fb7185, #ec4899)",
+    svg: `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
+        <rect x="7" y="12.5" width="18" height="12" rx="2.6" fill="#fdf2f8" opacity="0.8"/>
+        <rect x="7" y="9" width="18" height="4" rx="1.6" fill="#fde68a" opacity="0.7"/>
+        <path d="M13.5 9c-1.5 0-2.7-1.2-2.7-2.6 0-1.1 0.8-1.9 1.8-1.9 1.5 0 3.4 1.3 4.5 2.7L17.5 9z" fill="#f97316"/>
+        <path d="M18.5 9c1.5 0 2.7-1.2 2.7-2.6 0-1.1-0.8-1.9-1.8-1.9-1.5 0-3.4 1.3-4.5 2.7L14.5 9z" fill="#f97316" opacity="0.75"/>
+        <rect x="14.6" y="9" width="2.8" height="15.5" fill="#fef08a"/>
+        <rect x="7" y="14.4" width="18" height="2.4" fill="#fef3c7" opacity="0.6"/>
+      </svg>
+    `
+  },
+  default: {
+    background: "linear-gradient(135deg, #cbd5f5, #818cf8)",
+    svg: `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="10" fill="#f8fafc" opacity="0.5"/>
+        <circle cx="16" cy="16" r="6" fill="#f8fafc"/>
+      </svg>
+    `
+  }
+};
+
+
 const ACHIEVEMENTS = [
   {
     id: "first-catch",
@@ -349,6 +462,15 @@ const ACHIEVEMENTS = [
     tone: "violet"
   },
   {
+    id: "launch-pad",
+    title: "Launch Pad",
+    description: "Complete every onboarding checklist item in your first week.",
+    category: "Activation",
+    points: 50,
+    icon: "rocket",
+    tone: "aqua"
+  },
+  {
     id: "rapid-reporter",
     title: "Rapid Reporter",
     description: "Flag a potentially risky message within 10 minutes of receiving it.",
@@ -358,112 +480,13 @@ const ACHIEVEMENTS = [
     tone: "cobalt"
   },
   {
-    id: "reward-ready",
-    title: "Reward Ready",
-    description: "Earn enough points to unlock your first WeldSecure reward.",
-    category: "Rewards",
-    points: 80,
-    icon: "gift",
-    tone: "coral"
-  },
-  {
-    id: "bullseye-breaker",
-    title: "Bullseye Breaker",
-    description: "Identify a targeted phishing attempt that hits multiple peers.",
-    category: "Precision",
-    points: 90,
-    icon: "target",
-    tone: "aqua"
-  },
-  {
-    id: "leaderboard-legend",
-    title: "Leaderboard Legend",
-    description: "Finish a month at the top of the reporter leaderboard.",
-    category: "Recognition",
-    points: 160,
-    icon: "trophy",
-    tone: "gold"
-  },
-  {
-    id: "golden-signal",
-    title: "Golden Signal",
-    description: "Submit intel that leads to a high-severity threat takedown.",
-    category: "Impact",
-    points: 150,
-    icon: "diamond",
-    tone: "amber"
-  },
-  {
-    id: "culture-spark",
-    title: "Culture Spark",
-    description: "Share a vigilance tip that inspires three coworkers to report.",
-    category: "Culture",
-    points: 70,
-    icon: "heart",
-    tone: "emerald"
-  },
-  {
-    id: "guardian-streak",
-    title: "Guardian Streak",
-    description: "Report suspicious content for seven days in a row.",
-    category: "Consistency",
-    points: 120,
-    icon: "shield",
-    tone: "midnight"
-  },
-  {
-    id: "launch-pad",
-    title: "Launch Pad",
-    description: "Complete every onboarding checklist item in your first week.",
-    category: "Activation",
-    points: 50,
-    icon: "rocket",
-    tone: "violet"
-  },
-  {
-    id: "champion-circle",
-    title: "Champion Circle",
-    description: "Earn the monthly champion recognition from security leaders.",
-    category: "Recognition",
-    points: 180,
-    icon: "crown",
-    tone: "gold"
-  },
-  {
     id: "hype-herald",
     title: "Hype Herald",
     description: "Promote WeldSecure reporting in a company-wide channel.",
     category: "Culture",
     points: 60,
     icon: "megaphone",
-    tone: "coral"
-  },
-  {
-    id: "global-scout",
-    title: "Global Scout",
-    description: "Submit a report while traveling outside your primary office.",
-    category: "Mobility",
-    points: 100,
-    icon: "globe",
-    tone: "cobalt"
-  },
-  {
-    id: "spark-starter",
-    title: "Spark Starter",
-    description: "Be the first reporter to raise a newly trending threat subject.",
-    category: "Impact",
-    points: 85,
-    icon: "spark",
-    tone: "blush"
-  },
-  {
-    id: "playbook-pro",
-    title: "Playbook Pro",
-    description: "Complete every interactive training mission in the reporter hub.",
-    category: "Mastery",
-    points: 75,
-    icon: "book",
-    tone: "slate"
+    tone: "emerald"
   },
   {
     id: "context-captain",
@@ -475,102 +498,30 @@ const ACHIEVEMENTS = [
     tone: "emerald"
   },
   {
-    id: "elevation-500",
-    title: "Elevation 500",
-    description: "Reach 500 lifetime WeldSecure points as a reporter.",
-    category: "Rewards",
-    points: 110,
-    icon: "mountain",
-    tone: "midnight"
-  },
-  {
-    id: "insight-whisperer",
-    title: "Insight Whisperer",
-    description: "Spot a new attacker tactic before it appears in threat advisories.",
-    category: "Impact",
-    points: 140,
-    icon: "lightbulb",
-    tone: "gold"
-  },
-  {
-    id: "streak-ribbon",
-    title: "Streak Ribbon",
-    description: "Maintain a fourteen-day reporting streak without missing a beat.",
-    category: "Consistency",
-    points: 130,
-    icon: "ribbon",
-    tone: "violet"
-  },
-  {
-    id: "trend-setter",
-    title: "Trend Setter",
-    description: "Contribute to three weekly momentum report spikes in a quarter.",
-    category: "Consistency",
-    points: 95,
-    icon: "chart",
-    tone: "aqua"
-  },
-  {
-    id: "buddy-system",
-    title: "Buddy System",
-    description: "Coach a colleague through their first WeldSecure report.",
-    category: "Collaboration",
-    points: 90,
-    icon: "handshake",
+    id: "culture-spark",
+    title: "Culture Spark",
+    description: "Share a vigilance tip that inspires three coworkers to report.",
+    category: "Culture",
+    points: 70,
+    icon: "heart",
     tone: "emerald"
   },
   {
-    id: "spotlight-star",
-    title: "Spotlight Star",
-    description: "Be featured on the company vigilance wall of fame.",
-    category: "Recognition",
-    points: 170,
-    icon: "star",
-    tone: "gold"
-  },
-  {
-    id: "early-pathfinder",
-    title: "Early Pathfinder",
-    description: "Submit the first report from a newly onboarded location.",
-    category: "Activation",
-    points: 105,
-    icon: "compass",
+    id: "playbook-pro",
+    title: "Playbook Pro",
+    description: "Complete every interactive training mission in the reporter hub.",
+    category: "Mastery",
+    points: 75,
+    icon: "book",
     tone: "slate"
   },
   {
-    id: "seasoned-sentinel",
-    title: "Seasoned Sentinel",
-    description: "Report suspicious activity every month for six consecutive months.",
-    category: "Consistency",
-    points: 160,
-    icon: "laurel",
-    tone: "emerald"
-  },
-  {
-    id: "pattern-decoder",
-    title: "Pattern Decoder",
-    description: "Connect three related phishing emails across different days.",
-    category: "Impact",
-    points: 145,
-    icon: "puzzle",
-    tone: "midnight"
-  },
-  {
-    id: "badge-binge",
-    title: "Badge Binge",
-    description: "Unlock five unique reporter achievements in a single quarter.",
-    category: "Meta",
-    points: 200,
-    icon: "badge",
-    tone: "violet"
-  },
-  {
-    id: "zero-day-zeal",
-    title: "Zero-Day Zeal",
-    description: "Raise the first report tied to a zero-day alert in the news.",
-    category: "Impact",
-    points: 155,
-    icon: "flame",
+    id: "reward-ready",
+    title: "Reward Ready",
+    description: "Earn enough points to unlock your first WeldSecure reward.",
+    category: "Rewards",
+    points: 80,
+    icon: "gift",
     tone: "coral"
   },
   {
@@ -583,13 +534,76 @@ const ACHIEVEMENTS = [
     tone: "aqua"
   },
   {
-    id: "automation-ally",
-    title: "Automation Ally",
-    description: "Trigger an automated secure response with your report metadata.",
+    id: "spark-starter",
+    title: "Spark Starter",
+    description: "Be the first reporter to raise a newly trending threat subject.",
     category: "Impact",
-    points: 125,
-    icon: "gear",
+    points: 85,
+    icon: "spark",
+    tone: "blush"
+  },
+  {
+    id: "bullseye-breaker",
+    title: "Bullseye Breaker",
+    description: "Identify a targeted phishing attempt that hits multiple peers.",
+    category: "Precision",
+    points: 90,
+    icon: "target",
+    tone: "cobalt"
+  },
+  {
+    id: "buddy-system",
+    title: "Buddy System",
+    description: "Coach a colleague through their first WeldSecure report.",
+    category: "Collaboration",
+    points: 90,
+    icon: "handshake",
+    tone: "emerald"
+  },
+  {
+    id: "trend-setter",
+    title: "Trend Setter",
+    description: "Contribute to three weekly momentum report spikes in a quarter.",
+    category: "Consistency",
+    points: 95,
+    icon: "chart",
     tone: "slate"
+  },
+  {
+    id: "global-scout",
+    title: "Global Scout",
+    description: "Submit a report while traveling outside your primary office.",
+    category: "Mobility",
+    points: 100,
+    icon: "globe",
+    tone: "midnight"
+  },
+  {
+    id: "carry-on-defender",
+    title: "Carry-on Defender",
+    description: "Submit a high-quality report while traveling on business day one.",
+    category: "Mobility",
+    points: 100,
+    icon: "plane",
+    tone: "blush"
+  },
+  {
+    id: "early-pathfinder",
+    title: "Early Pathfinder",
+    description: "Submit the first report from a newly onboarded location.",
+    category: "Activation",
+    points: 105,
+    icon: "compass",
+    tone: "slate"
+  },
+  {
+    id: "elevation-500",
+    title: "Elevation 500",
+    description: "Reach 500 lifetime WeldSecure points as a reporter.",
+    category: "Rewards",
+    points: 110,
+    icon: "mountain",
+    tone: "midnight"
   },
   {
     id: "whistle-watch",
@@ -601,13 +615,224 @@ const ACHIEVEMENTS = [
     tone: "cobalt"
   },
   {
-    id: "carry-on-defender",
-    title: "Carry-on Defender",
-    description: "Submit a high-quality report while traveling on business day one.",
-    category: "Mobility",
+    id: "guardian-streak",
+    title: "Guardian Streak",
+    description: "Report suspicious content for seven days in a row.",
+    category: "Consistency",
+    points: 120,
+    icon: "shield",
+    tone: "emerald"
+  },
+  {
+    id: "automation-ally",
+    title: "Automation Ally",
+    description: "Trigger an automated secure response with your report metadata.",
+    category: "Impact",
+    points: 125,
+    icon: "gear",
+    tone: "midnight"
+  },
+  {
+    id: "streak-ribbon",
+    title: "Streak Ribbon",
+    description: "Maintain a fourteen-day reporting streak without missing a beat.",
+    category: "Consistency",
+    points: 130,
+    icon: "ribbon",
+    tone: "aqua"
+  },
+  {
+    id: "insight-whisperer",
+    title: "Insight Whisperer",
+    description: "Spot a new attacker tactic before it appears in threat advisories.",
+    category: "Impact",
+    points: 140,
+    icon: "lightbulb",
+    tone: "coral"
+  },
+  {
+    id: "pattern-decoder",
+    title: "Pattern Decoder",
+    description: "Connect three related phishing emails across different days.",
+    category: "Impact",
+    points: 145,
+    icon: "puzzle",
+    tone: "midnight"
+  },
+  {
+    id: "golden-signal",
+    title: "Golden Signal",
+    description: "Submit intel that leads to a high-severity threat takedown.",
+    category: "Impact",
+    points: 150,
+    icon: "diamond",
+    tone: "amber"
+  },
+  {
+    id: "zero-day-zeal",
+    title: "Zero-Day Zeal",
+    description: "Raise the first report tied to a zero-day alert in the news.",
+    category: "Impact",
+    points: 155,
+    icon: "flame",
+    tone: "gold"
+  },
+  {
+    id: "leaderboard-legend",
+    title: "Leaderboard Legend",
+    description: "Finish a month at the top of the reporter leaderboard.",
+    category: "Recognition",
+    points: 160,
+    icon: "trophy",
+    tone: "gold"
+  },
+  {
+    id: "seasoned-sentinel",
+    title: "Seasoned Sentinel",
+    description: "Report suspicious activity every month for six consecutive months.",
+    category: "Consistency",
+    points: 160,
+    icon: "laurel",
+    tone: "amber"
+  },
+  {
+    id: "spotlight-star",
+    title: "Spotlight Star",
+    description: "Be featured on the company vigilance wall of fame.",
+    category: "Recognition",
+    points: 170,
+    icon: "star",
+    tone: "gold"
+  },
+  {
+    id: "champion-circle",
+    title: "Champion Circle",
+    description: "Earn the monthly champion recognition from security leaders.",
+    category: "Recognition",
+    points: 180,
+    icon: "crown",
+    tone: "gold"
+  },
+  {
+    id: "badge-binge",
+    title: "Badge Binge",
+    description: "Unlock five unique reporter achievements in a single quarter.",
+    category: "Meta",
+    points: 200,
+    icon: "badge",
+    tone: "amber"
+  }
+];
+
+
+const DEFAULT_QUESTS = [
+  {
+    id: "phish-flash",
+    title: "Phish or Friend?",
+    icon: "target",
+    category: "Phishing defence",
+    difficulty: "Starter",
+    duration: 5,
+    questions: 6,
+    points: 120,
+    published: true,
+    format: "Inbox lightning round",
+    focus: ["Spot high-risk signals", "Practice one-click reporting", "Coach escalation confidence"],
+    bonus: "+20 streak bonus",
+    bonusDetail: "Complete this quiz two weeks in a row to unlock a ready-made recognition shout-out.",
+    description: "Review real inbox screenshots and choose whether to report, ignore, or escalate in under 20 seconds.",
+    sampleQuestion:
+      "A supplier email mirrors your branding and asks for credential re-entry. What is the next WeldSecure-approved step?"
+  },
+  {
+    id: "password-gauntlet",
+    title: "Password Gauntlet",
+    icon: "shield",
+    category: "Password hygiene",
+    difficulty: "Intermediate",
+    duration: 6,
+    questions: 8,
+    points: 140,
+    published: true,
+    format: "Drag-and-drop mission",
+    focus: ["Strengthen passphrases", "Prioritise MFA usage", "Promote password managers"],
+    bonus: "Double points on perfect run",
+    bonusDetail: "Score 100% to unlock an extra 140 bonus points for the participant.",
+    description: "Launch a timed challenge comparing passphrases, MFA prompts, and vault best practice.",
+    sampleQuestion:
+      "Which combination gives the strongest defence for a finance approver approving payments on the go?"
+  },
+  {
+    id: "shadow-it-sweep",
+    title: "Shadow IT Sweep",
+    icon: "network",
+    category: "Shadow IT awareness",
+    difficulty: "Intermediate",
+    duration: 7,
+    questions: 7,
+    points: 150,
+    published: true,
+    format: "Choose-your-path",
+    focus: ["Surface risky tools", "Coach safer swaps", "Reinforce reporting habits"],
+    bonus: "+30 guidance bonus",
+    bonusDetail: "Award additional points when teammates suggest Weld-approved replacements.",
+    description: "Guide employees through murky productivity tool choices without slowing their workflow.",
+    sampleQuestion:
+      "A colleague uploads customer data into an unsanctioned notes app. How do you protect the deal and momentum?"
+  },
+  {
+    id: "remote-first-response",
+    title: "Remote-First Response",
+    icon: "globe",
+    category: "Remote work hygiene",
+    difficulty: "Starter",
+    duration: 4,
+    questions: 5,
     points: 100,
-    icon: "plane",
-    tone: "blush"
+    published: true,
+    format: "Tap-to-reveal story",
+    focus: ["Secure home setups", "Spot shoulder-surfing risk", "Keep VPN habits healthy"],
+    bonus: "+15 fast finish",
+    bonusDetail: "Wrap the quiz under four minutes to trigger a real-time kudos animation.",
+    description: "Short stories recreate remote mishaps from global deployments with choose-your-fix prompts.",
+    sampleQuestion:
+      "Your teammate joins a call from a cafe with customer dashboards on screen. What is the fastest mitigation?"
+  },
+  {
+    id: "gen-ai-guardrails",
+    title: "GenAI Guardrails Lab",
+    icon: "lightbulb",
+    category: "AI safety",
+    difficulty: "Advanced",
+    duration: 8,
+    questions: 9,
+    points: 180,
+    published: false,
+    format: "Scenario lab",
+    focus: ["Detect sensitive prompts", "Classify training data", "Escalate AI misuse"],
+    bonus: "+40 policy boost",
+    bonusDetail: "Completing awards an instant badge plus a personalised follow-up module.",
+    description: "Experience modern GenAI prompts and decide which ones violate policy before they spread.",
+    sampleQuestion:
+      "An engineer pastes client logs into an AI chat to debug an issue. What is the WeldSecure-approved response?"
+  },
+  {
+    id: "incident-escalation-sprint",
+    title: "Incident Escalation Sprint",
+    icon: "flame",
+    category: "Incident response",
+    difficulty: "Advanced",
+    duration: 9,
+    questions: 8,
+    points: 200,
+    published: false,
+    format: "Timer-based tabletop",
+    focus: ["Draft escalation updates", "Coordinate with SOC", "Protect comms channels"],
+    bonus: "+60 crisis mastery",
+    bonusDetail: "Finish under the time limit to unlock a post-incident debrief template.",
+    description: "Run a tight tabletop simulation that flexes response muscles without needing the SOC team online.",
+    sampleQuestion:
+      "Finance reports a compromised CFO mailbox. Who do you notify first and which channel keeps legal synced?"
   }
 ];
 
@@ -619,9 +844,14 @@ function initialState() {
       addinScreen: "report",
       lastReportedSubject: null,
       lastReportPoints: null,
-      achievementFilter: null,
-      quizFilter: null,
-      quizStatus: {}
+      lastBalanceBefore: null,
+      lastBalanceAfter: null,
+      lastBadgeId: null,
+      lastBadgePoints: null,
+      lastTotalAwarded: null,
+      lastMessageId: null,
+      lastClientSnapshot: null,
+      achievementFilter: null
     },
     customer: {
       id: 501,
@@ -641,42 +871,111 @@ function initialState() {
         category: "experience",
         provider: "Fortnum & Mason",
         image: "linear-gradient(135deg, #9457ff 0%, #4e0dff 100%)",
-        remaining: 6
+        remaining: 6,
+        published: true
       },
       {
         id: 2,
         name: "Selfridges Gift Card",
         description: "Digital gift card redeemable online or in-store.",
         pointsCost: 280,
-        icon: "diamond",
+        icon: "gift",
         category: "voucher",
         provider: "Selfridges & Co",
         image: "linear-gradient(135deg, #ff8a80 0%, #ff416c 100%)",
-        remaining: 12
+        remaining: 12,
+        published: true
       },
       {
         id: 3,
         name: "Margot & Montañez Chocolate Hamper",
         description: "Limited edition artisan chocolate selection to celebrate vigilance.",
         pointsCost: 120,
-        icon: "heart",
+        icon: "gift",
         category: "merchandise",
         provider: "Margot & Montañez",
         image: "linear-gradient(135deg, #ffbe0b 0%, #fb5607 100%)",
-        remaining: 20
+        remaining: 20,
+        published: false
       },
       {
         id: 4,
         name: "Weld Champion Hoodie",
         description: "Exclusive Weld hoodie for team members leading the risk scoreboard.",
         pointsCost: 260,
-        icon: "trophy",
+        icon: "gift",
         category: "merchandise",
         provider: "Weld Apparel",
         image: "linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)",
-        remaining: 15
+        remaining: 15,
+        published: false
+      },
+      {
+        id: 5,
+        name: "Amazon Gift Card",
+        description: "Digital code redeemable across Amazon.co.uk for everyday essentials or treats.",
+        pointsCost: 220,
+        icon: "gift",
+        category: "voucher",
+        provider: "Amazon UK",
+        image: "linear-gradient(135deg, #f97316 0%, #facc15 100%)",
+        remaining: 18,
+        published: true
+      },
+      {
+        id: 6,
+        name: "Plant a Tree",
+        description: "Fund the planting of a tree through our sustainability partner.",
+        pointsCost: 150,
+        icon: "gift",
+        category: "sustainability",
+        provider: "Green Earth Collective",
+        image: "linear-gradient(135deg, #22c55e 0%, #0ea5e9 100%)",
+        remaining: 40,
+        published: true
+      },
+      {
+        id: 7,
+        name: "Extra Day of Annual Leave",
+        description: "Enjoy an additional day of paid leave approved by your manager.",
+        pointsCost: 480,
+        icon: "gift",
+        category: "benefit",
+        provider: "People Team",
+        image: "linear-gradient(135deg, #818cf8 0%, #312e81 100%)",
+        remaining: 5,
+        published: false
+      },
+      {
+        id: 8,
+        name: "Donate to Charity",
+        description: "Direct a WeldSecure-supported donation to a charitable partner of your choice.",
+        pointsCost: 180,
+        icon: "gift",
+        category: "charity",
+        provider: "WeldSecure Giving",
+        image: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
+        remaining: null,
+        unlimited: true,
+        published: true
+      },
+      {
+        id: 9,
+        name: "Contribute to Work Social Event",
+        description: "Add funds to enhance the next team social experience.",
+        pointsCost: 140,
+        icon: "gift",
+        category: "culture",
+        provider: "Employee Engagement",
+        image: "linear-gradient(135deg, #38bdf8 0%, #6366f1 100%)",
+        remaining: 25,
+        published: false
       }
     ],
+    quests: DEFAULT_QUESTS.map(quest => ({
+      ...quest,
+      published: typeof quest.published === "boolean" ? quest.published : true
+    })),
     rewardRedemptions: [
       { id: 1, rewardId: 3, redeemedAt: "2025-09-12T09:30:00Z", status: "fulfilled" }
     ],
@@ -796,6 +1095,54 @@ function loadState() {
   try {
     const parsed = JSON.parse(raw);
     const baseState = initialState();
+    const normalizedQuests = Array.isArray(parsed.quests)
+      ? parsed.quests.map(quest => {
+          const baseQuest = baseState.quests.find(item => item.id === quest.id);
+          return {
+            ...baseQuest,
+            ...quest,
+            published:
+              typeof quest.published === "boolean"
+                ? quest.published
+                : baseQuest?.published ?? true
+          };
+        })
+      : baseState.quests;
+    const normalizedRewards = Array.isArray(parsed.rewards)
+      ? (() => {
+          const mergedRewards = parsed.rewards.map(reward => {
+            const baseReward =
+              baseState.rewards.find(item => item.id === reward.id) || {};
+            const unlimited = baseReward.unlimited === true || reward.unlimited === true;
+            const hasFiniteRemaining = Number.isFinite(reward.remaining);
+            const baseRemaining = Number.isFinite(baseReward.remaining)
+              ? baseReward.remaining
+              : 0;
+            return {
+              ...baseReward,
+              ...reward,
+              icon: "gift",
+              unlimited,
+              remaining: unlimited
+                ? null
+                : hasFiniteRemaining
+                ? reward.remaining
+                : baseRemaining,
+              published:
+                typeof reward.published === "boolean"
+                  ? reward.published
+                  : baseReward.published ?? true
+            };
+          });
+          const existingRewardIds = new Set(
+            mergedRewards.map(reward => reward.id)
+          );
+          const newRewards = baseState.rewards
+            .filter(reward => !existingRewardIds.has(reward.id))
+            .map(reward => ({ ...reward }));
+          return [...mergedRewards, ...newRewards];
+        })()
+      : baseState.rewards;
     const normalizedClients = Array.isArray(parsed.clients)
       ? parsed.clients.map(client => {
           const baseClient = baseState.clients.find(item => item.id === client.id);
@@ -827,6 +1174,8 @@ function loadState() {
         ...baseState.meta,
         ...parsed.meta
       },
+      rewards: normalizedRewards,
+      quests: normalizedQuests,
       messages: normalizedMessages,
       clients: normalizedClients
     };
@@ -882,6 +1231,7 @@ function resetDemo() {
   state.meta = clone(defaultState.meta);
   state.customer = clone(defaultState.customer);
   state.rewards = clone(defaultState.rewards);
+  state.quests = clone(defaultState.quests);
   state.rewardRedemptions = clone(defaultState.rewardRedemptions);
   state.reportReasons = clone(defaultState.reportReasons);
   state.messages = clone(defaultState.messages);
@@ -904,12 +1254,18 @@ function rewardById(id) {
   return state.rewards.find(item => item.id === id);
 }
 
-function reasonById(id) {
-  return state.reportReasons.find(item => item.id === id);
+function rewardRemainingLabel(reward) {
+  if (reward?.unlimited) {
+    return "&infin;";
+  }
+  if (typeof reward?.remaining === "number") {
+    return reward.remaining;
+  }
+  return 0;
 }
 
-function quizById(id) {
-  return QUIZZES.find(item => item.id === id);
+function reasonById(id) {
+  return state.reportReasons.find(item => item.id === id);
 }
 
 function messageBelongsToCustomer(message) {
@@ -919,16 +1275,22 @@ function messageBelongsToCustomer(message) {
 function redeemReward(rewardId) {
   const reward = rewardById(rewardId);
   if (!reward) return { success: false, reason: "Reward not found." };
+  if (!reward.published) {
+    return { success: false, reason: "This reward is not currently published to hubs." };
+  }
+  const isUnlimited = reward.unlimited === true;
   if (state.customer.currentPoints < reward.pointsCost) {
     return { success: false, reason: "Not enough points to redeem this reward yet." };
   }
-  if (reward.remaining <= 0) {
+  if (!isUnlimited && reward.remaining <= 0) {
     return { success: false, reason: "This reward is temporarily out of stock." };
   }
 
   state.customer.currentPoints -= reward.pointsCost;
   state.customer.redeemedPoints += reward.pointsCost;
-  reward.remaining = Math.max(reward.remaining - 1, 0);
+  if (!isUnlimited) {
+    reward.remaining = Math.max(reward.remaining - 1, 0);
+  }
 
   const redemption = {
     id: Date.now(),
@@ -944,8 +1306,63 @@ function redeemReward(rewardId) {
   return { success: true, redemption };
 }
 
+function setRewardPublication(rewardId, published) {
+  const reward = rewardById(rewardId);
+  if (!reward) return;
+  reward.published = Boolean(published);
+  persist();
+  renderApp();
+}
+
+function setAllRewardsPublication(published) {
+  const nextPublished = Boolean(published);
+  let changed = false;
+  state.rewards.forEach(reward => {
+    if (reward.published !== nextPublished) {
+      reward.published = nextPublished;
+      changed = true;
+    }
+  });
+  if (!changed) return;
+  persist();
+  renderApp();
+}
+
+function setAllQuestsPublication(published) {
+  if (!Array.isArray(state.quests)) return;
+  const nextPublished = Boolean(published);
+  let changed = false;
+  state.quests.forEach(quest => {
+    if (quest.published !== nextPublished) {
+      quest.published = nextPublished;
+      changed = true;
+    }
+  });
+  if (!changed) return;
+  persist();
+  renderApp();
+}
+
+function setQuestPublication(questId, published) {
+  if (!Array.isArray(state.quests)) return;
+  const targetId = String(questId);
+  const quest = state.quests.find(item => String(item.id) === targetId);
+  if (!quest) return;
+  quest.published = Boolean(published);
+  persist();
+  renderApp();
+}
+
 function reportMessage(payload) {
   const client = state.clients.find(c => c.id === state.customer.clientId);
+  const previousClientSnapshot = client
+    ? {
+        id: client.id,
+        openCases: client.openCases,
+        healthScore: client.healthScore,
+        lastReportAt: client.lastReportAt ?? null
+      }
+    : null;
   const pointsOnMessage = 20;
   const pointsOnApproval = client?.pointsOnApproval ?? 80;
   const beforePoints = state.customer.currentPoints;
@@ -966,8 +1383,16 @@ function reportMessage(payload) {
 
   state.messages.unshift(message);
   state.customer.currentPoints += pointsOnMessage;
-  const awardedPoints = state.customer.currentPoints - beforePoints;
-  message.pointsOnMessage = awardedPoints;
+  message.pointsOnMessage = pointsOnMessage;
+  state.meta.lastMessageId = message.id;
+
+  const selectedBadge = selectRandomBadge(state.meta.lastBadgeId);
+  const badgePoints = selectedBadge ? selectedBadge.points : 0;
+  if (badgePoints > 0) {
+    state.customer.currentPoints += badgePoints;
+  }
+  const afterPoints = state.customer.currentPoints;
+  const totalAwarded = afterPoints - beforePoints;
 
   if (client) {
     client.openCases += 1;
@@ -975,9 +1400,18 @@ function reportMessage(payload) {
     client.lastReportAt = message.reportedAt;
   }
 
+  state.meta.lastClientSnapshot = previousClientSnapshot;
   state.meta.addinScreen = "success";
   state.meta.lastReportedSubject = payload.subject;
-  state.meta.lastReportPoints = awardedPoints;
+  state.meta.lastReportPoints = pointsOnMessage;
+  state.meta.lastBalanceBefore = beforePoints;
+  state.meta.lastBalanceAfter = afterPoints;
+  state.meta.lastBadgePoints = badgePoints;
+  state.meta.lastBadgeId = selectedBadge ? selectedBadge.id : null;
+  state.meta.lastTotalAwarded = totalAwarded;
+  if (Array.isArray(payload.emergencyFlags) && payload.emergencyFlags.length > 0) {
+    message.emergencyFlags = payload.emergencyFlags;
+  }
   persist();
   renderApp();
 }
@@ -985,6 +1419,7 @@ function reportMessage(payload) {
 function setupCelebrationReplay(container) {
   const celebration = container.querySelector(".points-celebration");
   if (!celebration) return;
+  setupCelebrationSup(celebration, () => animatePointsTicker(celebration));
   const bubble = celebration.querySelector(".points-celebration__bubble");
   if (!bubble || bubble.dataset.replayBound === "true") return;
 
@@ -996,7 +1431,16 @@ function setupCelebrationReplay(container) {
 
   const restart = () => {
     const replacement = celebration.cloneNode(true);
+    const clonedBubble = replacement.querySelector(".points-celebration__bubble");
+    if (clonedBubble) {
+      delete clonedBubble.dataset.replayBound;
+      clonedBubble.classList.remove("points-celebration__bubble--interactive");
+      clonedBubble.removeAttribute("role");
+      clonedBubble.removeAttribute("tabindex");
+      clonedBubble.removeAttribute("aria-label");
+    }
     celebration.replaceWith(replacement);
+    setupCelebrationSup(replacement, () => animatePointsTicker(replacement));
     setupCelebrationReplay(container);
     const nextBubble = container.querySelector(".points-celebration__bubble");
     if (nextBubble) {
@@ -1016,6 +1460,108 @@ function setupCelebrationReplay(container) {
 
   bubble.addEventListener("click", handleTrigger);
   bubble.addEventListener("keydown", handleTrigger);
+}
+
+function revertLastReportAward() {
+  if (state.meta.addinScreen !== "success") return;
+
+  const beforeBalance = Number(state.meta.lastBalanceBefore);
+  const totalAwarded = Number(state.meta.lastTotalAwarded);
+
+  if (Number.isFinite(beforeBalance)) {
+    state.customer.currentPoints = Math.max(0, beforeBalance);
+  } else if (Number.isFinite(totalAwarded)) {
+    state.customer.currentPoints = Math.max(0, state.customer.currentPoints - totalAwarded);
+  }
+
+  const lastMessageId = Number(state.meta.lastMessageId);
+  if (Number.isFinite(lastMessageId)) {
+    const index = state.messages.findIndex(msg => msg.id === lastMessageId);
+    if (index !== -1) {
+      state.messages.splice(index, 1);
+    }
+    state.meta.lastMessageId = null;
+  }
+
+  const snapshot = state.meta.lastClientSnapshot;
+  if (snapshot && typeof snapshot === "object" && Number.isFinite(snapshot.id)) {
+    const client = state.clients.find(c => c.id === snapshot.id);
+    if (client) {
+      if (typeof snapshot.openCases === "number") {
+        client.openCases = snapshot.openCases;
+      }
+      if (typeof snapshot.healthScore === "number") {
+        client.healthScore = snapshot.healthScore;
+      }
+      if (Object.prototype.hasOwnProperty.call(snapshot, "lastReportAt")) {
+        client.lastReportAt = snapshot.lastReportAt;
+      }
+    }
+  }
+
+  state.meta.addinScreen = "report";
+  state.meta.lastReportedSubject = null;
+  state.meta.lastReportPoints = null;
+  state.meta.lastBalanceBefore = null;
+  state.meta.lastBalanceAfter = null;
+  state.meta.lastBadgeId = null;
+  state.meta.lastBadgePoints = null;
+  state.meta.lastTotalAwarded = null;
+  state.meta.lastClientSnapshot = null;
+
+  persist();
+  renderApp();
+}
+
+function animatePointsTicker(root) {
+  let ticker = null;
+  if (root && typeof root.querySelector === "function") {
+    ticker = root.querySelector(".points-ticker");
+  }
+  if (!ticker) {
+    ticker = document.querySelector('[data-points-ticker="total"]');
+  }
+  if (!ticker) return;
+  const valueEl = ticker.querySelector(".points-ticker__value");
+  const supEl = ticker.querySelector(".points-ticker__sup");
+  if (!valueEl || !supEl) return;
+
+  const targetEndAttr = Number(valueEl.dataset.targetEnd);
+  const end = Number.isFinite(targetEndAttr) ? targetEndAttr : Number(ticker.dataset.end);
+  if (!Number.isFinite(end)) return;
+
+  if (typeof window === "undefined" || !window.requestAnimationFrame) {
+    return;
+  }
+
+  const currentAward = Number(supEl.dataset.currentAward) || 0;
+  const start = Number(ticker.dataset.start);
+  const target = Math.max(start + currentAward, start);
+  const finalTarget = Math.max(end, target);
+
+  const duration = 720;
+  const startTime = performance.now();
+  const change = finalTarget - start;
+  if (change <= 0) {
+    valueEl.textContent = formatNumber(finalTarget);
+    return;
+  }
+
+  const easeOutQuart = t => 1 - Math.pow(1 - t, 4);
+
+  const tick = now => {
+    const elapsed = Math.min((now - startTime) / duration, 1);
+    const eased = easeOutQuart(elapsed);
+    const current = Math.round(start + change * eased);
+    valueEl.textContent = formatNumber(current);
+    if (elapsed < 1) {
+      window.requestAnimationFrame(tick);
+    } else {
+      valueEl.textContent = formatNumber(finalTarget);
+    }
+  };
+
+  window.requestAnimationFrame(tick);
 }
 
 function updateMessageStatus(messageId, status) {
@@ -1203,9 +1749,14 @@ function renderGlobalNav(activeRoute) {
           `;
         }).join("")}
       </div>
-      <button type="button" class="button-pill button-pill--primary global-nav__journey" id="global-journey">
-        Home
-      </button>
+      <div class="global-nav__actions">
+        ${activeRoute === "landing"
+          ? `<button type="button" class="button-pill button-pill--primary global-nav__reset" id="landing-reset">Reset</button>`
+          : ""}
+        <button type="button" class="button-pill button-pill--primary global-nav__journey" id="global-journey">
+          Home
+        </button>
+      </div>
     </nav>
   `;
 }
@@ -1265,7 +1816,6 @@ function renderLanding() {
           <h1 class="landing__headline">Weld keeps human vigilance rewarding.<span>Walk through every journey in minutes.</span></h1>
           <p class="landing__lead">Select the experience you want to explore. Each journey mirrors the shipping SaaS surfaces with live-feeling interactions and updated metrics--no backend required.</p>
         </div>
-        <button class="button-pill button-pill--primary landing-reset" id="landing-reset">Reset</button>
       </section>
       <section class="landing__section landing__section--journeys">
         <header class="landing__section-header">
@@ -1310,10 +1860,10 @@ function renderFeatureShowcase() {
       action: { label: "View badges", route: "achievements", role: "customer" }
     },
     {
-      title: "Quest challenges",
-      description: "Show how five-minute scenario quests award instant vigilance points and streak bonuses.",
+      title: "Quest catalogue",
+      description: "Show how organisations curate and publish quest experiences directly into employee hubs.",
       icon: "lightbulb",
-      action: { label: "Run quest experience", route: "quizzes", role: "customer" }
+      action: { label: "Open quest catalogue", route: "client-quests", role: "client" }
     },
     {
       title: "Recognition metrics",
@@ -1353,104 +1903,6 @@ function renderFeatureShowcase() {
     .join("");
 }
 
-const QUIZZES = [
-  {
-    id: "phish-flash",
-    title: "Phish or Friend?",
-    category: "Phishing defence",
-    difficulty: "Starter",
-    duration: 5,
-    questions: 6,
-    points: 120,
-    format: "Inbox lightning round",
-    focus: ["Spot high-risk signals", "Practice one-click reporting", "Coach escalation confidence"],
-    bonus: "+20 streak bonus",
-    bonusDetail: "Complete this quiz two weeks in a row to unlock a ready-made recognition shout-out.",
-    description: "Review real inbox screenshots and choose whether to report, ignore, or escalate in under 20 seconds.",
-    sampleQuestion:
-      "A supplier email mirrors your branding and asks for credential re-entry. What is the next WeldSecure-approved step?"
-  },
-  {
-    id: "password-gauntlet",
-    title: "Password Gauntlet",
-    category: "Password hygiene",
-    difficulty: "Intermediate",
-    duration: 6,
-    questions: 8,
-    points: 140,
-    format: "Drag-and-drop mission",
-    focus: ["Strengthen passphrases", "Prioritise MFA usage", "Promote password managers"],
-    bonus: "Double points on perfect run",
-    bonusDetail: "Score 100% to unlock an extra 140 bonus points for the participant.",
-    description: "Launch a timed challenge comparing passphrases, MFA prompts, and vault best practice.",
-    sampleQuestion:
-      "Which combination gives the strongest defence for a finance approver approving payments on the go?"
-  },
-  {
-    id: "shadow-it-sweep",
-    title: "Shadow IT Sweep",
-    category: "Shadow IT awareness",
-    difficulty: "Intermediate",
-    duration: 7,
-    questions: 7,
-    points: 150,
-    format: "Choose-your-path",
-    focus: ["Surface risky tools", "Coach safer swaps", "Reinforce reporting habits"],
-    bonus: "+30 guidance bonus",
-    bonusDetail: "Award additional points when teammates suggest Weld-approved replacements.",
-    description: "Guide employees through murky productivity tool choices without slowing their workflow.",
-    sampleQuestion:
-      "A colleague uploads customer data into an unsanctioned notes app. How do you protect the deal and momentum?"
-  },
-  {
-    id: "remote-first-response",
-    title: "Remote-First Response",
-    category: "Remote work hygiene",
-    difficulty: "Starter",
-    duration: 4,
-    questions: 5,
-    points: 100,
-    format: "Tap-to-reveal story",
-    focus: ["Secure home setups", "Spot shoulder-surfing risk", "Keep VPN habits healthy"],
-    bonus: "+15 fast finish",
-    bonusDetail: "Wrap the quiz under four minutes to trigger a real-time kudos animation.",
-    description: "Short stories recreate remote mishaps from global deployments with choose-your-fix prompts.",
-    sampleQuestion:
-      "Your teammate joins a call from a cafe with customer dashboards on screen. What is the fastest mitigation?"
-  },
-  {
-    id: "gen-ai-guardrails",
-    title: "GenAI Guardrails Lab",
-    category: "AI safety",
-    difficulty: "Advanced",
-    duration: 8,
-    questions: 9,
-    points: 180,
-    format: "Scenario lab",
-    focus: ["Detect sensitive prompts", "Classify training data", "Escalate AI misuse"],
-    bonus: "+40 policy boost",
-    bonusDetail: "Completing awards an instant badge plus a personalised follow-up module.",
-    description: "Experience modern GenAI prompts and decide which ones violate policy before they spread.",
-    sampleQuestion:
-      "An engineer pastes client logs into an AI chat to debug an issue. What is the WeldSecure-approved response?"
-  },
-  {
-    id: "incident-escalation-sprint",
-    title: "Incident Escalation Sprint",
-    category: "Incident response",
-    difficulty: "Advanced",
-    duration: 9,
-    questions: 8,
-    points: 200,
-    format: "Timer-based tabletop",
-    focus: ["Draft escalation updates", "Coordinate with SOC", "Protect comms channels"],
-    bonus: "+60 crisis mastery",
-    bonusDetail: "Finish under the time limit to unlock a post-incident debrief template.",
-    description: "Run a tight tabletop simulation that flexes response muscles without needing the SOC team online.",
-    sampleQuestion:
-      "Finance reports a compromised CFO mailbox. Who do you notify first and which channel keeps legal synced?"
-  }
-];
 
 function renderAchievementsPage() {
   const totalPoints = ACHIEVEMENTS.reduce((sum, achievement) => sum + achievement.points, 0);
@@ -1500,7 +1952,10 @@ function renderAchievementsPage() {
           <p>${achievement.description}</p>
         </div>
         <div class="achievement-card__footer">
-          <span class="achievement-card__points">+${achievement.points} pts</span>
+          <span class="achievement-card__points">
+            <span class="achievement-card__points-value">+${formatNumber(achievement.points)}</span>
+            <span class="achievement-card__points-unit">pts</span>
+          </span>
           <span class="achievement-card__index">#${String(index + 1).padStart(2, "0")}</span>
         </div>
       </article>
@@ -1555,181 +2010,32 @@ function renderAchievementsPage() {
   `;
 }
 
-function renderQuizzesPage() {
-  const quizStatus = state.meta.quizStatus || {};
-  const categories = Array.from(new Set(QUIZZES.map(quiz => quiz.category))).sort((a, b) => a.localeCompare(b));
-  const filteredQuizzes = state.meta.quizFilter ? QUIZZES.filter(quiz => quiz.category === state.meta.quizFilter) : QUIZZES;
-  const scheduledCount = filteredQuizzes.filter(quiz => {
-    const status = quizStatus[quiz.id];
-    return status === "scheduled" || status === "completed";
-  }).length;
-  const completedCount = filteredQuizzes.filter(quiz => quizStatus[quiz.id] === "completed").length;
-  const completedPoints = filteredQuizzes.reduce(
-    (sum, quiz) => sum + (quizStatus[quiz.id] === "completed" ? quiz.points : 0),
-    0
-  );
-  const averageDuration = filteredQuizzes.length
-    ? Math.round(filteredQuizzes.reduce((sum, quiz) => sum + quiz.duration, 0) / filteredQuizzes.length)
-    : 0;
-
-  const filterButtons = [
-    {
-      label: "All themes",
-      value: "all",
-      active: state.meta.quizFilter === null
-    },
-    ...categories.map(category => ({
-      label: category,
-      value: category,
-      active: state.meta.quizFilter === category
-    }))
-  ]
-    .map(
-      filter => `
-        <button
-          type="button"
-          class="quizzes-filter__item ${filter.active ? "quizzes-filter__item--active" : ""}"
-          data-filter="${filter.value}"
-          aria-pressed="${filter.active ? "true" : "false"}">
-          ${filter.label}
-        </button>
-      `
-    )
-    .join("");
-
-  const cardsMarkup = filteredQuizzes.length
-    ? filteredQuizzes
-        .map(quiz => {
-          const status = quizStatus[quiz.id] || "new";
-          const isScheduled = status === "scheduled" || status === "completed";
-          const isCompleted = status === "completed";
-          const scheduleLabel = isScheduled ? "Scheduled" : "Add to rollout";
-          const completeLabel = isCompleted ? "Completed" : `Mark completed (+${quiz.points} pts)`;
-          const focusTags = quiz.focus.map(item => `<span class="quiz-card__tag">${item}</span>`).join("");
-          return `
-            <article class="quiz-card" data-quiz-id="${quiz.id}">
-              <header class="quiz-card__header">
-                <span class="quiz-card__category">${quiz.category}</span>
-                <span class="quiz-card__points">+${quiz.points} pts</span>
-              </header>
-              <div class="quiz-card__body">
-                <h3>${quiz.title}</h3>
-                <p>${quiz.description}</p>
-                <ul class="quiz-card__meta">
-                  <li>
-                    <span>Duration</span>
-                    <strong>${quiz.duration} min</strong>
-                  </li>
-                  <li>
-                    <span>Questions</span>
-                    <strong>${quiz.questions}</strong>
-                  </li>
-                  <li>
-                    <span>Difficulty</span>
-                    <strong>${quiz.difficulty}</strong>
-                  </li>
-                  <li>
-                    <span>Format</span>
-                    <strong>${quiz.format}</strong>
-                  </li>
-                </ul>
-                <div class="quiz-card__tags">
-                  ${focusTags}
-                </div>
-                <div class="quiz-card__sample">
-                  <span>Sample question</span>
-                  <p>${quiz.sampleQuestion}</p>
-                </div>
-              </div>
-              <footer class="quiz-card__footer">
-                <div class="quiz-card__bonus">
-                  <strong>${quiz.bonus}</strong>
-                  <span>${quiz.bonusDetail}</span>
-                </div>
-                <div class="quiz-card__actions">
-                  <button
-                    type="button"
-                    class="quiz-card__action quiz-card__action--schedule"
-                    data-action="schedule"
-                    ${isScheduled ? 'aria-pressed="true" disabled' : ""}>
-                    ${scheduleLabel}
-                  </button>
-                  <button
-                    type="button"
-                    class="quiz-card__action quiz-card__action--complete"
-                    data-action="complete"
-                    ${isCompleted ? 'aria-pressed="true" disabled' : ""}>
-                    ${completeLabel}
-                  </button>
-                </div>
-              </footer>
-            </article>
-          `;
-        })
-        .join("")
-    : `<p class="quests-empty">No quests match this filter yet. Try selecting another theme.</p>`;
-
-  return `
-    <div class="page page--quizzes">
-      ${renderHeader()}
-      <div class="page__inner page__inner--single">
-        <main class="layout-content" id="main-content">
-          <section class="hero-section hero-section--quizzes">
-            <div class="hero-section__header">
-              <div class="hero-section__intro">
-                <span class="hero-section__eyebrow">Micro-learning quests</span>
-                <h1 class="hero-section__headline">Award points for five-minute vigilance quests.</h1>
-                <p class="hero-section__lead">
-                  Roll these scenario-based quests out to squads and watch points land the moment a player crosses the finish line.
-                </p>
-              </div>
-              <div class="hero-stats">
-                <div class="hero-stats__item">
-                  <strong>${filteredQuizzes.length}</strong>
-                  <span>Quests live</span>
-                </div>
-                <div class="hero-stats__item">
-                  <strong>${scheduledCount}</strong>
-                  <span>Assigned to squads</span>
-                </div>
-                <div class="hero-stats__item">
-                  <strong>${completedPoints}</strong>
-                  <span>Points awarded</span>
-                </div>
-                <div class="hero-stats__item">
-                  <strong>${averageDuration || 0} min</strong>
-                  <span>Avg duration</span>
-                </div>
-              </div>
-            </div>
-            <div class="hero-section__filters quizzes-filter" role="toolbar" aria-label="Filter quests by theme">
-              ${filterButtons}
-            </div>
-          </section>
-          <div class="quizzes-content">
-            <section class="quizzes-grid">
-              ${cardsMarkup}
-            </section>
-          </div>
-        </main>
-      </div>
-    </div>
-  `;
-}
-
-function renderPointsCard(label, value, tone, icon) {
+function renderPointsCard({ label, value, tone, icon, action }) {
   const backgrounds = {
     purple: "linear-gradient(135deg, #6f47ff, #3623de)",
     orange: "linear-gradient(135deg, #ff922b, #f97316)",
     slate: "linear-gradient(135deg, #1f2937, #0f172a)"
   };
+  const iconConfig = POINTS_CARD_ICONS[icon] || POINTS_CARD_ICONS.default;
+  const actionMarkup = action
+    ? `<button type="button" class="points-card__chip-action"${action.route ? ` data-route="${action.route}"` : ""}${
+        action.scroll ? ` data-scroll="${action.scroll}"` : ""
+      }>${action.label}</button>`
+    : "";
   return `
     <article class="points-card" style="background:${backgrounds[tone]};">
-      ${icon ? `<div class="points-card__icon">${renderIcon(icon, "sm")}</div>` : ""}
-      <div class="points-card__body">
-        <span class="points-card__label">${label}</span>
-        <strong class="points-card__value">${value}</strong>
-        <p>Weld points</p>
+      <div class="points-card__chip${action ? " points-card__chip--interactive" : ""}">
+        <span>${label}</span>
+        ${actionMarkup}
+      </div>
+      <div class="points-card__content">
+        <span class="points-icon" style="background:${iconConfig.background};">
+          ${iconConfig.svg}
+        </span>
+        <div class="points-card__metrics">
+          <strong class="points-card__value">${formatNumber(value)}</strong>
+          <span class="points-card__unit">pts</span>
+        </div>
       </div>
     </article>
   `;
@@ -1739,107 +2045,241 @@ function renderCustomer() {
   const customerMessages = state.messages.filter(messageBelongsToCustomer);
   const pendingMessages = customerMessages.filter(msg => msg.status === MessageStatus.PENDING);
   const pendingApprovalPoints = pendingMessages.reduce((sum, msg) => sum + (msg.pointsOnApproval || 0), 0);
-  const rewardsHtml = state.rewards
+  const publishedQuests = Array.isArray(state.quests)
+    ? state.quests
+        .filter(quest => quest.published)
+        .sort(compareQuestsByDifficulty)
+    : [];
+  const publishedRewards = state.rewards.filter(reward => reward.published);
+  const rewardsHtml = publishedRewards
     .map(
       reward => `
-      <article class="reward-card" data-reward="${reward.id}">
+      <article class="reward-card reward-card--catalogue reward-card--hub" data-reward="${reward.id}">
         <div class="reward-card__artwork" style="background:${reward.image};">
-          ${renderIcon(reward.icon || "medal", "lg")}
+          ${renderIcon(reward.icon || "gift", "lg")}
         </div>
         <div class="reward-card__meta">
-          <span>${reward.category}</span>
-          <span>${reward.provider}</span>
+          <span class="reward-card__chip reward-card__chip--category">${reward.category}</span>
+          <span class="reward-card__chip reward-card__chip--provider">${reward.provider}</span>
         </div>
         <h4 class="reward-card__title">${reward.name}</h4>
         <p class="reward-card__desc">${reward.description}</p>
         <div class="reward-card__footer">
           <strong>${reward.pointsCost} pts</strong>
-          <span>${reward.remaining} left</span>
+          <span>${rewardRemainingLabel(reward)} left</span>
         </div>
         <button type="button" class="reward-card__cta button-pill button-pill--primary">Redeem reward</button>
       </article>
     `
     )
     .join("");
-
-  const recentMessages = customerMessages.slice(0, 3);
-  const timelineItems = recentMessages
-    .map(msg => {
-      const reasons = msg.reasons.map(reasonById).filter(Boolean);
+  const questsHtml = publishedQuests
+    .map(quest => {
+      const focusTags = Array.isArray(quest.focus)
+        ? quest.focus.slice(0, 2).map(item => `<span>${item}</span>`).join("")
+        : "";
+      const focusBlock = focusTags ? `<div class="quest-card__focus quest-card__focus--compact">${focusTags}</div>` : "";
+      const difficultyChip = quest.difficulty
+        ? `<span class="quest-card__chip quest-card__chip--difficulty" data-difficulty="${quest.difficulty}">${quest.difficulty}</span>`
+        : "";
+      const headerTags = [];
+      if (quest.category) headerTags.push(`<span class="quest-card__chip">${quest.category}</span>`);
+      const chipGroup = headerTags.length ? `<div class="quest-card__chip-group">${headerTags.join("")}</div>` : "";
       return `
-        <li class="timeline__item">
-          <div class="timeline__status" data-state="${msg.status}">${msg.status}</div>
-          <div class="timeline__details">
-            <strong>${msg.subject}</strong>
-            <span>${relativeTime(msg.reportedAt)}</span>
-            <div class="timeline__chips">
-              ${reasons.map(reason => `<span>${reason.description}</span>`).join("")}
+      <article class="quest-card quest-card--hub" data-quest="${quest.id}">
+        <header class="quest-card__header quest-card__header--hub">
+          ${difficultyChip}
+          ${chipGroup}
+        </header>
+        <h4 class="quest-card__title">${quest.title}</h4>
+        <p class="quest-card__description">${quest.description}</p>
+        <ul class="quest-card__details quest-card__details--compact">
+          <li><span>Duration</span><strong>${quest.duration} min</strong></li>
+          <li><span>Questions</span><strong>${quest.questions}</strong></li>
+          <li><span>Format</span><strong>${quest.format}</strong></li>
+          <li><span>Points</span><strong>${quest.points}</strong></li>
+        </ul>
+        ${focusBlock}
+        <div class="quest-card__footer quest-card__footer--hub">
+          <button type="button" class="button-pill button-pill--primary quest-card__cta" data-quest="${quest.id}">
+            View in catalogue
+          </button>
+        </div>
+      </article>
+    `;
+    })
+    .join("");
+
+  return `
+    <header class="customer-hero">
+      <h1>Good day, ${state.customer.name}</h1>
+      <p>Your vigilance is fuelling a safer inbox for everyone at Evergreen Capital.</p>
+      <button class="button-pill button-pill--primary" id="customer-report-button">Report other suspicious activity</button>
+    </header>
+    <section class="customer-section customer-section--points points-strip">
+      ${renderPointsCard({
+        label: "Available to spend",
+        value: state.customer.currentPoints,
+        tone: "purple",
+        icon: "medal",
+        action: { label: "Browse rewards", scroll: "#customer-rewards" }
+      })}
+      ${renderPointsCard({
+        label: "Pending approval",
+        value: pendingApprovalPoints,
+        tone: "orange",
+        icon: "hourglass",
+        action: { label: "Recent reports", route: "customer-reports" }
+      })}
+      ${renderPointsCard({
+        label: "Reward history",
+        value: state.customer.redeemedPoints,
+        tone: "slate",
+        icon: "gift",
+        action: { label: "View history", route: "customer-redemptions" }
+      })}
+    </section>
+    <section id="customer-rewards" class="customer-section customer-section--rewards">
+      <div class="section-header">
+        <h2>Your rewards</h2>
+        <p>Select a reward to demonstrate the instant redemption flow. Only rewards published by your organisation appear here.</p>
+      </div>
+      ${
+        rewardsHtml
+          ? `<div class="reward-grid reward-grid--catalogue reward-grid--hub">${rewardsHtml}</div>`
+          : `<div class="reward-empty"><p>No rewards are currently published. Check back soon!</p></div>`
+      }
+    </section>
+    <section class="customer-section customer-section--quests">
+      <div class="section-header">
+        <h2>Your quests</h2>
+        <p>Introduce squads to the latest WeldSecure quests. Only published quests from your organisation appear here.</p>
+      </div>
+      ${
+        questsHtml
+          ? `<div class="quest-grid quest-grid--hub">${questsHtml}</div>`
+          : `<div class="reward-empty"><p>No quests are currently published. Check back soon!</p></div>`
+      }
+    </section>
+  `;
+}
+
+function renderCustomerReportsPage() {
+  const customerMessages = state.messages
+    .filter(messageBelongsToCustomer)
+    .slice()
+    .sort((a, b) => new Date(b.reportedAt).getTime() - new Date(a.reportedAt).getTime());
+  const rowsMarkup = customerMessages
+    .map(message => {
+      const reasons = message.reasons.map(reasonById).filter(Boolean);
+      const reasonChips = reasons.map(reason => `<span class="detail-chip">${reason.description}</span>`).join("");
+      const totalPoints = message.pointsOnMessage + (message.status === MessageStatus.APPROVED ? message.pointsOnApproval || 0 : 0);
+      return `
+        <tr>
+          <td>${formatDateTime(message.reportedAt)}</td>
+          <td>
+            <strong>${message.subject}</strong>
+            ${reasonChips ? `<div class="detail-table__chips">${reasonChips}</div>` : ""}
+          </td>
+          <td><span class="badge" data-state="${message.status}">${message.status}</span></td>
+          <td>
+            <div class="detail-table__points">
+              <span>+${message.pointsOnMessage}</span>
+              ${message.status === MessageStatus.APPROVED ? `<span>+${message.pointsOnApproval}</span>` : ""}
+              <strong>= ${totalPoints}</strong>
             </div>
-          </div>
-          <div class="timeline__points">
-            <span>+${msg.pointsOnMessage}</span>
-            ${msg.status === MessageStatus.APPROVED ? `<span>+${msg.pointsOnApproval}</span>` : ""}
-          </div>
-        </li>
+          </td>
+        </tr>
       `;
     })
     .join("");
 
-  const rewardHistory = state.rewardRedemptions.slice(0, 5).map(entry => {
-    const reward = rewardById(entry.rewardId);
-    return `
-      <tr>
-        <td>${reward ? reward.name : "Reward"}</td>
-        <td>${formatDateTime(entry.redeemedAt)}</td>
-        <td>${reward ? reward.pointsCost : 0}</td>
-        <td><span class="badge" data-state="${entry.status}">${entry.status}</span></td>
-      </tr>
-    `;
-  });
-
-  return `
-    <header>
-      <h1>Good day, ${state.customer.name}</h1>
-      <p>Your vigilance is fuelling a safer inbox for everyone at Evergreen Capital.</p>
-      <button class="button-pill button-pill--primary" id="customer-report-button">Report suspicious email</button>
-    </header>
-    <section class="points-strip">
-      ${renderPointsCard("Available to spend", state.customer.currentPoints, "purple", "medal")}
-      ${renderPointsCard("Pending approval", pendingApprovalPoints, "orange", "hourglass")}
-      ${renderPointsCard("Already redeemed", state.customer.redeemedPoints, "slate", "gift")}
-    </section>
-    <section>
-      <div class="section-header">
-        <h2>Your rewards</h2>
-        <p>Select a reward to demonstrate the instant redemption flow.</p>
-      </div>
-      <div class="reward-grid">${rewardsHtml}</div>
-    </section>
-    <section class="grid-two">
-      <article class="timeline">
-        <div>
-          <h3>Recent reports</h3>
-          <p>Fresh from the Reporter journey.</p>
-        </div>
-        <ul class="timeline__list">${timelineItems}</ul>
-      </article>
-      <article class="card">
-        <div>
-          <h3>Reward history</h3>
-          <p>Use this to show fulfilment states.</p>
-        </div>
-        <table>
+  const tableMarkup = customerMessages.length
+    ? `
+      <div class="detail-table-wrapper">
+        <table class="detail-table detail-table--reports">
           <thead>
             <tr>
-              <th>Reward</th>
+              <th>Reported</th>
+              <th>Subject &amp; reasons</th>
+              <th>Status</th>
+              <th>Points</th>
+            </tr>
+          </thead>
+          <tbody>${rowsMarkup}</tbody>
+        </table>
+      </div>
+    `
+    : `<div class="customer-detail__empty">No reports recorded yet. Use the hub to submit your first suspicious email.</div>`;
+
+  return `
+    <header class="customer-detail-header">
+      <button type="button" class="button-pill button-pill--ghost customer-detail__back" data-action="back-to-hub">
+        Back to hub
+      </button>
+      <span class="customer-detail__eyebrow">Reporter history</span>
+      <h1>Recent reports</h1>
+      <p>Browse every suspicious email you've flagged and see how points land once security approves them.</p>
+    </header>
+    <section class="customer-section customer-section--detail customer-section--reports-log">
+      ${tableMarkup}
+    </section>
+  `;
+}
+
+function renderCustomerRedemptionsPage() {
+  const redemptions = state.rewardRedemptions
+    .slice()
+    .sort((a, b) => new Date(b.redeemedAt).getTime() - new Date(a.redeemedAt).getTime());
+  const rowsMarkup = redemptions
+    .map(entry => {
+      const reward = rewardById(entry.rewardId);
+      return `
+        <tr>
+          <td>${formatDateTime(entry.redeemedAt)}</td>
+          <td>
+            <strong>${reward ? reward.name : "Reward"}</strong>
+            <div class="detail-table__meta">
+              <span>${reward ? reward.provider : "Provider"}</span>
+              <span>${reward ? reward.category : "Reward"}</span>
+            </div>
+          </td>
+          <td>${reward ? `${reward.pointsCost} pts` : "—"}</td>
+          <td><span class="badge" data-state="${entry.status}">${entry.status}</span></td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  const tableMarkup = redemptions.length
+    ? `
+      <div class="detail-table-wrapper">
+        <table class="detail-table detail-table--redemptions">
+          <thead>
+            <tr>
               <th>Redeemed</th>
+              <th>Reward</th>
               <th>Points</th>
               <th>Status</th>
             </tr>
           </thead>
-          <tbody>${rewardHistory.join("")}</tbody>
+          <tbody>${rowsMarkup}</tbody>
         </table>
-      </article>
+      </div>
+    `
+    : `<div class="customer-detail__empty">You haven't redeemed any rewards yet. Explore the hub to pick your first recognition moment.</div>`;
+
+  return `
+    <header class="customer-detail-header">
+      <button type="button" class="button-pill button-pill--ghost customer-detail__back" data-action="back-to-hub">
+        Back to hub
+      </button>
+      <span class="customer-detail__eyebrow">Recognition history</span>
+      <h1>Redeemed rewards</h1>
+      <p>Showcase every reward you've queued and track the fulfilment status your security team sees.</p>
+    </header>
+    <section class="customer-section customer-section--detail customer-section--redemptions-log">
+      ${tableMarkup}
     </section>
   `;
 }
@@ -2075,6 +2515,211 @@ function renderClientReporting() {
   `;
 }
 
+function renderClientRewards() {
+  const publishedRewards = state.rewards.filter(reward => reward.published);
+  const unpublishedRewards = state.rewards.filter(reward => !reward.published);
+  const totalRewards = state.rewards.length;
+  const totalPointsValue = state.rewards.reduce((sum, reward) => sum + reward.pointsCost, 0);
+
+  const cardsMarkup = state.rewards
+    .map(reward => {
+      const action = reward.published ? "unpublish" : "publish";
+      const actionLabel = reward.published ? "Unpublish from hubs" : "Publish to hubs";
+      const actionTone = reward.published ? "button-pill--danger-light" : "button-pill--primary";
+      return `
+        <article class="reward-card reward-card--catalogue ${reward.published ? "reward-card--published" : "reward-card--draft"}" data-reward="${reward.id}">
+          <div class="reward-card__artwork" style="background:${reward.image};">
+            ${renderIcon(reward.icon || "gift", "lg")}
+          </div>
+          <div class="reward-card__meta">
+            <span class="reward-card__chip reward-card__chip--category">${reward.category}</span>
+            <span class="reward-card__chip reward-card__chip--provider">${reward.provider}</span>
+          </div>
+          <h4 class="reward-card__title">${reward.name}</h4>
+          <p class="reward-card__desc">${reward.description}</p>
+          <div class="reward-card__footer reward-card__footer--catalogue">
+            <strong>${reward.pointsCost} pts</strong>
+            <span>${rewardRemainingLabel(reward)} remaining</span>
+          </div>
+          <button
+            type="button"
+            class="button-pill ${actionTone} reward-publish-toggle"
+            data-action="${action}"
+            data-reward="${reward.id}">
+            ${actionLabel}
+          </button>
+        </article>
+      `;
+    })
+    .join("");
+
+  return `
+    <header>
+      <h1>Reward catalogue management</h1>
+      <p>Publish rewards to make them available inside employee hubs and track overall catalogue momentum.</p>
+    </header>
+    <section class="client-rewards__metrics">
+      <article class="client-rewards__metric">
+        <h3>Published rewards</h3>
+        <strong>${publishedRewards.length}</strong>
+        <span>Visible in hubs</span>
+      </article>
+      <article class="client-rewards__metric">
+        <h3>Draft rewards</h3>
+        <strong>${unpublishedRewards.length}</strong>
+        <span>Awaiting publication</span>
+      </article>
+      <article class="client-rewards__metric">
+        <h3>Total catalogue</h3>
+        <strong>${totalRewards}</strong>
+        <span>Across all categories</span>
+      </article>
+      <article class="client-rewards__metric">
+        <h3>Average cost</h3>
+        <strong>${totalRewards ? Math.round(totalPointsValue / totalRewards) : 0} pts</strong>
+        <span>Points per reward</span>
+      </article>
+    </section>
+    <div class="client-rewards__actions">
+      <button
+        type="button"
+        class="button-pill button-pill--primary"
+        data-bulk-reward-action="publish">
+        Publish all rewards
+      </button>
+      <button
+        type="button"
+        class="button-pill button-pill--danger-light"
+        data-bulk-reward-action="unpublish">
+        Unpublish all rewards
+      </button>
+    </div>
+    <section>
+      <div class="section-header">
+        <h2>Reward catalogue</h2>
+        <p>Toggle publication status to control which rewards appear inside employee hubs.</p>
+      </div>
+      <div class="reward-grid reward-grid--catalogue">
+        ${cardsMarkup}
+      </div>
+    </section>
+  `;
+}
+
+function renderClientQuests() {
+  const quests = Array.isArray(state.quests) ? state.quests.slice() : [];
+  quests.sort(compareQuestsByDifficulty);
+  const publishedQuests = quests.filter(quest => quest.published);
+  const draftQuests = quests.filter(quest => !quest.published);
+  const totalDuration = quests.reduce((sum, quest) => sum + quest.duration, 0);
+  const totalPoints = quests.reduce((sum, quest) => sum + quest.points, 0);
+  const averageDuration = quests.length ? Math.round(totalDuration / quests.length) : 0;
+  const averagePoints = quests.length ? Math.round(totalPoints / quests.length) : 0;
+
+  const cardsMarkup = quests
+    .map(quest => {
+      const action = quest.published ? "unpublish" : "publish";
+      const actionLabel = quest.published ? "Unpublish from hubs" : "Publish to hubs";
+      const actionTone = quest.published ? "button-pill--danger-light" : "button-pill--primary";
+      const focusTags =
+        Array.isArray(quest.focus) && quest.focus.length > 0
+          ? quest.focus.map(tag => `<span>${tag}</span>`).join("")
+          : "";
+      const focusBlock = focusTags ? `<div class="quest-card__focus">${focusTags}</div>` : "";
+      const sampleBlock = quest.sampleQuestion
+        ? `<div class="quest-card__sample"><span>Sample question</span><p>${quest.sampleQuestion}</p></div>`
+        : "";
+      const difficultyChip = quest.difficulty
+        ? `<span class="quest-card__chip quest-card__chip--difficulty" data-difficulty="${quest.difficulty}">${quest.difficulty}</span>`
+        : "";
+      const headerTags = [];
+      if (quest.category) headerTags.push(`<span class="quest-card__chip">${quest.category}</span>`);
+      const chipGroup = headerTags.length ? `<div class="quest-card__chip-group">${headerTags.join("")}</div>` : "";
+      return `
+        <article class="quest-card ${quest.published ? "quest-card--published" : "quest-card--draft"}" data-quest="${quest.id}">
+          <header class="quest-card__header">
+            ${difficultyChip}
+            ${chipGroup}
+          </header>
+          <h4 class="quest-card__title">${quest.title}</h4>
+          <p class="quest-card__description">${quest.description}</p>
+          <ul class="quest-card__details">
+            <li><span>Duration</span><strong>${quest.duration} min</strong></li>
+            <li><span>Questions</span><strong>${quest.questions}</strong></li>
+            <li><span>Format</span><strong>${quest.format}</strong></li>
+            <li><span>Points</span><strong>${quest.points}</strong></li>
+          </ul>
+          ${focusBlock}
+          ${sampleBlock}
+          <div class="quest-card__footer">
+            <button
+              type="button"
+              class="button-pill ${actionTone} quest-publish-toggle"
+              data-action="${action}"
+              data-quest="${quest.id}">
+              ${actionLabel}
+            </button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+
+  const catalogueMarkup = quests.length
+    ? `<div class="quest-grid">${cardsMarkup}</div>`
+    : `<div class="reward-empty">No quests configured yet.</div>`;
+
+  return `
+    <header>
+      <h1>Quest catalogue management</h1>
+      <p>Publish quests to employee hubs and curate the training portfolio your squads can access.</p>
+    </header>
+    <section class="client-quests__metrics">
+      <article class="client-quests__metric">
+        <h3>Published quests</h3>
+        <strong>${publishedQuests.length}</strong>
+        <span>Visible in hubs</span>
+      </article>
+      <article class="client-quests__metric">
+        <h3>Draft quests</h3>
+        <strong>${draftQuests.length}</strong>
+        <span>Awaiting publication</span>
+      </article>
+      <article class="client-quests__metric">
+        <h3>Total catalogue</h3>
+        <strong>${quests.length}</strong>
+        <span>Across all themes</span>
+      </article>
+      <article class="client-quests__metric">
+        <h3>Average duration</h3>
+        <strong>${averageDuration} min</strong>
+        <span>${averagePoints} pts per quest</span>
+      </article>
+    </section>
+    <div class="client-quests__actions">
+      <button
+        type="button"
+        class="button-pill button-pill--primary"
+        data-bulk-quest-action="publish">
+        Publish all quests
+      </button>
+      <button
+        type="button"
+        class="button-pill button-pill--danger-light"
+        data-bulk-quest-action="unpublish">
+        Unpublish all quests
+      </button>
+    </div>
+    <section>
+      <div class="section-header">
+        <h2>Quest catalogue</h2>
+        <p>Toggle publication status to control which quests appear inside employee hubs.</p>
+      </div>
+      ${catalogueMarkup}
+    </section>
+  `;
+}
+
 function renderWeldAdmin() {
   const clientCards = state.clients
     .map(
@@ -2160,38 +2805,366 @@ function renderWeldAdmin() {
   `;
 }
 
+function formatNumber(value) {
+  try {
+    return new Intl.NumberFormat().format(Number(value));
+  } catch {
+    return String(value);
+  }
+}
+
+function renderPointsTicker(beforeValue, afterValue, awarded, extraAttributes = "") {
+  const before = Number.isFinite(beforeValue) ? beforeValue : 0;
+  const after = Number.isFinite(afterValue) ? afterValue : before;
+  const awardedValue = Number.isFinite(awarded) ? awarded : Math.max(after - before, 0);
+  const finalTotal = Number.isFinite(afterValue) ? after : before + awardedValue;
+  return `
+    <span class="points-ticker" ${extraAttributes} aria-live="polite" data-start="${before}" data-end="${before}" data-final-total="${finalTotal}">
+      <span class="points-ticker__value" data-target-end="${before}">${formatNumber(before)}</span>
+      <span class="points-ticker__sup" data-total-award="${awardedValue}" data-current-award="0">+0</span>
+    </span>
+  `;
+}
+
+function renderPointsBurst(value, variant, label, index) {
+  if (!Number.isFinite(value) || value <= 0) return "";
+  const durationSeconds = 3.4;
+  const absorbSeconds = 1;
+  const inlineStyle = `--burst-duration:${durationSeconds}s;`;
+  return `
+    <span class="points-burst points-burst--${variant}" data-burst-index="${index}" data-burst-value="${value}" data-burst-duration="${durationSeconds}" data-burst-absorb="${absorbSeconds}" style="${inlineStyle}">
+      <span class="points-burst__value">+${formatNumber(value)}</span>
+      <span class="points-burst__label">${label}</span>
+    </span>
+  `;
+}
+
+function renderPointsBursts(entries) {
+  const fragments = [];
+  entries.forEach(entry => {
+    if (!entry) return;
+    const { value, variant, label } = entry;
+    if (!Number.isFinite(value) || value <= 0) return;
+    const index = fragments.length;
+    const burstMarkup = renderPointsBurst(value, variant, label, index);
+    if (burstMarkup) {
+      fragments.push(burstMarkup);
+    }
+  });
+
+  if (fragments.length === 0) return "";
+  return `<div class="points-celebration__bursts" aria-hidden="true" data-points-bursts="true">${fragments.join(
+    ""
+  )}</div>`;
+}
+
+function resetCelebrationFireworks(celebrationRoot) {
+  if (!celebrationRoot) return;
+  const emitters = celebrationRoot.querySelectorAll(".points-celebration__fireworks .firework");
+  if (emitters.length === 0) return;
+  emitters.forEach(emitter => {
+    emitter.style.animation = "none";
+    // Force reflow so the browser registers the animation reset.
+    void emitter.offsetWidth;
+    emitter.style.removeProperty("animation");
+  });
+}
+
+function setupCelebrationSup(celebrationRoot, onBurstsComplete) {
+  if (typeof onBurstsComplete !== "function") {
+    onBurstsComplete = () => {};
+  }
+
+  resetCelebrationFireworks(celebrationRoot);
+  const sup =
+    celebrationRoot.querySelector(".points-ticker__sup") ||
+    document.querySelector('[data-points-ticker="total"] .points-ticker__sup');
+  const celebrationAward = celebrationRoot.querySelector("[data-celebration-award]");
+  const resolveTicker = () =>
+    celebrationRoot.querySelector(".points-ticker") || document.querySelector('[data-points-ticker="total"]');
+  const resetTickerDisplay = () => {
+    const ticker = resolveTicker();
+    if (!ticker) return;
+    const startRaw = Number(ticker.dataset.start);
+    if (!Number.isFinite(startRaw)) return;
+    const valueEl = ticker.querySelector(".points-ticker__value");
+    if (valueEl) {
+      valueEl.textContent = formatNumber(startRaw);
+      valueEl.dataset.targetEnd = String(startRaw);
+    }
+    ticker.dataset.end = String(startRaw);
+  };
+  resetTickerDisplay();
+  if (!sup) {
+    if (celebrationAward) {
+      celebrationAward.textContent = "+0";
+    }
+    onBurstsComplete();
+    return;
+  }
+
+  sup.dataset.burstBound = "true";
+  const totalAward = Number(sup.dataset.totalAward);
+  const safeTotal = Number.isFinite(totalAward) ? Math.max(totalAward, 0) : 0;
+
+  const setSupValue = value => {
+    const rounded = Math.max(0, Math.round(value));
+    const formatted = formatNumber(rounded);
+    sup.textContent = `+${formatted}`;
+    sup.dataset.currentAward = String(rounded);
+    if (celebrationAward) {
+      celebrationAward.textContent = `+${formatted}`;
+    }
+  };
+
+  let animationFrame = null;
+  const animateSup = (target, onComplete) => {
+    const start = Number(sup.dataset.currentAward) || 0;
+    const clampedTarget = Math.min(Math.max(target, start), safeTotal);
+    if (clampedTarget <= start) {
+      setSupValue(start);
+      if (typeof onComplete === "function") onComplete();
+      return;
+    }
+
+    if (typeof window === "undefined" || !window.requestAnimationFrame) {
+      setSupValue(clampedTarget);
+      if (typeof onComplete === "function") onComplete();
+      return;
+    }
+
+    if (animationFrame) {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = null;
+    }
+
+    const duration = 480;
+    const startTime = performance.now();
+    const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+
+    const step = now => {
+      const progress = Math.min((now - startTime) / duration, 1);
+      const eased = easeOutCubic(progress);
+      const value = start + (clampedTarget - start) * eased;
+      setSupValue(value);
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(step);
+      } else {
+        animationFrame = null;
+        setSupValue(clampedTarget);
+        if (typeof onComplete === "function") onComplete();
+      }
+    };
+
+    animationFrame = requestAnimationFrame(step);
+  };
+
+  setSupValue(0);
+
+  const burstsContainer = celebrationRoot.querySelector("[data-points-bursts]");
+  const bursts = burstsContainer ? Array.from(burstsContainer.querySelectorAll(".points-burst")) : [];
+  const resetBurstLayout = () => {
+    bursts.forEach(burst => {
+      burst.style.removeProperty("--burst-offset");
+    });
+  };
+
+  const lastBurst = bursts.length > 0 ? bursts[bursts.length - 1] : null;
+  const lastDurationRaw = lastBurst ? Number(lastBurst.dataset.burstDuration) : NaN;
+  const lastAbsorbRaw = lastBurst ? Number(lastBurst.dataset.burstAbsorb) : NaN;
+  const safeLastDuration = Number.isFinite(lastDurationRaw) ? lastDurationRaw : 3.4;
+  const safeLastAbsorb = Number.isFinite(lastAbsorbRaw) ? lastAbsorbRaw : 1;
+  const finalTailMs = Math.max((safeLastDuration - safeLastAbsorb) * 1000 + 180, 220);
+
+  bursts.forEach(burst => {
+    burst.classList.remove("points-burst--active");
+    burst.style.removeProperty("display");
+    // reset animation by forcing reflow
+    void burst.offsetWidth;
+  });
+  resetBurstLayout();
+
+  const finish = () => {
+    const current = Number(sup.dataset.currentAward) || 0;
+    const commitTicker = () => {
+      const ticker = resolveTicker();
+      const valueEl = ticker ? ticker.querySelector(".points-ticker__value") : null;
+      if (ticker && valueEl) {
+        const startRaw = Number(ticker.dataset.start);
+        const startValue = Number.isFinite(startRaw) ? startRaw : 0;
+        const plannedTotalRaw = Number(ticker.dataset.finalTotal);
+        const plannedTotal = Number.isFinite(plannedTotalRaw) ? plannedTotalRaw : startValue + safeTotal;
+        const computedTotal = Number.isFinite(safeTotal) ? startValue + safeTotal : startValue;
+        const targetTotal = Number.isFinite(plannedTotal) ? plannedTotal : computedTotal;
+        const resolvedTotal = Number.isFinite(targetTotal) ? targetTotal : computedTotal;
+        valueEl.dataset.targetEnd = String(resolvedTotal);
+        ticker.dataset.end = String(resolvedTotal);
+        ticker.dataset.finalTotal = String(resolvedTotal);
+      }
+      onBurstsComplete();
+    };
+    if (current < safeTotal) {
+      animateSup(safeTotal, commitTicker);
+    } else {
+      commitTicker();
+    }
+  };
+
+  if (safeTotal === 0 || bursts.length === 0) {
+    animateSup(safeTotal, finish);
+    return;
+  }
+
+  const playBurst = index => {
+    if (index >= bursts.length) {
+      window.setTimeout(() => {
+        finish();
+      }, finalTailMs);
+      return;
+    }
+
+    const burst = bursts[index];
+    const burstValue = Number(burst.dataset.burstValue);
+    if (!Number.isFinite(burstValue) || burstValue <= 0) {
+      playBurst(index + 1);
+      return;
+    }
+
+    resetBurstLayout();
+
+    const durationSeconds = Number(burst.dataset.burstDuration) || 3.4;
+    burst.style.setProperty("--burst-duration", `${durationSeconds}s`);
+
+    const rawAbsorb = Number(burst.dataset.burstAbsorb) || 1;
+    const absorbSeconds = Number.isFinite(rawAbsorb) ? rawAbsorb : 0;
+    const absorbMs = absorbSeconds * 1000;
+    const cleanupMs = Number.isFinite(durationSeconds)
+      ? Math.max(durationSeconds * 1000, absorbMs + 120)
+      : absorbMs + 120;
+
+    burst.classList.add("points-burst--active");
+
+    window.setTimeout(() => {
+      const current = Number(sup.dataset.currentAward) || 0;
+      const target = Math.min(current + burstValue, safeTotal);
+      animateSup(target, () => playBurst(index + 1));
+    }, absorbMs);
+
+    if (Number.isFinite(cleanupMs) && cleanupMs > 0) {
+      window.setTimeout(() => {
+        burst.style.display = "none";
+      }, cleanupMs);
+    }
+  };
+
+  playBurst(0);
+}
+
+function renderBadgeSpotlight(badge) {
+  if (!badge) return "";
+  const background = ACHIEVEMENT_TONES[badge.tone] || ACHIEVEMENT_TONES.violet;
+  const iconBackdrop = ACHIEVEMENT_ICON_BACKDROPS[badge.tone]?.background || "linear-gradient(135deg, #e0e7ff, #a855f7)";
+  const iconShadow = ACHIEVEMENT_ICON_BACKDROPS[badge.tone]?.shadow || "rgba(79, 70, 229, 0.32)";
+  return `
+    <article class="badge-spotlight" data-achievement="${badge.id}" style="--badge-tone:${background};--badge-icon-tone:${iconBackdrop};--badge-icon-shadow:${iconShadow};">
+      <div class="badge-spotlight__icon">
+        ${renderIcon(badge.icon, "sm")}
+      </div>
+      <div class="badge-spotlight__content">
+        <span class="badge-spotlight__eyebrow">Badge unlocked</span>
+        <strong class="badge-spotlight__title">${badge.title}</strong>
+        <p class="badge-spotlight__description">${badge.description}</p>
+        <span class="badge-spotlight__points">
+          <span class="badge-spotlight__points-value">+${formatNumber(badge.points)}</span>
+          <span class="badge-spotlight__points-unit">pts</span>
+        </span>
+      </div>
+    </article>
+  `;
+}
+
+function selectRandomBadge(excludeId) {
+  const eligible = ACHIEVEMENTS.filter(achievement => achievement.icon);
+  if (eligible.length === 0) return null;
+  const pool =
+    excludeId && excludeId.length > 0 ? eligible.filter(achievement => achievement.id !== excludeId) : eligible;
+  const source = pool.length > 0 ? pool : eligible;
+  const index = Math.floor(Math.random() * source.length);
+  return source[index];
+}
+
+function badgeById(id) {
+  if (!id) return null;
+  return ACHIEVEMENTS.find(achievement => achievement.id === id) || null;
+}
+
+function teardownBadgeShowcase() {
+  if (typeof document === "undefined") return;
+  document.querySelectorAll("[data-badge-showcase][data-badge-bound='true']").forEach(container => {
+    const replacement = container.cloneNode(true);
+    replacement.removeAttribute("data-badge-bound");
+    container.replaceWith(replacement);
+  });
+}
+
+function setupBadgeShowcase(container) {
+  let badgeContainer = container.querySelector("[data-badge-showcase]");
+  if (!badgeContainer || !Array.isArray(ACHIEVEMENTS) || ACHIEVEMENTS.length === 0) return;
+
+  if (badgeContainer.dataset.badgeBound === "true") {
+    return;
+  }
+
+  badgeContainer.setAttribute("role", "status");
+  badgeContainer.setAttribute("aria-live", "polite");
+  badgeContainer.setAttribute("tabindex", "0");
+  badgeContainer.setAttribute("aria-label", "Badge spotlight. Activate to view another achievement.");
+
+  const showBadge = badge => {
+    if (!badge) {
+      badgeContainer.innerHTML = "";
+      badgeContainer.removeAttribute("data-current-badge");
+      return;
+    }
+    badgeContainer.innerHTML = renderBadgeSpotlight(badge);
+    badgeContainer.setAttribute("data-current-badge", badge.id);
+  };
+
+  let initialBadge = badgeById(state.meta.lastBadgeId);
+  if (!initialBadge) {
+    initialBadge = selectRandomBadge(null);
+    if (initialBadge) {
+      state.meta.lastBadgeId = initialBadge.id;
+      persist();
+    }
+  }
+
+  showBadge(initialBadge);
+
+  const rotateBadge = () => {
+    const currentId = badgeContainer.getAttribute("data-current-badge") || null;
+    const nextBadge = selectRandomBadge(currentId);
+    if (!nextBadge) return;
+    showBadge(nextBadge);
+  };
+
+  const handleKeydown = event => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    rotateBadge();
+  };
+
+  badgeContainer.addEventListener("click", rotateBadge);
+  badgeContainer.addEventListener("keydown", handleKeydown);
+  badgeContainer.dataset.badgeBound = "true";
+}
+
 function renderAddIn() {
   const screen = state.meta.addinScreen;
-  const pendingApprovalPoints = state.messages
-    .filter(messageBelongsToCustomer)
-    .filter(msg => msg.status === MessageStatus.PENDING)
-    .reduce((sum, msg) => sum + (msg.pointsOnApproval || 0), 0);
-  const statsStrip = `
-    <div class="addin-stats">
-      <article class="addin-stat">
-        <div class="addin-stat__item">
-          ${renderIcon("medal", "xs")}
-          <div>
-            <span>Available</span>
-            <strong>${state.customer.currentPoints}</strong>
-          </div>
-        </div>
-        <div class="addin-stat__divider"></div>
-        <div class="addin-stat__item">
-          ${renderIcon("hourglass", "xs")}
-          <div>
-            <span>Pending</span>
-            <strong>${pendingApprovalPoints}</strong>
-          </div>
-        </div>
-      </article>
-    </div>
-  `;
-
   const reportForm = `
     <div class="addin-body">
-      <div class="addin-field">
-        <span>Why are you reporting this?</span>
+      <fieldset class="addin-field">
+        <legend>Why are you reporting this?</legend>
         <div class="addin-checkbox-list">
           ${state.reportReasons
             .map(
@@ -2204,39 +3177,72 @@ function renderAddIn() {
             )
             .join("")}
         </div>
-      </div>
-      <label class="addin-field">
-        Anything else we should know?
+      </fieldset>
+      <label class="addin-emergency">
+        <input type="checkbox" value="clicked-link,opened-attachment,shared-credentials" />
+        <span class="addin-emergency__text">Recipient clicked a link, opened an attachment, or entered credentials</span>
+      </label>
+      <label class="addin-field addin-field--notes">
+        Another reason or anything else we should know?
         <textarea rows="3" id="addin-notes" placeholder="Optional context for your security reviewers."></textarea>
       </label>
       <button class="addin-primary" id="addin-submit">Report</button>
     </div>
   `;
 
-  const lastPoints = state.meta.lastReportPoints ?? 20;
+  const reportAward = Number.isFinite(state.meta.lastReportPoints) ? state.meta.lastReportPoints : 0;
+  const badgeAward = Number.isFinite(state.meta.lastBadgePoints) ? state.meta.lastBadgePoints : 0;
+  const afterBalance = Number.isFinite(state.meta.lastBalanceAfter) ? state.meta.lastBalanceAfter : state.customer.currentPoints;
+  const fallbackTotal = reportAward + badgeAward;
+  const previousBalance = Number.isFinite(state.meta.lastBalanceBefore)
+    ? state.meta.lastBalanceBefore
+    : Math.max(afterBalance - fallbackTotal, 0);
+  let totalAwarded = Number.isFinite(state.meta.lastTotalAwarded)
+    ? state.meta.lastTotalAwarded
+    : afterBalance - previousBalance;
+  if (!Number.isFinite(totalAwarded) || totalAwarded <= 0) {
+    totalAwarded = Math.max(fallbackTotal, 0);
+  }
+  const tickerMarkup = renderPointsTicker(previousBalance, afterBalance, totalAwarded, 'data-points-ticker="total"');
+  const burstsMarkup = renderPointsBursts([
+    { value: reportAward, variant: "report", label: "Report" },
+    { value: badgeAward, variant: "badge", label: "Badge" }
+  ]);
   const auroraLayers = [
-    { angle: 18, hue: 258, delay: "0s" },
-    { angle: -22, hue: 200, delay: "0.08s" },
-    { angle: 36, hue: 42, delay: "0.16s" }
+    { angle: 12, hue: 258, delay: "0s", offsetX: -28, offsetY: -52, shape: "wave1" },
+    { angle: -18, hue: 210, delay: "0.08s", offsetX: 6, offsetY: -44, shape: "wave2" },
+    { angle: 28, hue: 42, delay: "0.15s", offsetX: -4, offsetY: 6, shape: "wave3" },
+    { angle: -6, hue: 320, delay: "0.22s", offsetX: 18, offsetY: -18, shape: "wave4" },
+    { angle: 34, hue: 168, delay: "0.3s", offsetX: -20, offsetY: -8, shape: "wave5" }
   ];
-  const shimmerLayers = [
-    { delay: "0.4s" },
-    { delay: "0.6s" },
-    { delay: "0.8s" }
+  const sparkles = [
+    { x: -92, y: -68, delay: "0.32s", size: 18 },
+    { x: -32, y: -8, delay: "0.45s", size: 14 },
+    { x: 38, y: -10, delay: "0.58s", size: 12 },
+    { x: 74, y: -44, delay: "0.72s", size: 16 }
   ];
   const auroraMarkup = auroraLayers
     .map(
       layer => `
-        <span class="points-aurora__ribbon" style="--aurora-angle:${layer.angle}deg;--aurora-hue:${layer.hue};--aurora-delay:${layer.delay};"></span>
+        <span class="points-aurora__ribbon points-aurora__ribbon--${layer.shape}" style="--aurora-angle:${layer.angle}deg;--aurora-hue:${layer.hue};--aurora-delay:${layer.delay};--aurora-offset-x:${layer.offsetX}px;--aurora-offset-y:${layer.offsetY}px;"></span>
       `
     )
     .join("");
-  const shimmerMarkup = shimmerLayers
-    .map(layer => `<span class="points-shimmer" style="--shimmer-delay:${layer.delay};"></span>`)
+  const sparklesMarkup = sparkles
+    .map(
+      sparkle => `
+        <span class="points-sparkle" style="--sparkle-x:${sparkle.x}px;--sparkle-y:${sparkle.y}px;--sparkle-delay:${sparkle.delay};--sparkle-size:${sparkle.size}px;"></span>
+      `
+    )
     .join("");
   const successView = `
     <div class="addin-success">
       <div class="points-celebration points-celebration--aurora">
+        <div class="points-celebration__fireworks" aria-hidden="true">
+          <div class="firework"></div>
+          <div class="firework"></div>
+          <div class="firework"></div>
+        </div>
         <div class="points-celebration__halo"></div>
         <div class="points-aurora" aria-hidden="true">
           ${auroraMarkup}
@@ -2244,21 +3250,39 @@ function renderAddIn() {
         <div class="points-celebration__bubble">
           <span class="points-celebration__label">Great catch</span>
           <div class="points-celebration__points">
-            ${renderIcon("medal", "xs")}
-            <strong class="points-celebration__points-value">+${lastPoints} pts</strong>
+            <span class="points-celebration__star" aria-hidden="true">
+              <svg
+                class="badge"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 360 360"
+                preserveAspectRatio="xMidYMid meet"
+                focusable="false"
+              >
+                <circle class="outer" fill="#F9D535" stroke="#fff" stroke-width="8" stroke-linecap="round" cx="180" cy="180" r="157"></circle>
+                <circle class="inner" fill="#DFB828" stroke="#fff" stroke-width="8" cx="180" cy="180" r="108.3"></circle>
+                <path class="inline" d="M89.4 276.7c-26-24.2-42.2-58.8-42.2-97.1 0-22.6 5.6-43.8 15.5-62.4m234.7.1c9.9 18.6 15.4 39.7 15.4 62.2 0 38.3-16.2 72.8-42.1 97" stroke="#CAA61F" stroke-width="7" stroke-linecap="round" fill="none"></path>
+                <g class="star">
+                  <path fill="#F9D535" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="M180 107.8l16.9 52.1h54.8l-44.3 32.2 16.9 52.1-44.3-32.2-44.3 32.2 16.9-52.1-44.3-32.2h54.8z"></path>
+                  <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="180" cy="107.8" r="4.4"></circle>
+                  <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="223.7" cy="244.2" r="4.4"></circle>
+                  <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="135.5" cy="244.2" r="4.4"></circle>
+                  <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="108.3" cy="160.4" r="4.4"></circle>
+                  <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="251.7" cy="160.4" r="4.4"></circle>
+                </g>
+              </svg>
+            </span>
+            <span class="points-celebration__award">
+              <span class="points-celebration__award-value" data-celebration-award>+0</span>
+              <span class="points-celebration__award-unit">pts</span>
+            </span>
+            ${burstsMarkup}
           </div>
         </div>
-        <div class="points-shimmer-group" aria-hidden="true">
-          ${shimmerMarkup}
-        </div>
-        <div class="points-celebration__confetti">
-          <span></span>
-          <span></span>
-          <span></span>
-          <span></span>
-          <span></span>
+        <div class="points-sparkles" aria-hidden="true">
+          ${sparklesMarkup}
         </div>
       </div>
+      <div class="addin-success__badge" data-badge-showcase aria-live="polite"></div>
       <p>The security team will review your report shortly. Your points are available immediately.</p>
       <div class="addin-actions">
         <button class="addin-cta addin-cta--primary" id="addin-view-rewards">
@@ -2269,11 +3293,57 @@ function renderAddIn() {
     </div>
   `;
 
+  const headerPointsDisplay =
+    screen === "success"
+      ? tickerMarkup
+      : `<span class="addin-points__value">${formatNumber(state.customer.currentPoints)}</span>`;
+  const showBackNav = screen === "success";
+  const backButtonMarkup = showBackNav
+    ? `<button type="button" class="addin-header__back" data-addin-back aria-label="Back to report form">
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+          <path d="M12.94 4.44a1 1 0 0 1 0 1.41L9.29 9.5l3.65 3.65a1 1 0 1 1-1.41 1.41l-4.36-4.36a1 1 0 0 1 0-1.41l4.36-4.36a1 1 0 0 1 1.41 0z" fill="currentColor"/>
+        </svg>
+      </button>`
+    : "";
+
   return `
     <div class="addin-page">
       <div class="addin-shell">
         <header class="addin-header">
-          <div class="addin-logo">W</div>
+          <div class="addin-header__top">
+            <div class="addin-header__title">
+              ${backButtonMarkup}
+              ${
+                showBackNav
+                  ? ""
+                  : `<div class="addin-logo">W</div>`
+              }
+            </div>
+            <div class="addin-points" aria-live="polite">
+              <span class="addin-points__star" aria-hidden="true">
+                <svg
+                  class="badge"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 360 360"
+                  preserveAspectRatio="xMidYMid meet"
+                  focusable="false"
+                >
+                  <circle class="outer" fill="#F9D535" stroke="#fff" stroke-width="8" stroke-linecap="round" cx="180" cy="180" r="157"></circle>
+                  <circle class="inner" fill="#DFB828" stroke="#fff" stroke-width="8" cx="180" cy="180" r="108.3"></circle>
+                  <path class="inline" d="M89.4 276.7c-26-24.2-42.2-58.8-42.2-97.1 0-22.6 5.6-43.8 15.5-62.4m234.7.1c9.9 18.6 15.4 39.7 15.4 62.2 0 38.3-16.2 72.8-42.1 97" stroke="#CAA61F" stroke-width="7" stroke-linecap="round" fill="none"></path>
+                  <g class="star">
+                    <path fill="#F9D535" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="M180 107.8l16.9 52.1h54.8l-44.3 32.2 16.9 52.1-44.3-32.2-44.3 32.2 16.9-52.1-44.3-32.2h54.8z"></path>
+                    <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="180" cy="107.8" r="4.4"></circle>
+                    <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="223.7" cy="244.2" r="4.4"></circle>
+                    <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="135.5" cy="244.2" r="4.4"></circle>
+                    <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="108.3" cy="160.4" r="4.4"></circle>
+                    <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="251.7" cy="160.4" r="4.4"></circle>
+                  </g>
+                </svg>
+              </span>
+              ${headerPointsDisplay}
+            </div>
+          </div>
           <div class="addin-header__body">
             <h1>Report with Weld</h1>
             <p>Flag anything suspicious, earn recognition, and protect your team.</p>
@@ -2283,7 +3353,6 @@ function renderAddIn() {
             <strong>${state.customer.name}</strong>
           </div>
         </header>
-        ${statsStrip}
         ${screen === "report" ? reportForm : successView}
       </div>
     </div>
@@ -2291,9 +3360,6 @@ function renderAddIn() {
 }
 
 function renderHeader() {
-  if (state.meta.route === "landing") {
-    return "";
-  }
   const role = state.meta.role;
   const navMarkup = renderGlobalNav(state.meta.route);
   return `
@@ -2318,10 +3384,18 @@ function renderContent() {
   switch (state.meta.route) {
     case "customer":
       return renderCustomer();
+    case "customer-reports":
+      return renderCustomerReportsPage();
+    case "customer-redemptions":
+      return renderCustomerRedemptionsPage();
     case "client-dashboard":
       return renderClientDashboard();
     case "client-reporting":
       return renderClientReporting();
+    case "client-rewards":
+      return renderClientRewards();
+    case "client-quests":
+      return renderClientQuests();
     case "weld-admin":
       return renderWeldAdmin();
     default:
@@ -2343,59 +3417,6 @@ function attachAchievementsEvents(container) {
       renderApp();
     });
   }
-}
-
-function attachQuizzesEvents(container) {
-  const filterContainer = container.querySelector(".quizzes-filter");
-  if (filterContainer) {
-    filterContainer.addEventListener("click", event => {
-      const button = event.target.closest("[data-filter]");
-      if (!button) return;
-      const value = button.getAttribute("data-filter");
-      const nextFilter = value === "all" ? null : value;
-      if (state.meta.quizFilter === nextFilter) return;
-      state.meta.quizFilter = nextFilter;
-      persist();
-      renderApp();
-    });
-  }
-
-  container.addEventListener("click", event => {
-    const actionButton = event.target.closest(".quiz-card__action");
-    if (!actionButton || actionButton.disabled) return;
-    const action = actionButton.getAttribute("data-action");
-    const card = actionButton.closest(".quiz-card");
-    if (!card) return;
-    const quizId = card.getAttribute("data-quiz-id");
-    if (!quizId) return;
-    const currentStatus = state.meta.quizStatus || {};
-
-    if (action === "schedule") {
-      if (currentStatus[quizId] === "scheduled" || currentStatus[quizId] === "completed") return;
-      state.meta.quizStatus = { ...currentStatus, [quizId]: "scheduled" };
-      persist();
-      renderApp();
-      return;
-    }
-
-    if (action === "complete") {
-      if (currentStatus[quizId] === "completed") return;
-      const quiz = quizById(quizId);
-      state.meta.quizStatus = { ...currentStatus, [quizId]: "completed" };
-      if (quiz) {
-        state.customer.currentPoints += quiz.points;
-      }
-      persist();
-      renderApp();
-      if (quiz) {
-        openDialog({
-          title: "Points awarded",
-          description: `+${quiz.points} points credited for finishing "${quiz.title}".`,
-          confirmLabel: "Close"
-        });
-      }
-    }
-  });
 }
 
 function attachGlobalNav(container) {
@@ -2582,6 +3603,90 @@ function attachCustomerEvents(container) {
       });
     });
   });
+  container.querySelectorAll(".points-card__chip-action").forEach(button => {
+    button.addEventListener("click", () => {
+      const scrollTarget = button.getAttribute("data-scroll");
+      if (scrollTarget) {
+        const target = document.querySelector(scrollTarget);
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }
+      const targetRoute = button.getAttribute("data-route");
+      if (targetRoute) {
+        setRole("customer", targetRoute);
+      }
+    });
+  });
+  container.querySelectorAll(".quest-card__cta").forEach(button => {
+    button.addEventListener("click", () => {
+      setRole("client", "client-quests");
+    });
+  });
+}
+
+function attachCustomerReportsEvents(container) {
+  const back = container.querySelector("[data-action='back-to-hub']");
+  if (back) {
+    back.addEventListener("click", () => {
+      setRole("customer", "customer");
+    });
+  }
+}
+
+function attachCustomerRedemptionsEvents(container) {
+  const back = container.querySelector("[data-action='back-to-hub']");
+  if (back) {
+    back.addEventListener("click", () => {
+      setRole("customer", "customer");
+    });
+  }
+}
+
+function attachClientRewardsEvents(container) {
+  container.addEventListener("click", event => {
+    const bulkButton = event.target.closest("[data-bulk-reward-action]");
+    if (bulkButton) {
+      const action = bulkButton.getAttribute("data-bulk-reward-action");
+      if (action === "publish") {
+        setAllRewardsPublication(true);
+      } else if (action === "unpublish") {
+        setAllRewardsPublication(false);
+      }
+      return;
+    }
+
+    const button = event.target.closest(".reward-publish-toggle");
+    if (!button) return;
+    const rewardId = Number(button.getAttribute("data-reward"));
+    if (!Number.isFinite(rewardId)) return;
+    const action = button.getAttribute("data-action");
+    if (!action) return;
+    const nextPublished = action === "publish";
+    setRewardPublication(rewardId, nextPublished);
+  });
+}
+
+function attachClientQuestsEvents(container) {
+  container.addEventListener("click", event => {
+    const bulkButton = event.target.closest("[data-bulk-quest-action]");
+    if (bulkButton) {
+      const action = bulkButton.getAttribute("data-bulk-quest-action");
+      if (action === "publish") {
+        setAllQuestsPublication(true);
+      } else if (action === "unpublish") {
+        setAllQuestsPublication(false);
+      }
+      return;
+    }
+
+    const button = event.target.closest(".quest-publish-toggle");
+    if (!button) return;
+    const questId = button.getAttribute("data-quest");
+    const action = button.getAttribute("data-action");
+    if (!questId || !action) return;
+    setQuestPublication(questId, action === "publish");
+  });
 }
 
 function attachReportingEvents(container) {
@@ -2641,27 +3746,47 @@ function attachAdminEvents(container) {
 
 function attachAddInEvents(container) {
   if (state.meta.addinScreen === "report") {
+    teardownBadgeShowcase();
     const submitBtn = container.querySelector("#addin-submit");
+    const emergencyInputs = container.querySelectorAll('.addin-emergency input[type="checkbox"]');
+    if (emergencyInputs.length > 0) {
+      emergencyInputs.forEach(input => {
+        input.checked = false;
+      });
+    }
     if (submitBtn) {
       submitBtn.addEventListener("click", () => {
         const notesInput = container.querySelector("#addin-notes");
-        const reasonCheckboxes = Array.from(container.querySelectorAll('.addin-checkbox-list input[type="checkbox"]'))
+        const reasonCheckboxes = Array.from(
+          container.querySelectorAll('.addin-checkbox-list input[type="checkbox"]')
+        )
           .filter(input => input.checked)
           .map(input => Number(input.value));
+        const notesValue = notesInput ? notesInput.value.trim() : "";
 
-        if (reasonCheckboxes.length === 0) {
+        if (reasonCheckboxes.length === 0 && !notesValue) {
           openDialog({
-            title: "Select at least one reason",
-            description: "This helps reviewers triage the report quickly.",
+            title: "Add a reason",
+            description: "Select a reason or share additional details so security can triage quickly.",
             confirmLabel: "Close"
           });
           return;
         }
 
         const primaryReason = reasonById(reasonCheckboxes[0]);
-        const generatedSubject = primaryReason ? `Suspicious email: ${primaryReason.description}` : "Suspicious email reported";
+        const generatedSubject = primaryReason
+          ? `Suspicious email: ${primaryReason.description}`
+          : notesValue
+          ? `Suspicious email: ${notesValue.slice(0, 60)}`
+          : "Suspicious email reported";
         const generatedMessageId =
           "MSG-" + Date.now() + "-" + Math.floor(Math.random() * 10000).toString().padStart(4, "0");
+
+        const emergencySelections = Array.from(container.querySelectorAll('.addin-emergency input[type="checkbox"]'))
+          .filter(input => input.checked)
+          .flatMap(input => input.value.split(","))
+          .map(item => item.trim())
+          .filter(Boolean);
 
         reportMessage({
           subject: generatedSubject,
@@ -2669,13 +3794,24 @@ function attachAddInEvents(container) {
           reasons: reasonCheckboxes,
           reporterName: state.customer.name,
           reporterEmail: state.customer.email,
-          notes: notesInput ? notesInput.value.trim() : ""
+          notes: notesValue,
+          emergencyFlags: emergencySelections
         });
       });
     }
   } else {
     if (state.meta.addinScreen === "success") {
       setupCelebrationReplay(container);
+      setupBadgeShowcase(container);
+      const backControl = container.querySelector("[data-addin-back]");
+      if (backControl && backControl.dataset.backBound !== "true") {
+        backControl.dataset.backBound = "true";
+        backControl.addEventListener("click", () => {
+          revertLastReportAward();
+        });
+      }
+    } else {
+      teardownBadgeShowcase();
     }
     const viewRewards = container.querySelector("#addin-view-rewards");
     if (viewRewards) {
@@ -2702,14 +3838,21 @@ function renderApp() {
   const app = document.getElementById("app");
   const route = state.meta.route;
 
+  if (route !== "addin") {
+    teardownBadgeShowcase();
+  }
+
   if (route === "landing") {
     app.innerHTML = `
       <div class="page page--landing">
+        ${renderHeader()}
         <div class="page__inner page__inner--single">
           <main class="layout-content" id="main-content">${renderLanding()}</main>
         </div>
       </div>
     `;
+    attachHeaderEvents(app);
+    attachGlobalNav(app);
     attachLandingEvents(app);
     return;
   }
@@ -2719,14 +3862,6 @@ function renderApp() {
     attachHeaderEvents(app);
     attachGlobalNav(app);
     attachAchievementsEvents(app);
-    return;
-  }
-
-  if (route === "quizzes") {
-    app.innerHTML = renderQuizzesPage();
-    attachHeaderEvents(app);
-    attachGlobalNav(app);
-    attachQuizzesEvents(app);
     return;
   }
 
@@ -2762,7 +3897,11 @@ function renderApp() {
   const mainContent = app.querySelector("#main-content");
   if (!mainContent) return;
   if (route === "customer") attachCustomerEvents(mainContent);
+  if (route === "customer-reports") attachCustomerReportsEvents(mainContent);
+  if (route === "customer-redemptions") attachCustomerRedemptionsEvents(mainContent);
   if (route === "client-reporting") attachReportingEvents(mainContent);
+  if (route === "client-rewards") attachClientRewardsEvents(mainContent);
+  if (route === "client-quests") attachClientQuestsEvents(mainContent);
   if (route === "weld-admin") attachAdminEvents(mainContent);
 }
 
@@ -2781,6 +3920,13 @@ window.addEventListener("hashchange", () => {
     renderApp();
   }
 });
+
+
+
+
+
+
+
 
 
 

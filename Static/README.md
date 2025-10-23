@@ -3,7 +3,7 @@
 This repository contains a dependency-free walkthrough of the WeldSecure SaaS experience. Everything runs on vanilla HTML, CSS, and JavaScript -- open `index.html` in a browser and you are ready to demo. No package installation, build tooling, or Node runtime is required.
 
 ## Features
-- Journey picker & navigation for switching between the Reporter Journey, Reporter Profile, Organisation Dashboard, Security Team Dashboard, and Badges experiences.
+- Journey picker & navigation for switching between the Reporter Journey, Hub, Organisation Dashboard, Security Team Dashboard, and Badges experiences.
 - Reporter rewards view showing live point balances, redemption flow, recent reports, and reward history with instant redemption feedback.
 - Organisation dashboard highlighting weekly momentum, dominant threat signals, and top reporters, plus a CSV-export cue.
 - Security team dashboard workspace where approving or rejecting submissions immediately updates reporter points and open cases.
