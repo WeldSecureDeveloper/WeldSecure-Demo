@@ -753,6 +753,14 @@ const ACHIEVEMENTS = [
   }
 ];
 
+const ACHIEVEMENT_DRAFTS = new Set([
+  "culture-spark",
+  "buddy-system",
+  "network-node",
+  "badge-binge",
+  "playbook-pro"
+]);
+
 
 const DEFAULT_QUESTS = [
   {
@@ -1005,6 +1013,10 @@ function initialState() {
       ...quest,
       published: typeof quest.published === "boolean" ? quest.published : true
     })),
+    achievements: ACHIEVEMENTS.map(achievement => ({
+      ...achievement,
+      published: !ACHIEVEMENT_DRAFTS.has(achievement.id)
+    })),
     rewardRedemptions: [
       { id: 1, rewardId: 3, redeemedAt: "2025-09-12T09:30:00Z", status: "fulfilled" }
     ],
@@ -1172,6 +1184,48 @@ function loadState() {
           return [...mergedRewards, ...newRewards];
         })()
       : baseState.rewards;
+    const normalizedAchievements = Array.isArray(parsed.achievements)
+      ? (() => {
+          const overrides = new Map();
+          parsed.achievements.forEach(item => {
+            if (!item) return;
+            const key =
+              typeof item.id === "string" && item.id.trim().length > 0
+                ? item.id.trim()
+                : null;
+            if (key) {
+              overrides.set(key, { ...item, id: key });
+            } else {
+              const fallbackId = generateId("achievement");
+              overrides.set(fallbackId, { ...item, id: fallbackId });
+            }
+          });
+          const merged = baseState.achievements.map(baseAchievement => {
+            const override = overrides.get(baseAchievement.id);
+            if (!override) {
+              return { ...baseAchievement };
+            }
+            overrides.delete(baseAchievement.id);
+            return {
+              ...baseAchievement,
+              ...override,
+              id: baseAchievement.id,
+              published:
+                typeof override.published === "boolean"
+                  ? override.published
+                  : baseAchievement.published
+            };
+          });
+          const additional = Array.from(overrides.values()).map(item => ({
+            ...item,
+            published:
+              typeof item.published === "boolean"
+                ? item.published
+                : !ACHIEVEMENT_DRAFTS.has(item.id)
+          }));
+          return [...merged, ...additional];
+        })()
+      : baseState.achievements;
     const normalizedClients = Array.isArray(parsed.clients)
       ? parsed.clients.map(client => {
           const baseClient = baseState.clients.find(item => item.id === client.id);
@@ -1238,6 +1292,7 @@ function loadState() {
       meta: mergedMeta,
       rewards: normalizedRewards,
       quests: normalizedQuests,
+      achievements: normalizedAchievements,
       messages: normalizedMessages,
       clients: normalizedClients,
       rewardRedemptions: normalizedRewardRedemptions
@@ -1295,6 +1350,7 @@ function resetDemo() {
   state.customer = clone(defaultState.customer);
   state.rewards = clone(defaultState.rewards);
   state.quests = clone(defaultState.quests);
+  state.achievements = clone(defaultState.achievements);
   state.rewardRedemptions = clone(defaultState.rewardRedemptions);
   state.reportReasons = clone(defaultState.reportReasons);
   state.messages = clone(defaultState.messages);
@@ -1315,6 +1371,16 @@ function resetDemo() {
 
 function rewardById(id) {
   return state.rewards.find(item => item.id === id);
+}
+
+function getAchievements() {
+  if (Array.isArray(state.achievements) && state.achievements.length > 0) {
+    return state.achievements;
+  }
+  return ACHIEVEMENTS.map(achievement => ({
+    ...achievement,
+    published: !ACHIEVEMENT_DRAFTS.has(achievement.id)
+  }));
 }
 
 function rewardRemainingLabel(reward) {
@@ -1377,12 +1443,40 @@ function setRewardPublication(rewardId, published) {
   renderApp();
 }
 
+function setAchievementPublication(achievementId, published) {
+  if (!Array.isArray(state.achievements)) return;
+  const targetId =
+    typeof achievementId === "string" && achievementId.trim().length > 0
+      ? achievementId.trim()
+      : String(achievementId ?? "");
+  const achievement = state.achievements.find(item => item.id === targetId);
+  if (!achievement) return;
+  achievement.published = Boolean(published);
+  persist();
+  renderApp();
+}
+
 function setAllRewardsPublication(published) {
   const nextPublished = Boolean(published);
   let changed = false;
   state.rewards.forEach(reward => {
     if (reward.published !== nextPublished) {
       reward.published = nextPublished;
+      changed = true;
+    }
+  });
+  if (!changed) return;
+  persist();
+  renderApp();
+}
+
+function setAllAchievementsPublication(published) {
+  if (!Array.isArray(state.achievements) || state.achievements.length === 0) return;
+  const nextPublished = Boolean(published);
+  let changed = false;
+  state.achievements.forEach(achievement => {
+    if (achievement.published !== nextPublished) {
+      achievement.published = nextPublished;
       changed = true;
     }
   });
@@ -2067,14 +2161,18 @@ function renderFeatureShowcase() {
 
 
 function renderAchievementsPage() {
-  const totalPoints = ACHIEVEMENTS.reduce((sum, achievement) => sum + achievement.points, 0);
-  const categories = Array.from(new Set(ACHIEVEMENTS.map(achievement => achievement.category))).sort((a, b) =>
+  const achievements = getAchievements();
+  const totalPoints = achievements.reduce((sum, achievement) => sum + achievement.points, 0);
+  const categories = Array.from(new Set(achievements.map(achievement => achievement.category))).sort((a, b) =>
     a.localeCompare(b)
   );
   const filteredAchievements = state.meta.achievementFilter
-    ? ACHIEVEMENTS.filter(achievement => achievement.category === state.meta.achievementFilter)
-    : ACHIEVEMENTS;
+    ? achievements.filter(achievement => achievement.category === state.meta.achievementFilter)
+    : achievements;
   const visiblePoints = filteredAchievements.reduce((sum, achievement) => sum + achievement.points, 0);
+  const publishedAchievements = achievements.filter(achievement => achievement.published);
+  const draftAchievements = achievements.filter(achievement => !achievement.published);
+  const averagePoints = achievements.length ? Math.round(totalPoints / achievements.length) : 0;
 
   const filterButtons = [
     {
@@ -2101,71 +2199,106 @@ function renderAchievementsPage() {
     )
     .join("");
 
-  const cards = filteredAchievements.map((achievement, index) => {
-    const tone = ACHIEVEMENT_TONES[achievement.tone] || ACHIEVEMENT_TONES.violet;
-    return `
-      <article class="achievement-card" style="--achievement-tone:${tone};">
-        <div class="achievement-card__icon">
-          ${renderIcon(achievement.icon, "md")}
-        </div>
-        <div class="achievement-card__body">
-          <span class="achievement-card__category">${achievement.category}</span>
-          <h3>${achievement.title}</h3>
-          <p>${achievement.description}</p>
-        </div>
-        <div class="achievement-card__footer">
-          <span class="achievement-card__points">
-            <span class="achievement-card__points-value">+${formatNumber(achievement.points)}</span>
-            <span class="achievement-card__points-unit">pts</span>
-          </span>
-          <span class="achievement-card__index">#${String(index + 1).padStart(2, "0")}</span>
-        </div>
-      </article>
-    `;
-  });
+  const cardsMarkup = filteredAchievements
+    .map(achievement => {
+      const tone = ACHIEVEMENT_TONES[achievement.tone] || ACHIEVEMENT_TONES.violet;
+      const action = achievement.published ? "unpublish" : "publish";
+      const actionLabel = achievement.published ? "Unpublish from hubs" : "Publish to hubs";
+      const actionTone = achievement.published ? "button-pill--danger-light" : "button-pill--primary";
+      const statusLabel = achievement.published ? "Published" : "Draft";
+      const statusMod = achievement.published ? "badge-card__status--published" : "badge-card__status--draft";
+      return `
+        <article class="badge-card ${achievement.published ? "badge-card--published" : "badge-card--draft"}" data-achievement="${achievement.id}" style="--badge-card-tone:${tone};">
+          <header class="badge-card__header">
+            <span class="badge-card__category">${achievement.category}</span>
+            <span class="badge-card__status ${statusMod}">${statusLabel}</span>
+          </header>
+          <div class="badge-card__icon">
+            ${renderIcon(achievement.icon, "md")}
+          </div>
+          <h4 class="badge-card__title">${achievement.title}</h4>
+          <p class="badge-card__description">${achievement.description}</p>
+          <div class="badge-card__footer">
+            <span class="badge-card__points"><strong>+${formatNumber(achievement.points)}</strong><span>pts</span></span>
+            <button
+              type="button"
+              class="button-pill ${actionTone} badge-publish-toggle"
+              data-action="${action}"
+              data-achievement="${achievement.id}">
+              ${actionLabel}
+            </button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+
+  const catalogueMarkup = filteredAchievements.length
+    ? `<div class="badge-grid">${cardsMarkup}</div>`
+    : `<div class="reward-empty">No badges in this view yet.</div>`;
+
+  const sectionTitle = state.meta.achievementFilter
+    ? `${state.meta.achievementFilter} badges`
+    : "Badge catalogue";
 
   return `
     <div class="page page--achievements">
       ${renderHeader()}
       <div class="page__inner page__inner--single">
         <main class="layout-content" id="main-content">
-          <section class="hero-section hero-section--achievements">
-            <div class="hero-section__header">
-              <div class="hero-section__intro">
-                <span class="hero-section__eyebrow">Badge milestones</span>
-                <h1 class="hero-section__headline">Celebrate vigilance with 30 WeldSecure badges.</h1>
-                <p class="hero-section__lead">
-                  Mix and match these badges to show how WeldSecure rewards frontline reporters for keeping the organisation safe.
-                </p>
-              </div>
-              <div class="hero-stats">
-                <div class="hero-stats__item">
-                  <strong>${ACHIEVEMENTS.length}</strong>
-                  <span>Total badges</span>
-                </div>
-                <div class="hero-stats__item">
-                  <strong>${categories.length}</strong>
-                  <span>Badge themes</span>
-                </div>
-                <div class="hero-stats__item">
-                  <strong>${filteredAchievements.length}</strong>
-                  <span>Visible badges</span>
-                </div>
-                <div class="hero-stats__item">
-                  <strong>${visiblePoints}</strong>
-                  <span>Points on offer</span>
-                </div>
-              </div>
+          <header class="client-catalogue__intro">
+            <span class="client-catalogue__eyebrow">Badge catalogue</span>
+            <h1>Badge catalogue management</h1>
+            <p>Publish badges to employee hubs and showcase how WeldSecure celebrates vigilant reporters.</p>
+          </header>
+          <section class="client-achievements__metrics">
+            <article class="client-achievements__metric">
+              <h3>Published badges</h3>
+              <strong>${publishedAchievements.length}</strong>
+              <span>Visible in hubs</span>
+            </article>
+            <article class="client-achievements__metric">
+              <h3>Draft badges</h3>
+              <strong>${draftAchievements.length}</strong>
+              <span>Awaiting publication</span>
+            </article>
+            <article class="client-achievements__metric">
+              <h3>Total catalogue</h3>
+              <strong>${achievements.length}</strong>
+              <span>Across all themes</span>
+            </article>
+            <article class="client-achievements__metric">
+              <h3>Average points</h3>
+              <strong>${averagePoints} pts</strong>
+              <span>${formatNumber(visiblePoints)} pts in view</span>
+            </article>
+          </section>
+          <div class="client-achievements__actions">
+            <div class="client-achievements__bulk">
+              <button
+                type="button"
+                class="button-pill button-pill--primary"
+                data-bulk-achievement-action="publish">
+                Publish all badges
+              </button>
+              <button
+                type="button"
+                class="button-pill button-pill--danger-light"
+                data-bulk-achievement-action="unpublish">
+                Unpublish all badges
+              </button>
             </div>
-            <div class="hero-section__filters achievements-filter" role="toolbar" aria-label="Filter badges by theme">
+            <div class="achievements-filter" role="toolbar" aria-label="Filter badges by theme">
               ${filterButtons}
             </div>
-          </section>
-          <div class="achievements-content">
-            <section class="achievements-grid">
-              ${cards.join("")}
-            </section>
           </div>
+          <section>
+            <div class="section-header">
+              <h2>${sectionTitle}</h2>
+              <p>Toggle publication status to control which badges appear inside employee hubs.</p>
+            </div>
+            ${catalogueMarkup}
+          </section>
         </main>
       </div>
     </div>
@@ -3253,18 +3386,21 @@ function renderBadgeSpotlight(badge) {
 }
 
 function selectRandomBadge(excludeId) {
-  const eligible = ACHIEVEMENTS.filter(achievement => achievement.icon);
+  const achievements = getAchievements();
+  const eligible = achievements.filter(achievement => achievement.icon);
   if (eligible.length === 0) return null;
+  const publishedEligible = eligible.filter(achievement => achievement.published !== false);
+  const basePool = publishedEligible.length > 0 ? publishedEligible : eligible;
   const pool =
-    excludeId && excludeId.length > 0 ? eligible.filter(achievement => achievement.id !== excludeId) : eligible;
-  const source = pool.length > 0 ? pool : eligible;
+    excludeId && excludeId.length > 0 ? basePool.filter(achievement => achievement.id !== excludeId) : basePool;
+  const source = pool.length > 0 ? pool : basePool;
   const index = Math.floor(Math.random() * source.length);
   return source[index];
 }
 
 function badgeById(id) {
   if (!id) return null;
-  return ACHIEVEMENTS.find(achievement => achievement.id === id) || null;
+  return getAchievements().find(achievement => achievement.id === id) || null;
 }
 
 function teardownBadgeShowcase() {
@@ -3278,7 +3414,8 @@ function teardownBadgeShowcase() {
 
 function setupBadgeShowcase(container) {
   let badgeContainer = container.querySelector("[data-badge-showcase]");
-  if (!badgeContainer || !Array.isArray(ACHIEVEMENTS) || ACHIEVEMENTS.length === 0) return;
+  const achievements = getAchievements();
+  if (!badgeContainer || !Array.isArray(achievements) || achievements.length === 0) return;
 
   if (badgeContainer.dataset.badgeBound === "true") {
     return;
@@ -3573,19 +3710,37 @@ function renderContent() {
 }
 
 function attachAchievementsEvents(container) {
-  const filterContainer = container.querySelector(".achievements-filter");
-  if (filterContainer) {
-    filterContainer.addEventListener("click", event => {
-      const button = event.target.closest("[data-filter]");
-      if (!button) return;
-      const value = button.getAttribute("data-filter");
-      const nextFilter = value === "all" ? null : value;
-      if (state.meta.achievementFilter === nextFilter) return;
-      state.meta.achievementFilter = nextFilter;
-      persist();
-      renderApp();
-    });
-  }
+  if (!container) return;
+  container.addEventListener("click", event => {
+    const bulkButton = event.target.closest("[data-bulk-achievement-action]");
+    if (bulkButton) {
+      const action = bulkButton.getAttribute("data-bulk-achievement-action");
+      if (action === "publish") {
+        setAllAchievementsPublication(true);
+      } else if (action === "unpublish") {
+        setAllAchievementsPublication(false);
+      }
+      return;
+    }
+
+    const toggleButton = event.target.closest(".badge-publish-toggle");
+    if (toggleButton) {
+      const achievementId = toggleButton.getAttribute("data-achievement");
+      const action = toggleButton.getAttribute("data-action");
+      if (!achievementId || !action) return;
+      setAchievementPublication(achievementId, action === "publish");
+      return;
+    }
+
+    const filterButton = event.target.closest(".achievements-filter [data-filter]");
+    if (!filterButton) return;
+    const value = filterButton.getAttribute("data-filter");
+    const nextFilter = value === "all" ? null : value;
+    if (state.meta.achievementFilter === nextFilter) return;
+    state.meta.achievementFilter = nextFilter;
+    persist();
+    renderApp();
+  });
 }
 
 function attachGlobalNav(container) {
