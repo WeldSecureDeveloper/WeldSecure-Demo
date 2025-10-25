@@ -52,6 +52,38 @@ const NAV_GROUPS = [
 
 const QUEST_DIFFICULTY_ORDER = ["starter", "intermediate", "advanced"];
 
+const SETTINGS_CATEGORIES = [
+  {
+    id: "reporter",
+    label: "Reporter",
+    description: "Configure the reporter add-in experience"
+  },
+  {
+    id: "organisation",
+    label: "Organisation",
+    description: "Tailor organisation dashboards and engagement",
+    disabled: true
+  },
+  {
+    id: "weldsecure",
+    label: "WeldSecure",
+    description: "Shape WeldSecure playbooks and operations",
+    disabled: true
+  }
+];
+
+const DEFAULT_REPORTER_PROMPT = "Why are you reporting this?";
+const DEFAULT_EMERGENCY_LABEL =
+  "Recipient clicked a link, opened an attachment, or entered credentials";
+
+const DEFAULT_REPORTER_REASONS = [
+  { id: "reason-looks-like-phishing", label: "Looks like a phishing attempt" },
+  { id: "reason-unexpected-attachment", label: "Unexpected attachment or link" },
+  { id: "reason-urgent-tone", label: "Urgent language / suspicious tone" },
+  { id: "reason-spoofing-senior", label: "Sender spoofing a senior colleague" },
+  { id: "reason-personal-data", label: "Personal data request" }
+];
+
 function generateId(prefix = "id") {
   const idPrefix = typeof prefix === "string" && prefix.length > 0 ? `${prefix}-` : "";
   const cryptoSource = typeof globalThis !== "undefined" ? globalThis.crypto : null;
@@ -1151,7 +1183,129 @@ const DEFAULT_QUESTS = [
   }
 ];
 
+const DEPARTMENT_LEADERBOARD = [
+  {
+    id: "finance-vanguard",
+    name: "Finance Vanguard",
+    department: "Finance & Procurement",
+    points: 1840,
+    trendDirection: "up",
+    trendValue: "+12%",
+    trendCaption: "vs last month",
+    participationRate: 0.88,
+    streakWeeks: 6,
+    avgResponseMinutes: 7,
+    featuredBadgeId: "zero-day-zeal",
+    featuredQuestId: "phish-flash",
+    momentumTag: "Invoice armour programme",
+    focusNarrative: "Refined vendor verification playbook and spotlighted cross-team hero catches.",
+    tone: "indigo",
+    published: true
+  },
+  {
+    id: "people-pulse",
+    name: "People Pulse",
+    department: "People & Culture",
+    points: 1520,
+    trendDirection: "up",
+    trendValue: "+8%",
+    trendCaption: "participation jump",
+    participationRate: 0.92,
+    streakWeeks: 9,
+    avgResponseMinutes: 5,
+    featuredBadgeId: "reward-ready",
+    featuredQuestId: "remote-first-response",
+    momentumTag: "Recognition wave",
+    focusNarrative: "Weekend flash quests with live kudos and squad shout-outs.",
+    tone: "rose",
+    published: true
+  },
+  {
+    id: "engineering-guild",
+    name: "Engineering Guild",
+    department: "Engineering & Product",
+    points: 1375,
+    trendDirection: "steady",
+    trendValue: "+0%",
+    trendCaption: "holding line",
+    participationRate: 0.71,
+    streakWeeks: 3,
+    avgResponseMinutes: 11,
+    featuredBadgeId: "automation-ally",
+    featuredQuestId: "gen-ai-guardrails",
+    momentumTag: "AI guardrails pilot",
+    focusNarrative: "Running targeted prompt labs for early adopters before wider launch.",
+    tone: "cyan",
+    published: false
+  },
+  {
+    id: "operations-shield",
+    name: "Operations Shield",
+    department: "Operations & Logistics",
+    points: 1655,
+    trendDirection: "up",
+    trendValue: "+5%",
+    trendCaption: "vs prior sprint",
+    participationRate: 0.83,
+    streakWeeks: 7,
+    avgResponseMinutes: 8,
+    featuredBadgeId: "resilience-ranger",
+    featuredQuestId: "incident-escalation-sprint",
+    momentumTag: "Tabletop surge",
+    focusNarrative: "Daily stand-ups highlight rapid approvals and rerun the crisis sprint.",
+    tone: "emerald",
+    published: true
+  }
+];
+
+const ENGAGEMENT_PROGRAMS = [
+  {
+    id: "double-points-weekender",
+    title: "Double points Friday",
+    category: "Live boost",
+    description: "Run a 90-minute double points window that encourages inbox clean-up before the weekend.",
+    metricValue: "x2.1",
+    metricCaption: "reports submitted",
+    audience: "Finance Vanguard",
+    owner: "Security champions",
+    status: "Running",
+    successSignal: "Finance Vanguard kept a six-week streak after launching this boost.",
+    tone: "fuchsia",
+    published: true
+  },
+  {
+    id: "quest-mini-series",
+    title: "Inbox mini-series",
+    category: "Seasonal quest",
+    description: "Bundle three quests into a themed playlist with auto-publishing between chapters.",
+    metricValue: "87%",
+    metricCaption: "completion rate",
+    audience: "People Pulse",
+    owner: "Enablement squad",
+    status: "Scheduled",
+    successSignal: "HR tees this up with a Monday post and finishes with raffle shout-outs.",
+    tone: "indigo",
+    published: false
+  },
+  {
+    id: "legendary-badge-chase",
+    title: "Legendary badge chase",
+    category: "Badge drop",
+    description: "Highlight the newest Legendary badges with a milestone tracker inside the hub.",
+    metricValue: "14",
+    metricCaption: "Legendary badges minted",
+    audience: "All departments",
+    owner: "Engagement operations",
+    status: "Draft",
+    successSignal: "Reporter success view now spotlights the latest Legendary unlock.",
+    tone: "amber",
+    published: false
+  }
+];
+
 function initialState() {
+  const reporterReasons = DEFAULT_REPORTER_REASONS.map(item => ({ ...item }));
+
   return {
     meta: {
       role: null,
@@ -1168,7 +1322,16 @@ function initialState() {
       lastClientSnapshot: null,
       rewardFilter: null,
       questFilter: null,
-      badgeFilter: null
+      badgeFilter: null,
+      settingsOpen: false,
+      settingsCategory: "reporter"
+    },
+    settings: {
+      reporter: {
+        reasonPrompt: DEFAULT_REPORTER_PROMPT,
+        emergencyLabel: DEFAULT_EMERGENCY_LABEL,
+        reasons: reporterReasons
+      }
     },
     customer: {
       id: 501,
@@ -1297,15 +1460,14 @@ function initialState() {
       ...badge,
       published: !BADGE_DRAFTS.has(badge.id)
     })),
+    departmentLeaderboard: DEPARTMENT_LEADERBOARD.map(entry => ({
+      ...entry
+    })),
+    engagementPrograms: ENGAGEMENT_PROGRAMS.map(program => ({
+      ...program
+    })),
     rewardRedemptions: [
       { id: 1, rewardId: 3, redeemedAt: "2025-09-12T09:30:00Z", status: "fulfilled" }
-    ],
-    reportReasons: [
-      { id: 1, description: "Looks like a phishing attempt" },
-      { id: 2, description: "Unexpected attachment or link" },
-      { id: 3, description: "Urgent language / suspicious tone" },
-      { id: 4, description: "Sender spoofing a senior colleague" },
-      { id: 5, description: "Personal data request" }
     ],
     messages: [
       {
@@ -1317,7 +1479,7 @@ function initialState() {
         clientId: 101,
         reportedAt: "2025-10-07T08:45:00Z",
         status: MessageStatus.APPROVED,
-        reasons: [1, 3],
+        reasons: ["reason-looks-like-phishing", "reason-urgent-tone"],
         pointsOnMessage: 20,
         pointsOnApproval: 80,
         additionalNotes: "Sender domain looked suspicious and the tone was urgent."
@@ -1331,7 +1493,7 @@ function initialState() {
         clientId: 101,
         reportedAt: "2025-10-02T17:12:00Z",
         status: MessageStatus.PENDING,
-        reasons: [2],
+        reasons: ["reason-unexpected-attachment"],
         pointsOnMessage: 20,
         pointsOnApproval: 80
       },
@@ -1344,7 +1506,7 @@ function initialState() {
         clientId: 101,
         reportedAt: "2025-09-26T11:06:00Z",
         status: MessageStatus.APPROVED,
-        reasons: [4, 5],
+        reasons: ["reason-spoofing-senior", "reason-personal-data"],
         pointsOnMessage: 20,
         pointsOnApproval: 80,
         additionalNotes: "Attempted to impersonate our CEO - flagged for urgency."
@@ -1416,6 +1578,13 @@ function loadState() {
   try {
     const parsed = JSON.parse(raw);
     const baseState = initialState();
+    const {
+      reportReasons: legacyReportReasons,
+      settings: storedSettingsRaw,
+      ...passthrough
+    } = parsed;
+    const parsedSettings =
+      storedSettingsRaw && typeof storedSettingsRaw === "object" ? storedSettingsRaw : {};
     const normalizedQuests = Array.isArray(parsed.quests)
       ? parsed.quests.map(quest => {
           const baseQuest = baseState.quests.find(item => item.id === quest.id);
@@ -1516,6 +1685,140 @@ function loadState() {
           };
         })
       : baseState.clients;
+    const normalizedRewardRedemptions = Array.isArray(parsed.rewardRedemptions)
+      ? parsed.rewardRedemptions.map(entry => ({
+          ...entry,
+          id: normalizeId(entry.id, "redemption") ?? generateId("redemption")
+        }))
+      : baseState.rewardRedemptions.map(entry => ({
+          ...entry,
+          id: normalizeId(entry.id, "redemption") ?? generateId("redemption")
+        }));
+    const normalizedLeaderboard = Array.isArray(parsed.departmentLeaderboard)
+      ? (() => {
+          const baseMap = new Map(
+            (baseState.departmentLeaderboard || []).map(entry => [entry.id, entry])
+          );
+          const seen = new Set();
+          const merged = parsed.departmentLeaderboard
+            .map(entry => {
+              if (!entry) return null;
+              const normalizedId = normalizeId(entry.id, "dept") ?? generateId("dept");
+              const baseEntry = baseMap.get(normalizedId) || {};
+              seen.add(normalizedId);
+              return {
+                ...baseEntry,
+                ...entry,
+                id: normalizedId,
+                published:
+                  typeof entry.published === "boolean"
+                    ? entry.published
+                    : baseEntry.published ?? true
+              };
+            })
+            .filter(Boolean);
+          const additions = (baseState.departmentLeaderboard || [])
+            .filter(entry => entry && !seen.has(entry.id))
+            .map(entry => ({ ...entry }));
+          return [...merged, ...additions];
+        })()
+      : (baseState.departmentLeaderboard || []).map(entry => ({ ...entry }));
+    const normalizedPrograms = Array.isArray(parsed.engagementPrograms)
+      ? (() => {
+          const baseMap = new Map((baseState.engagementPrograms || []).map(item => [item.id, item]));
+          const seen = new Set();
+          const merged = parsed.engagementPrograms
+            .map(item => {
+              if (!item) return null;
+              const normalizedId = normalizeId(item.id, "program") ?? generateId("program");
+              const baseItem = baseMap.get(normalizedId) || {};
+              seen.add(normalizedId);
+              return {
+                ...baseItem,
+                ...item,
+                id: normalizedId,
+                published:
+                  typeof item.published === "boolean"
+                    ? item.published
+                    : baseItem.published ?? true
+              };
+            })
+            .filter(Boolean);
+          const additions = (baseState.engagementPrograms || [])
+            .filter(item => item && !seen.has(item.id))
+            .map(item => ({ ...item }));
+          return [...merged, ...additions];
+        })()
+      : (baseState.engagementPrograms || []).map(item => ({ ...item }));
+    const baseReporterSettings = baseState.settings?.reporter || {
+      reasonPrompt: DEFAULT_REPORTER_PROMPT,
+      emergencyLabel: DEFAULT_EMERGENCY_LABEL,
+      reasons: []
+    };
+    const storedReporterSettings =
+      parsedSettings && typeof parsedSettings.reporter === "object"
+        ? parsedSettings.reporter
+        : null;
+    const reporterReasonsSource = Array.isArray(storedReporterSettings?.reasons)
+      ? storedReporterSettings.reasons
+      : Array.isArray(legacyReportReasons)
+      ? legacyReportReasons
+      : baseReporterSettings.reasons;
+    const seenReasonIds = new Set();
+    const reasonIdMap = new Map();
+    const normalizedReporterReasons = [];
+    reporterReasonsSource.forEach((reason, index) => {
+      if (!reason) return;
+      const labelSource =
+        typeof reason === "string"
+          ? reason
+          : typeof reason.label === "string"
+          ? reason.label
+          : typeof reason.description === "string"
+          ? reason.description
+          : null;
+      if (!labelSource) return;
+      const label = labelSource.trim();
+      if (!label) return;
+      const idCandidate =
+        typeof reason === "string" ? null : reason.id ?? reason.key ?? reason.value ?? null;
+      let normalizedId = normalizeId(idCandidate, "reason");
+      const legacyKey = normalizedId;
+      if (!normalizedId) {
+        normalizedId = `reason-${index + 1}`;
+      }
+      while (seenReasonIds.has(normalizedId)) {
+        normalizedId = `${normalizedId}-${index + 1}`;
+      }
+      seenReasonIds.add(normalizedId);
+      if (legacyKey) {
+        reasonIdMap.set(legacyKey, normalizedId);
+      }
+      reasonIdMap.set(String(index + 1), normalizedId);
+      normalizedReporterReasons.push({ id: normalizedId, label });
+    });
+    const reporterReasons =
+      normalizedReporterReasons.length > 0
+        ? normalizedReporterReasons
+        : baseReporterSettings.reasons.map(item => ({ ...item }));
+    const normalizedReporterSettings = {
+      reasonPrompt:
+        typeof storedReporterSettings?.reasonPrompt === "string" &&
+        storedReporterSettings.reasonPrompt.trim().length > 0
+          ? storedReporterSettings.reasonPrompt.trim()
+          : baseReporterSettings.reasonPrompt,
+      emergencyLabel:
+        typeof storedReporterSettings?.emergencyLabel === "string" &&
+        storedReporterSettings.emergencyLabel.trim().length > 0
+          ? storedReporterSettings.emergencyLabel.trim()
+          : baseReporterSettings.emergencyLabel,
+      reasons: reporterReasons
+    };
+    const normalizedSettings = {
+      ...baseState.settings,
+      ...(parsedSettings && typeof parsedSettings === "object" ? parsedSettings : {}),
+      reporter: normalizedReporterSettings
+    };
     const normalizedMessages = Array.isArray(parsed.messages)
       ? parsed.messages.map(message => {
           const clientId = message.clientId ?? baseState.customer.clientId;
@@ -1527,32 +1830,61 @@ function loadState() {
             typeof message.messageId === "string" && message.messageId.trim().length > 0
               ? message.messageId.trim()
               : generateId("MSG").toUpperCase();
+          const rawReasons = Array.isArray(message.reasons) ? message.reasons : [];
+          const normalizedReasonIds = [];
+          rawReasons.forEach((reasonId, index) => {
+            const normalizedKey = normalizeId(reasonId, "reason");
+            let mappedId = null;
+            if (normalizedKey && reasonIdMap.has(normalizedKey)) {
+              mappedId = reasonIdMap.get(normalizedKey);
+            } else if (reasonIdMap.has(String(index + 1))) {
+              mappedId = reasonIdMap.get(String(index + 1));
+            } else if (normalizedKey) {
+              mappedId = normalizedKey;
+            }
+            if (mappedId && !normalizedReasonIds.includes(mappedId)) {
+              normalizedReasonIds.push(mappedId);
+            }
+          });
           return {
             ...message,
             id: normalizedMessageId,
             messageId: externalMessageId,
             clientId,
             pointsOnMessage: message.pointsOnMessage ?? clientConfig?.pointsPerMessage ?? 20,
-            pointsOnApproval: message.pointsOnApproval ?? clientConfig?.pointsOnApproval ?? 80
+            pointsOnApproval: message.pointsOnApproval ?? clientConfig?.pointsOnApproval ?? 80,
+            reasons: normalizedReasonIds
           };
         })
-      : baseState.messages.map(message => ({
-          ...message,
-          id: normalizeId(message.id, "message") ?? generateId("message"),
-          messageId:
+      : baseState.messages.map(message => {
+          const normalizedMessageId = normalizeId(message.id, "message") ?? generateId("message");
+          const externalMessageId =
             typeof message.messageId === "string" && message.messageId.trim().length > 0
               ? message.messageId.trim()
-              : generateId("MSG").toUpperCase()
-        }));
-    const normalizedRewardRedemptions = Array.isArray(parsed.rewardRedemptions)
-      ? parsed.rewardRedemptions.map(entry => ({
-          ...entry,
-          id: normalizeId(entry.id, "redemption") ?? generateId("redemption")
-        }))
-      : baseState.rewardRedemptions.map(entry => ({
-          ...entry,
-          id: normalizeId(entry.id, "redemption") ?? generateId("redemption")
-        }));
+              : generateId("MSG").toUpperCase();
+          const baseReasons = Array.isArray(message.reasons) ? message.reasons : [];
+          const normalizedReasonIds = [];
+          baseReasons.forEach((reasonId, index) => {
+            const normalizedKey = normalizeId(reasonId, "reason");
+            let mappedId = null;
+            if (normalizedKey && reasonIdMap.has(normalizedKey)) {
+              mappedId = reasonIdMap.get(normalizedKey);
+            } else if (reasonIdMap.has(String(index + 1))) {
+              mappedId = reasonIdMap.get(String(index + 1));
+            } else if (normalizedKey) {
+              mappedId = normalizedKey;
+            }
+            if (mappedId && !normalizedReasonIds.includes(mappedId)) {
+              normalizedReasonIds.push(mappedId);
+            }
+          });
+          return {
+            ...message,
+            id: normalizedMessageId,
+            messageId: externalMessageId,
+            reasons: normalizedReasonIds
+          };
+        });
     const mergedMeta = {
       ...baseState.meta,
       ...parsed.meta
@@ -1571,16 +1903,30 @@ function loadState() {
     mergedMeta.rewardFilter = normalizeFilter(mergedMeta.rewardFilter);
     mergedMeta.questFilter = normalizeFilter(mergedMeta.questFilter);
     mergedMeta.badgeFilter = normalizeFilter(mergedMeta.badgeFilter);
+    mergedMeta.settingsOpen = false;
+    if (
+      mergedMeta.settingsCategory &&
+      !SETTINGS_CATEGORIES.some(
+        category => category.id === mergedMeta.settingsCategory && !category.disabled
+      )
+    ) {
+      const fallbackCategory =
+        SETTINGS_CATEGORIES.find(category => !category.disabled) || SETTINGS_CATEGORIES[0] || null;
+      mergedMeta.settingsCategory = fallbackCategory ? fallbackCategory.id : null;
+    }
     return {
       ...baseState,
-      ...parsed,
+      ...passthrough,
       meta: mergedMeta,
       rewards: normalizedRewards,
       quests: normalizedQuests,
       badges: normalizedBadges,
       messages: normalizedMessages,
       clients: normalizedClients,
-      rewardRedemptions: normalizedRewardRedemptions
+      rewardRedemptions: normalizedRewardRedemptions,
+      departmentLeaderboard: normalizedLeaderboard,
+      engagementPrograms: normalizedPrograms,
+      settings: normalizedSettings
     };
   } catch {
     return initialState();
@@ -1637,9 +1983,11 @@ function resetDemo() {
   state.quests = clone(defaultState.quests);
   state.badges = clone(defaultState.badges);
   state.rewardRedemptions = clone(defaultState.rewardRedemptions);
-  state.reportReasons = clone(defaultState.reportReasons);
+  state.settings = clone(defaultState.settings);
   state.messages = clone(defaultState.messages);
   state.clients = clone(defaultState.clients);
+  state.departmentLeaderboard = clone(defaultState.departmentLeaderboard);
+  state.engagementPrograms = clone(defaultState.engagementPrograms);
   if (storageAvailable()) {
     localStorage.removeItem(STORAGE_KEY);
   }
@@ -1679,7 +2027,9 @@ function rewardRemainingLabel(reward) {
 }
 
 function reasonById(id) {
-  return state.reportReasons.find(item => item.id === id);
+  const reasons = state?.settings?.reporter?.reasons;
+  if (!Array.isArray(reasons)) return null;
+  return reasons.find(item => item.id === id) || null;
 }
 
 function messageBelongsToCustomer(message) {
@@ -1789,6 +2139,88 @@ function setQuestPublication(questId, published) {
   const quest = state.quests.find(item => String(item.id) === targetId);
   if (!quest) return;
   quest.published = Boolean(published);
+  persist();
+  renderApp();
+}
+
+function setLeaderboardEntryPublication(entryId, published) {
+  if (!Array.isArray(state.departmentLeaderboard)) return;
+  const targetId =
+    typeof entryId === "string" && entryId.trim().length > 0
+      ? entryId.trim()
+      : Number.isFinite(entryId)
+      ? String(entryId)
+      : null;
+  if (!targetId) return;
+  const entry = state.departmentLeaderboard.find(item => {
+    const candidate =
+      typeof item?.id === "string" && item.id.trim().length > 0
+        ? item.id.trim()
+        : Number.isFinite(item?.id)
+        ? String(item.id)
+        : null;
+    return candidate === targetId;
+  });
+  if (!entry) return;
+  const nextPublished = Boolean(published);
+  if (entry.published === nextPublished) return;
+  entry.published = nextPublished;
+  persist();
+  renderApp();
+}
+
+function setAllLeaderboardPublication(published) {
+  if (!Array.isArray(state.departmentLeaderboard) || state.departmentLeaderboard.length === 0) return;
+  const nextPublished = Boolean(published);
+  let changed = false;
+  state.departmentLeaderboard.forEach(entry => {
+    if (entry && entry.published !== nextPublished) {
+      entry.published = nextPublished;
+      changed = true;
+    }
+  });
+  if (!changed) return;
+  persist();
+  renderApp();
+}
+
+function setEngagementProgramPublication(programId, published) {
+  if (!Array.isArray(state.engagementPrograms)) return;
+  const targetId =
+    typeof programId === "string" && programId.trim().length > 0
+      ? programId.trim()
+      : Number.isFinite(programId)
+      ? String(programId)
+      : null;
+  if (!targetId) return;
+  const program = state.engagementPrograms.find(item => {
+    const candidate =
+      typeof item?.id === "string" && item.id.trim().length > 0
+        ? item.id.trim()
+        : Number.isFinite(item?.id)
+        ? String(item.id)
+        : null;
+    return candidate === targetId;
+  });
+  if (!program) return;
+  const nextPublished = Boolean(published);
+  if (program.published === nextPublished) return;
+  program.published = nextPublished;
+  persist();
+  renderApp();
+}
+
+function setAllEngagementProgramsPublication(published) {
+  if (!Array.isArray(state.engagementPrograms) || state.engagementPrograms.length === 0) return;
+  const nextPublished = Boolean(published);
+  let changed = false;
+  state.engagementPrograms.forEach(program => {
+    if (program && program.published !== nextPublished) {
+      program.published = nextPublished;
+      changed = true;
+    }
+  });
+  if (!changed) return;
   persist();
   renderApp();
 }
@@ -2266,15 +2698,43 @@ function renderGlobalNav(activeRoute) {
         }).join("")}
       </div>
       <div class="global-nav__actions">
-        ${activeRoute === "landing"
-          ? `<button type="button" class="button-pill button-pill--primary global-nav__reset" id="landing-reset">Reset</button>`
-          : ""}
-        <button type="button" class="button-pill button-pill--primary global-nav__journey" id="global-journey">
-          Home
-        </button>
-      </div>
-    </nav>
-  `;
+      ${activeRoute === "landing"
+        ? `<button type="button" class="button-pill button-pill--primary global-nav__reset" id="landing-reset">Reset</button>`
+        : ""}
+      <button type="button" class="button-pill button-pill--primary global-nav__journey" id="global-journey">
+        Home
+      </button>
+      <button
+        type="button"
+        class="global-nav__icon-button"
+        id="global-settings"
+        aria-label="Open settings"
+        data-settings-toggle
+      >
+        <svg class="global-nav__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M10.325 4.317c.427-1.756 3.002-1.756 3.429 0a1.72 1.72 0 002.586 1.066c1.544-.89 3.31.876 2.42 2.42a1.72 1.72 0 001.065 2.572c1.756.426 1.756 3.002 0 3.429a1.72 1.72 0 00-1.066 2.586c.89 1.544-.876 3.31-2.42 2.42a1.72 1.72 0 00-2.586 1.065c-.426 1.756-3.002 1.756-3.429 0a1.72 1.72 0 00-2.586-1.066c-1.544.89-3.31-.876-2.42-2.42a1.72 1.72 0 00-1.065-2.586c-1.756-.426-1.756-3.002 0-3.429a1.72 1.72 0 001.066-2.586c-.89-1.544.876-3.31 2.42-2.42a1.72 1.72 0 002.586-1.065z"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          ></path>
+          <circle
+            cx="12"
+            cy="12"
+            r="3"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          ></circle>
+        </svg>
+      </button>
+    </div>
+  </nav>
+`;
 }
 
 function renderLanding() {
@@ -2692,7 +3152,7 @@ function renderCustomerReportsPage() {
     .map(message => {
       const reasons = Array.isArray(message.reasons) ? message.reasons.map(reasonById).filter(Boolean) : [];
       const reasonChips = reasons
-        .map(reason => `<span class="detail-chip">${escapeHtml(reason.description)}</span>`)
+        .map(reason => `<span class="detail-chip">${escapeHtml(reason.label)}</span>`)
         .join("");
       const approvedPoints = message.status === MessageStatus.APPROVED ? message.pointsOnApproval || 0 : 0;
       const totalPoints = (message.pointsOnMessage || 0) + approvedPoints;
@@ -2829,7 +3289,7 @@ function renderClientDashboard() {
   const metricsConfig = [
     {
       label: "Active reporters",
-      value: clients.length ? formatNumber(totalActiveUsers) : "—",
+      value: clients.length ? formatNumber(totalActiveUsers) : "--",
       trend: clients.length
         ? { direction: "up", value: "+18", caption: "vs last quarter" }
         : { direction: "up", value: "Ready to demo", caption: "Add sample data" },
@@ -2838,7 +3298,7 @@ function renderClientDashboard() {
     },
     {
       label: "Average health",
-      value: clients.length ? `${formatNumber(averageHealth)}%` : "—",
+      value: clients.length ? `${formatNumber(averageHealth)}%` : "--",
       trend: clients.length
         ? { direction: "up", value: "+5 pts", caption: "quarter to date" }
         : { direction: "up", value: "Set baseline", caption: "Import client scores" },
@@ -2874,10 +3334,10 @@ function renderClientDashboard() {
         .map(client => {
           const healthScore = Number.isFinite(client.healthScore)
             ? `${formatNumber(client.healthScore)}%`
-            : "—";
+            : "--";
           const activeUsers = Number.isFinite(client.activeUsers)
             ? formatNumber(client.activeUsers)
-            : "—";
+            : "--";
           const openCasesValue = Number.isFinite(client.openCases)
             ? formatNumber(client.openCases)
             : "0";
@@ -2928,6 +3388,300 @@ function renderClientDashboard() {
         .join("")
     : `<div class="customer-detail__empty">Add a client profile to unlock the storytelling metrics.</div>`;
 
+  const leaderboardEntries = Array.isArray(state.departmentLeaderboard)
+    ? state.departmentLeaderboard
+        .slice()
+        .sort((a, b) => (Number(b?.points) || 0) - (Number(a?.points) || 0))
+    : [];
+  const publishedDepartments = leaderboardEntries.filter(entry => entry && entry.published);
+  const leaderboardRows = leaderboardEntries.length
+    ? leaderboardEntries
+        .map((entry, index) => {
+          if (!entry) return "";
+          const fallbackId = `dept-${index}`;
+          const entryId =
+            typeof entry.id === "string" && entry.id.trim().length > 0 ? entry.id.trim() : fallbackId;
+          const tone =
+            typeof entry.tone === "string" && entry.tone.trim().length > 0
+              ? entry.tone.trim().toLowerCase()
+              : "indigo";
+          const pointsValue = Number.isFinite(entry.points) ? formatNumber(entry.points) : "0";
+          const momentumTag =
+            typeof entry.momentumTag === "string" && entry.momentumTag.trim().length > 0
+              ? entry.momentumTag.trim()
+              : "Momentum story";
+          const rawTrendDirection =
+            typeof entry.trendDirection === "string" && entry.trendDirection.trim().length > 0
+              ? entry.trendDirection.trim().toLowerCase()
+              : "";
+          const trendDirection =
+            rawTrendDirection === "up" || rawTrendDirection === "down" ? rawTrendDirection : "steady";
+          const trendValue =
+            typeof entry.trendValue === "string" && entry.trendValue.trim().length > 0
+              ? entry.trendValue.trim()
+              : "--";
+          const trendCaption =
+            typeof entry.trendCaption === "string" && entry.trendCaption.trim().length > 0
+              ? `<span class="detail-table__meta">${escapeHtml(entry.trendCaption)}</span>`
+              : "";
+          const participation = Number.isFinite(entry.participationRate)
+            ? formatPercent(entry.participationRate)
+            : "--";
+          const streakWeeks = Number.isFinite(entry.streakWeeks)
+            ? `${formatNumber(entry.streakWeeks)} wks`
+            : "--";
+          const badge = badgeById(entry.featuredBadgeId);
+          const badgeLabel = badge ? `Badge: ${badge.title}` : null;
+          const quest = Array.isArray(state.quests)
+            ? state.quests.find(questItem => String(questItem.id) === String(entry.featuredQuestId))
+            : null;
+          const questLabel = quest ? `Quest: ${quest.title}` : null;
+          const avgResponse =
+            Number.isFinite(entry.avgResponseMinutes) && entry.avgResponseMinutes > 0
+              ? `Avg triage ${formatNumber(entry.avgResponseMinutes)} mins`
+              : null;
+          const chips = [];
+          if (badgeLabel) chips.push(`<span class="department-leaderboard__chip">${escapeHtml(badgeLabel)}</span>`);
+          if (questLabel) chips.push(`<span class="department-leaderboard__chip">${escapeHtml(questLabel)}</span>`);
+          if (avgResponse) chips.push(`<span class="department-leaderboard__chip">${escapeHtml(avgResponse)}</span>`);
+          const chipsMarkup = chips.length
+            ? `<div class="department-leaderboard__chips">${chips.join("")}</div>`
+            : "";
+          const focusNarrative =
+            typeof entry.focusNarrative === "string" && entry.focusNarrative.trim().length > 0
+              ? `<p class="department-leaderboard__focus">${escapeHtml(entry.focusNarrative)}</p>`
+              : "";
+          const action = entry.published ? "unpublish" : "publish";
+          const actionLabel = entry.published ? "Unpublish from hub" : "Publish to hub";
+          const actionTone = entry.published ? "button-pill--danger-light" : "button-pill--primary";
+          const statusLabel = entry.published ? "Published" : "Draft";
+          const statusClass = entry.published
+            ? "department-leaderboard__state--published"
+            : "department-leaderboard__state--draft";
+          return `
+            <tr class="department-leaderboard__row" data-tone="${escapeHtml(tone)}" data-department="${escapeHtml(entryId)}">
+              <td class="department-leaderboard__rank-cell">
+                <span class="department-leaderboard__rank" data-rank="${index + 1}">${formatNumber(index + 1)}</span>
+              </td>
+              <td>
+                <div class="department-leaderboard__team">
+                  <strong>${escapeHtml(entry.name || "Department")}</strong>
+                  <span class="detail-table__meta">${escapeHtml(entry.department || "Organisation team")}</span>
+                </div>
+              </td>
+              <td>
+                <div class="department-leaderboard__metric">
+                  <strong>${pointsValue}</strong>
+                  <span class="detail-table__meta">${escapeHtml(momentumTag)}</span>
+                </div>
+              </td>
+              <td>
+                <div class="department-leaderboard__trend" data-direction="${trendDirection}">
+                  <strong>${escapeHtml(trendValue)}</strong>
+                  ${trendCaption}
+                </div>
+              </td>
+              <td>
+                <div class="department-leaderboard__metric">
+                  <strong>${escapeHtml(participation)}</strong>
+                  <span class="detail-table__meta">Participation</span>
+                </div>
+              </td>
+              <td>
+                <div class="department-leaderboard__metric">
+                  <strong>${escapeHtml(streakWeeks)}</strong>
+                  <span class="detail-table__meta">Streak</span>
+                </div>
+              </td>
+              <td>
+                ${chipsMarkup}${focusNarrative}
+              </td>
+              <td class="department-leaderboard__actions">
+                <span class="department-leaderboard__state ${statusClass}">${statusLabel}</span>
+                <div class="table-actions">
+                  <button
+                    type="button"
+                    class="button-pill ${actionTone} department-publish-toggle"
+                    data-department="${escapeHtml(entryId)}"
+                    data-action="${action}">
+                    ${actionLabel}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        })
+        .join("")
+    : `<tr><td colspan="8" class="department-leaderboard__empty">Add departments to highlight the leaderboard story.</td></tr>`;
+
+  const leaderboardSummaryItems = [
+    `${formatNumber(leaderboardEntries.length)} departments`,
+    `${formatNumber(publishedDepartments.length)} published`
+  ];
+  const leaderboardSummaryCopy = leaderboardSummaryItems.join(" | ");
+  const leaderboardMarkup = `
+    <section class="department-leaderboard">
+      <div class="section-header">
+        <h2>Department leaderboard</h2>
+        <p>Inspire friendly competition with streaks, spotlighted badges, and hub-ready publishing.</p>
+      </div>
+      <div class="department-leaderboard__controls">
+        <p class="detail-table__meta">${escapeHtml(leaderboardSummaryCopy)}</p>
+        <div class="department-leaderboard__bulk">
+          <button type="button" class="button-pill button-pill--primary" data-bulk-department-action="publish">Publish all</button>
+          <button type="button" class="button-pill button-pill--danger-light" data-bulk-department-action="unpublish">Unpublish all</button>
+        </div>
+      </div>
+      <div class="detail-table-wrapper department-leaderboard__table-wrapper">
+        <table class="detail-table department-leaderboard__table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Department</th>
+              <th>Points</th>
+              <th>Trend</th>
+              <th>Participation</th>
+              <th>Streak</th>
+              <th>Spotlight</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>${leaderboardRows}</tbody>
+        </table>
+      </div>
+    </section>
+  `;
+
+  const programs = Array.isArray(state.engagementPrograms) ? state.engagementPrograms.slice() : [];
+  programs.sort((a, b) => {
+    const aPublished = Boolean(a?.published);
+    const bPublished = Boolean(b?.published);
+    if (aPublished !== bPublished) {
+      return aPublished ? -1 : 1;
+    }
+    const titleA = typeof a?.title === "string" ? a.title : "";
+    const titleB = typeof b?.title === "string" ? b.title : "";
+    return titleA.localeCompare(titleB, undefined, { sensitivity: "base" });
+  });
+  const publishedPrograms = programs.filter(program => program && program.published);
+  const programCards = programs.length
+    ? programs
+        .map((program, index) => {
+          if (!program) return "";
+          const fallbackId = `program-${index}`;
+          const programId =
+            typeof program.id === "string" && program.id.trim().length > 0 ? program.id.trim() : fallbackId;
+          const tone =
+            typeof program.tone === "string" && program.tone.trim().length > 0
+              ? program.tone.trim().toLowerCase()
+              : "indigo";
+          const statusLabel = program.published
+            ? "Published"
+            : program.status && String(program.status).trim().length > 0
+            ? String(program.status).trim()
+            : "Draft";
+          const statusClass = program.published
+            ? "engagement-card__status--published"
+            : "engagement-card__status--draft";
+          const action = program.published ? "unpublish" : "publish";
+          const actionLabel = program.published ? "Unpublish from hub" : "Publish to hub";
+          const actionTone = program.published ? "button-pill--danger-light" : "button-pill--primary";
+          const metricValue =
+            typeof program.metricValue === "string" && program.metricValue.trim().length > 0
+              ? program.metricValue.trim()
+              : "--";
+          const metricCaption =
+            typeof program.metricCaption === "string" && program.metricCaption.trim().length > 0
+              ? program.metricCaption.trim()
+              : "";
+          const audience =
+            typeof program.audience === "string" && program.audience.trim().length > 0
+              ? program.audience.trim()
+              : "";
+          const owner =
+            typeof program.owner === "string" && program.owner.trim().length > 0 ? program.owner.trim() : "";
+          const successSignal =
+            typeof program.successSignal === "string" && program.successSignal.trim().length > 0
+              ? program.successSignal.trim()
+              : "";
+          const metaItems = [];
+          if (audience) {
+            metaItems.push(`<li><strong>Audience</strong><span>${escapeHtml(audience)}</span></li>`);
+          }
+          if (owner) {
+            metaItems.push(`<li><strong>Owner</strong><span>${escapeHtml(owner)}</span></li>`);
+          }
+          const metaMarkup = metaItems.length
+            ? `<ul class="engagement-card__meta">${metaItems.join("")}</ul>`
+            : "";
+          const successMarkup = successSignal
+            ? `<p class="engagement-card__signal">${escapeHtml(successSignal)}</p>`
+            : "";
+          const category =
+            typeof program.category === "string" && program.category.trim().length > 0
+              ? program.category.trim()
+              : "Programme";
+          const description =
+            typeof program.description === "string" && program.description.trim().length > 0
+              ? program.description.trim()
+              : "";
+          return `
+            <article
+              class="engagement-card ${program.published ? "engagement-card--published" : "engagement-card--draft"}"
+              data-program="${escapeHtml(programId)}"
+              data-tone="${escapeHtml(tone)}">
+              <header class="engagement-card__header">
+                <span class="engagement-card__category">${escapeHtml(category)}</span>
+                <span class="engagement-card__status ${statusClass}">${escapeHtml(statusLabel)}</span>
+              </header>
+              <h3 class="engagement-card__title">${escapeHtml(program.title || "Gamification boost")}</h3>
+              <p class="engagement-card__description">${escapeHtml(description)}</p>
+              <div class="engagement-card__metric">
+                <span class="engagement-card__metric-value">${escapeHtml(metricValue)}</span>
+                <span class="engagement-card__metric-caption">${escapeHtml(metricCaption)}</span>
+              </div>
+              ${metaMarkup}
+              ${successMarkup}
+              <footer class="engagement-card__footer">
+                <button
+                  type="button"
+                  class="button-pill ${actionTone} program-publish-toggle"
+                  data-program="${escapeHtml(programId)}"
+                  data-action="${action}">
+                  ${actionLabel}
+                </button>
+                <span class="detail-table__meta">${escapeHtml(program.published ? "Visible in hub" : "Draft only")}</span>
+              </footer>
+            </article>
+          `;
+        })
+        .join("")
+    : `<div class="engagement-empty"><p>No gamification boosts configured yet. Pair the leaderboard with a programme to make it shine.</p></div>`;
+
+  const programSummaryItems = [
+    `${formatNumber(programs.length)} programmes`,
+    `${formatNumber(publishedPrograms.length)} published`
+  ];
+  const programSummaryCopy = programSummaryItems.join(" | ");
+  const programsMarkup = `
+    <section class="engagement-programs">
+      <div class="section-header">
+        <h2>Gamification boosts</h2>
+        <p>Bundle badge drops, double points windows, and quest playlists, then publish when the story is ready.</p>
+      </div>
+      <div class="engagement-programs__controls">
+        <p class="detail-table__meta">${escapeHtml(programSummaryCopy)}</p>
+        <div class="engagement-programs__bulk">
+          <button type="button" class="button-pill button-pill--primary" data-bulk-program-action="publish">Publish all</button>
+          <button type="button" class="button-pill button-pill--danger-light" data-bulk-program-action="unpublish">Unpublish all</button>
+        </div>
+      </div>
+      <div class="engagement-programs__grid">
+        ${programCards}
+      </div>
+    </section>
+  `;
+
   return `
     <section class="client-catalogue__intro">
       <span class="client-catalogue__eyebrow">Organisation dashboard</span>
@@ -2937,12 +3691,13 @@ function renderClientDashboard() {
     <section class="metrics-grid">
       ${metricsMarkup}
     </section>
+    ${leaderboardMarkup}
+    ${programsMarkup}
     <section class="clients-grid">
       ${clientCards}
     </section>
   `;
 }
-
 function renderClientReporting() {
   const messages = Array.isArray(state.messages)
     ? state.messages.slice().sort((a, b) => new Date(b.reportedAt).getTime() - new Date(a.reportedAt).getTime())
@@ -2952,7 +3707,7 @@ function renderClientReporting() {
     .map(message => {
       const reasons = Array.isArray(message.reasons) ? message.reasons.map(reasonById).filter(Boolean) : [];
       const reasonChips = reasons
-        .map(reason => `<span class="detail-chip">${escapeHtml(reason.description)}</span>`)
+        .map(reason => `<span class="detail-chip">${escapeHtml(reason.label)}</span>`)
         .join("");
       const client =
         state.clients && message && Number.isFinite(message.clientId)
@@ -3529,7 +4284,7 @@ function renderClientBadges() {
 
   const filterMarkup = categories.length
     ? `
-      <div class="badge-gallery__filters badge-filter client-badges__filters" role="toolbar" aria-label="Badge categories">
+      <div class="badge-filter client-badges__filters" role="toolbar" aria-label="Badge categories">
         <button
           type="button"
           class="badge-filter__item${activeFilter ? "" : " badge-filter__item--active"}"
@@ -3666,7 +4421,7 @@ function renderClientBadges() {
   const metricsMarkup = metricsConfig
     .map(
       metric => `
-        <article class="badge-gallery__metric client-badges__metric">
+        <article class="client-badges__metric">
           <h3>${escapeHtml(metric.label)}</h3>
           <strong>${escapeHtml(String(metric.value))}</strong>
           <span>${escapeHtml(metric.caption)}</span>
@@ -3676,38 +4431,34 @@ function renderClientBadges() {
     .join("");
 
   return `
-    <section class="badge-gallery" aria-labelledby="badge-gallery-heading">
-      <div class="badge-gallery__inner">
-        <section class="badge-gallery__hero client-catalogue__intro">
-          <span class="badge-gallery__eyebrow client-catalogue__eyebrow">Badge catalogue</span>
-          <h1 id="badge-gallery-heading">Badge collection</h1>
-          <p>Curate the badge tiers you want squads to chase. Publish just the stories you need and bring the sparkle into every hub and add-in moment.</p>
-          <p class="badge-gallery__sub detail-table__meta">${escapeHtml(totalPointsCopy)}</p>
-        </section>
-        <section class="badge-gallery__metrics client-badges__metrics">
-          ${metricsMarkup}
-        </section>
-        <div class="badge-gallery__actions client-badges__actions">
-          <div class="badge-gallery__bulk client-badges__bulk">
-            <button
-              type="button"
-              class="button-pill button-pill--primary"
-              data-bulk-badge-action="publish">
-              Publish all badges
-            </button>
-            <button
-              type="button"
-              class="button-pill button-pill--danger-light"
-              data-bulk-badge-action="unpublish">
-              Unpublish all badges
-            </button>
-          </div>
-          ${filterMarkup}
-        </div>
-        <section class="badge-gallery__grid gem-badge-grid client-badges__grid">
-          ${gridMarkup}
-        </section>
+    <section class="client-catalogue__intro">
+      <span class="client-catalogue__eyebrow">Badge catalogue</span>
+      <h1>Badge collection</h1>
+      <p>Curate the badge tiers you want squads to chase. Publish just the stories you need and bring the sparkle into every hub and add-in moment.</p>
+      <p class="detail-table__meta">${escapeHtml(totalPointsCopy)}</p>
+    </section>
+    <section class="client-badges__metrics">
+      ${metricsMarkup}
+    </section>
+    <div class="client-badges__actions">
+      <div class="client-badges__bulk">
+        <button
+          type="button"
+          class="button-pill button-pill--primary"
+          data-bulk-badge-action="publish">
+          Publish all badges
+        </button>
+        <button
+          type="button"
+          class="button-pill button-pill--danger-light"
+          data-bulk-badge-action="unpublish">
+          Unpublish all badges
+        </button>
       </div>
+      ${filterMarkup}
+    </div>
+    <section class="gem-badge-grid client-badges__grid">
+      ${gridMarkup}
     </section>
   `;
 }
@@ -3815,6 +4566,21 @@ function formatNumber(value) {
     return new Intl.NumberFormat().format(Number(value));
   } catch {
     return String(value);
+  }
+}
+
+function formatPercent(value) {
+  if (!Number.isFinite(value)) {
+    return "--";
+  }
+  try {
+    const options =
+      value < 0.1
+        ? { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 }
+        : { style: "percent", minimumFractionDigits: 0, maximumFractionDigits: 1 };
+    return new Intl.NumberFormat(undefined, options).format(value);
+  } catch {
+    return `${Math.round(value * 100)}%`;
   }
 }
 
@@ -4128,21 +4894,49 @@ function setupBadgeShowcase(container) {
   badgeContainer.setAttribute("tabindex", "0");
   badgeContainer.setAttribute("aria-label", "Badge spotlight. Activate to view another badge.");
 
-  const showBadge = badge => {
+  const showBadge = badgeInput => {
+    let badge = badgeInput;
+    let shouldPersist = false;
+    if (badge && badge.published === false) {
+      const fallback = selectRandomBadge(badge.id);
+      badge = fallback || null;
+      shouldPersist = Boolean(fallback);
+    }
+
     if (!badge) {
       badgeContainer.innerHTML = "";
       badgeContainer.removeAttribute("data-current-badge");
+      if (state.meta.lastBadgeId !== null) {
+        state.meta.lastBadgeId = null;
+        persist();
+      } else if (shouldPersist) {
+        persist();
+      }
       return;
     }
+
+    if (state.meta.lastBadgeId !== badge.id) {
+      state.meta.lastBadgeId = badge.id;
+      shouldPersist = true;
+    }
+
     badgeContainer.innerHTML = renderBadgeSpotlight(badge);
     badgeContainer.setAttribute("data-current-badge", badge.id);
+
+    if (shouldPersist) {
+      persist();
+    }
   };
 
   let initialBadge = badgeById(state.meta.lastBadgeId);
+  if (initialBadge && initialBadge.published === false) {
+    initialBadge = null;
+  }
   if (!initialBadge) {
-    initialBadge = selectRandomBadge(null);
-    if (initialBadge) {
-      state.meta.lastBadgeId = initialBadge.id;
+    const fallback = selectRandomBadge(null);
+    if (fallback) {
+      initialBadge = fallback;
+      state.meta.lastBadgeId = fallback.id;
       persist();
     }
   }
@@ -4169,26 +4963,53 @@ function setupBadgeShowcase(container) {
 
 function renderAddIn() {
   const screen = state.meta.addinScreen;
+  const reporterSettings = state?.settings?.reporter || {};
+  const reasonPrompt =
+    typeof reporterSettings.reasonPrompt === "string" &&
+    reporterSettings.reasonPrompt.trim().length > 0
+      ? reporterSettings.reasonPrompt.trim()
+      : DEFAULT_REPORTER_PROMPT;
+  const emergencyLabel =
+    typeof reporterSettings.emergencyLabel === "string" &&
+    reporterSettings.emergencyLabel.trim().length > 0
+      ? reporterSettings.emergencyLabel.trim()
+      : DEFAULT_EMERGENCY_LABEL;
+  const reporterReasons =
+    Array.isArray(reporterSettings.reasons) && reporterSettings.reasons.length > 0
+      ? reporterSettings.reasons
+      : DEFAULT_REPORTER_REASONS;
+  const reasonsMarkup = reporterReasons
+    .map(reason => {
+      if (!reason) return "";
+      const reasonId =
+        typeof reason.id === "string" && reason.id.trim().length > 0
+          ? reason.id.trim()
+          : null;
+      const label =
+        typeof reason.label === "string" && reason.label.trim().length > 0
+          ? reason.label.trim()
+          : null;
+      if (!reasonId || !label) return "";
+      return `
+        <label>
+          <input type="checkbox" value="${escapeHtml(reasonId)}" />
+          <span>${escapeHtml(label)}</span>
+        </label>
+      `;
+    })
+    .filter(Boolean)
+    .join("");
   const reportForm = `
     <div class="addin-body">
       <fieldset class="addin-field">
-        <legend>Why are you reporting this?</legend>
+        <legend>${escapeHtml(reasonPrompt)}</legend>
         <div class="addin-checkbox-list">
-          ${state.reportReasons
-            .map(
-              reason => `
-                <label>
-                  <input type="checkbox" value="${reason.id}" />
-                  <span>${reason.description}</span>
-                </label>
-              `
-            )
-            .join("")}
+          ${reasonsMarkup}
         </div>
       </fieldset>
       <label class="addin-emergency">
         <input type="checkbox" value="clicked-link,opened-attachment,shared-credentials" />
-        <span class="addin-emergency__text">Recipient clicked a link, opened an attachment, or entered credentials</span>
+        <span class="addin-emergency__text">${escapeHtml(emergencyLabel)}</span>
       </label>
       <label class="addin-field addin-field--notes">
         Another reason or anything else we should know?
@@ -4367,9 +5188,208 @@ function renderAddIn() {
   `;
 }
 
+function resolveActiveSettingsCategory() {
+  const categories = SETTINGS_CATEGORIES || [];
+  if (categories.length === 0) return null;
+  const storedId = state?.meta?.settingsCategory;
+  const matched = categories.find(category => category.id === storedId && !category.disabled);
+  if (matched) return matched;
+  const fallback = categories.find(category => !category.disabled);
+  return fallback || categories[0];
+}
+
+function reporterReasonRowTemplate(reason, index) {
+  if (!reason) {
+    reason = {};
+  }
+  const baseId =
+    typeof reason.id === "string" && reason.id.trim().length > 0
+      ? reason.id.trim()
+      : `reason-${index + 1}`;
+  const id = escapeHtml(baseId);
+  const valueSource =
+    typeof reason.label === "string"
+      ? reason.label
+      : typeof reason.description === "string"
+      ? reason.description
+      : "";
+  const value = escapeHtml(valueSource);
+  return `
+    <div class="settings-reason" data-reason-row="${id}">
+      <span class="settings-reason__index">${index + 1}</span>
+      <input
+        type="text"
+        class="settings-reason__input"
+        data-reason-input
+        data-reason-id="${id}"
+        value="${value}"
+        placeholder="Add a reason reporters can select"
+      />
+      <button
+        type="button"
+        class="settings-reason__remove"
+        data-action="remove-reason"
+        data-reason-id="${id}"
+        aria-label="Remove reason ${index + 1}"
+      >
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+  `;
+}
+
+function renderSettingsPlaceholder(category) {
+  const label = escapeHtml(category?.label || "Settings");
+  const description =
+    typeof category?.description === "string" && category.description.trim().length > 0
+      ? escapeHtml(category.description)
+      : "Configuration options coming soon.";
+  return `
+    <section class="settings-panel__section settings-panel__section--placeholder">
+      <h3>${label}</h3>
+      <p>${description}</p>
+      <span class="settings-panel__chip">Coming soon</span>
+    </section>
+  `;
+}
+
+function renderReporterSettingsContent() {
+  const reporterSettings = state?.settings?.reporter || {};
+  const reasonPrompt =
+    typeof reporterSettings.reasonPrompt === "string" &&
+    reporterSettings.reasonPrompt.trim().length > 0
+      ? reporterSettings.reasonPrompt.trim()
+      : DEFAULT_REPORTER_PROMPT;
+  const emergencyLabel =
+    typeof reporterSettings.emergencyLabel === "string" &&
+    reporterSettings.emergencyLabel.trim().length > 0
+      ? reporterSettings.emergencyLabel.trim()
+      : DEFAULT_EMERGENCY_LABEL;
+  const reasons =
+    Array.isArray(reporterSettings.reasons) && reporterSettings.reasons.length > 0
+      ? reporterSettings.reasons
+      : DEFAULT_REPORTER_REASONS;
+  const reasonsMarkup = reasons.map((reason, index) => reporterReasonRowTemplate(reason, index)).join("");
+  return `
+    <section class="settings-panel__section" aria-labelledby="reporter-settings-heading">
+      <div class="settings-panel__section-header">
+        <h3 id="reporter-settings-heading">Reporter experience</h3>
+        <p>Control the prompts reporters see when escalating suspicious messages.</p>
+      </div>
+      <form id="reporter-settings-form" class="settings-form" autocomplete="off">
+        <div class="settings-form__group">
+          <label class="settings-form__label" for="reporter-reason-prompt">Reason prompt</label>
+          <input
+            type="text"
+            id="reporter-reason-prompt"
+            name="reasonPrompt"
+            class="settings-form__input"
+            value="${escapeHtml(reasonPrompt)}"
+            placeholder="${escapeHtml(DEFAULT_REPORTER_PROMPT)}"
+          />
+        </div>
+        <div class="settings-form__group">
+          <label class="settings-form__label" for="reporter-emergency-label">Urgent checkbox label</label>
+          <textarea
+            id="reporter-emergency-label"
+            class="settings-form__textarea"
+            rows="2"
+            data-autofocus
+            placeholder="${escapeHtml(DEFAULT_EMERGENCY_LABEL)}"
+          >${escapeHtml(emergencyLabel)}</textarea>
+        </div>
+        <div class="settings-form__group">
+          <div class="settings-form__group-header">
+            <span class="settings-form__label">Reasons reporters can choose</span>
+            <p class="settings-form__hint">Reorder or rewrite the shortlist that appears in the add-in.</p>
+          </div>
+          <div class="settings-form__reasons" data-reasons-container>
+            ${reasonsMarkup || ""}
+          </div>
+          <button type="button" class="button-pill button-pill--ghost settings-form__add" data-action="add-reason">
+            Add reason
+          </button>
+        </div>
+        <footer class="settings-panel__footer">
+          <button type="submit" class="button-pill button-pill--primary">Save changes</button>
+        </footer>
+      </form>
+    </section>
+  `;
+}
+
+function renderSettingsPanel() {
+  const categories = SETTINGS_CATEGORIES || [];
+  if (categories.length === 0) return "";
+  const open = state?.meta?.settingsOpen === true;
+  const activeCategory = resolveActiveSettingsCategory();
+  const categoryMarkup = categories
+    .map(category => {
+      const isActive = activeCategory && category.id === activeCategory.id;
+      const classes = [
+        "settings-nav__item",
+        isActive ? "settings-nav__item--active" : "",
+        category.disabled ? "settings-nav__item--disabled" : ""
+      ]
+        .filter(Boolean)
+        .join(" ");
+      const description =
+        typeof category.description === "string" && category.description.trim().length > 0
+          ? escapeHtml(category.description)
+          : "";
+      const disabledAttr = category.disabled ? " disabled" : "";
+      const metaLabel = category.disabled ? '<span class="settings-nav__meta">Coming soon</span>' : "";
+      return `
+        <button
+          type="button"
+          class="${classes}"
+          data-settings-category="${escapeHtml(category.id)}"
+          ${disabledAttr}
+        >
+          <span class="settings-nav__label">${escapeHtml(category.label)}</span>
+          ${description ? `<span class="settings-nav__description">${description}</span>` : ""}
+          ${metaLabel}
+        </button>
+      `;
+    })
+    .join("");
+  const contentMarkup =
+    activeCategory && activeCategory.id === "reporter"
+      ? renderReporterSettingsContent()
+      : renderSettingsPlaceholder(activeCategory);
+  const hiddenAttr = open ? "" : " hidden";
+  const ariaModal = open ? "true" : "false";
+  const ariaHidden = open ? "false" : "true";
+  return `
+    <div class="settings-shell${open ? " settings-shell--open" : ""}"${hiddenAttr} aria-hidden="${ariaHidden}">
+      <div class="settings-shell__backdrop" data-settings-dismiss></div>
+      <section class="settings-panel" role="dialog" aria-modal="${ariaModal}" aria-labelledby="settings-title" tabindex="-1">
+        <header class="settings-panel__header">
+          <div>
+            <p class="settings-panel__eyebrow">Configuration</p>
+            <h2 class="settings-panel__title" id="settings-title">Settings</h2>
+          </div>
+          <button type="button" class="settings-panel__close" id="settings-close" aria-label="Close settings">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </header>
+        <div class="settings-panel__body">
+          <nav class="settings-panel__nav" aria-label="Settings categories">
+            ${categoryMarkup}
+          </nav>
+          <div class="settings-panel__content">
+            ${contentMarkup}
+          </div>
+        </div>
+      </section>
+    </div>
+  `;
+}
+
 function renderHeader() {
   const role = state.meta.role;
   const navMarkup = renderGlobalNav(state.meta.route);
+  const settingsMarkup = renderSettingsPanel();
   return `
     ${navMarkup}
     <header class="header">
@@ -4385,6 +5405,7 @@ function renderHeader() {
         }
       </div>
     </header>
+    ${settingsMarkup}
   `;
 }
 
@@ -4537,6 +5558,210 @@ function attachGlobalNav(container) {
       });
     });
     window.__weldNavEscape__ = true;
+  }
+}
+
+function attachSettingsEvents(container) {
+  if (!container) return;
+
+  const settingsButton = container.querySelector("#global-settings");
+  const openSettings = () => {
+    if (state.meta.settingsOpen) return;
+    state.meta.settingsOpen = true;
+    renderApp();
+  };
+  if (settingsButton) {
+    settingsButton.addEventListener("click", event => {
+      event.preventDefault();
+      openSettings();
+    });
+  }
+
+  const closeSettings = () => {
+    if (!state.meta.settingsOpen) return;
+    state.meta.settingsOpen = false;
+    renderApp();
+  };
+
+  const closeButton = container.querySelector("#settings-close");
+  if (closeButton) {
+    closeButton.addEventListener("click", event => {
+      event.preventDefault();
+      closeSettings();
+    });
+  }
+
+  container.querySelectorAll("[data-action='close-settings']").forEach(button => {
+    button.addEventListener("click", event => {
+      event.preventDefault();
+      closeSettings();
+    });
+  });
+
+  const backdrop = container.querySelector(".settings-shell__backdrop");
+  if (backdrop) {
+    backdrop.addEventListener("click", closeSettings);
+  }
+
+  const activeCategory = resolveActiveSettingsCategory();
+  if (activeCategory && state.meta.settingsCategory !== activeCategory.id) {
+    state.meta.settingsCategory = activeCategory.id;
+    if (state.meta.settingsOpen) {
+      renderApp();
+      return;
+    }
+  }
+
+  container.querySelectorAll("[data-settings-category]").forEach(button => {
+    if (button.disabled) return;
+    button.addEventListener("click", event => {
+      event.preventDefault();
+      const category = button.getAttribute("data-settings-category");
+      if (!category || state.meta.settingsCategory === category) return;
+      state.meta.settingsCategory = category;
+      if (state.meta.settingsOpen) {
+        renderApp();
+      } else {
+        persist();
+      }
+    });
+  });
+
+  const escapeSelector = value => {
+    if (!value) return "";
+    if (typeof CSS !== "undefined" && CSS && typeof CSS.escape === "function") {
+      return CSS.escape(value);
+    }
+    return String(value).replace(/([ #;?%&,.+*~':"!^$[\]()=>|/@])/g, "\\$1");
+  };
+
+  const reporterForm = container.querySelector("#reporter-settings-form");
+  if (reporterForm) {
+    const reasonsContainer = reporterForm.querySelector("[data-reasons-container]");
+    const promptField = reporterForm.querySelector("#reporter-reason-prompt");
+    const emergencyField = reporterForm.querySelector("#reporter-emergency-label");
+
+    const updateReasonIndices = () => {
+      if (!reasonsContainer) return;
+      Array.from(reasonsContainer.querySelectorAll(".settings-reason__index")).forEach((item, index) => {
+        item.textContent = String(index + 1);
+      });
+    };
+
+    reporterForm.addEventListener("click", event => {
+      const addButton = event.target.closest("[data-action='add-reason']");
+      if (addButton) {
+        event.preventDefault();
+        if (!reasonsContainer) return;
+        const newId = generateId("reason");
+        const rowMarkup = reporterReasonRowTemplate({ id: newId, label: "" }, reasonsContainer.children.length);
+        reasonsContainer.insertAdjacentHTML("beforeend", rowMarkup);
+        updateReasonIndices();
+        const selector = `[data-reason-id="${escapeSelector(newId)}"]`;
+        const newInput = reasonsContainer.querySelector(selector);
+        if (newInput) newInput.focus();
+        return;
+      }
+      const removeButton = event.target.closest("[data-action='remove-reason']");
+      if (removeButton) {
+        event.preventDefault();
+        if (!reasonsContainer) return;
+        const reasonId = removeButton.getAttribute("data-reason-id");
+        if (!reasonId) return;
+        const row = reasonsContainer.querySelector(`[data-reason-row="${escapeSelector(reasonId)}"]`);
+        if (row) {
+          row.remove();
+          updateReasonIndices();
+        }
+      }
+    });
+
+    reporterForm.addEventListener("submit", event => {
+      event.preventDefault();
+      const reasonInputs = reasonsContainer
+        ? Array.from(reasonsContainer.querySelectorAll("[data-reason-input]"))
+        : [];
+      const reasons = [];
+      const seenIds = new Set();
+      reasonInputs.forEach((input, index) => {
+        const text = (input.value || "").trim();
+        if (!text) return;
+        const currentId = input.getAttribute("data-reason-id");
+        let normalizedId = normalizeId(currentId, "reason");
+        if (!normalizedId) {
+          normalizedId = generateId("reason");
+          input.setAttribute("data-reason-id", normalizedId);
+        }
+        while (seenIds.has(normalizedId)) {
+          normalizedId = generateId("reason");
+          input.setAttribute("data-reason-id", normalizedId);
+        }
+        seenIds.add(normalizedId);
+        reasons.push({ id: normalizedId, label: text });
+      });
+      if (reasons.length === 0) {
+        openDialog({
+          title: "Add at least one reason",
+          description: "Reporters need at least one selectable reason.",
+          confirmLabel: "Close"
+        });
+        return;
+      }
+      const promptValue = promptField ? promptField.value.trim() : "";
+      const emergencyValue = emergencyField ? emergencyField.value.trim() : "";
+      if (!emergencyValue) {
+        openDialog({
+          title: "Add urgent label text",
+          description: "Describe what happens when reporters tick the urgent box.",
+          confirmLabel: "Close"
+        });
+        if (emergencyField) emergencyField.focus();
+        return;
+      }
+      state.settings = state.settings || {};
+      const existing = state.settings.reporter || {};
+      const nextPrompt = promptValue.length > 0 ? promptValue : DEFAULT_REPORTER_PROMPT;
+      state.settings.reporter = {
+        ...existing,
+        reasonPrompt: nextPrompt,
+        emergencyLabel: emergencyValue,
+        reasons
+      };
+      if (Array.isArray(state.messages)) {
+        const validIds = new Set(reasons.map(reason => reason.id));
+        state.messages.forEach(message => {
+          if (!Array.isArray(message.reasons)) return;
+          message.reasons = message.reasons.filter(id => validIds.has(id));
+        });
+      }
+      persist();
+      renderApp();
+    });
+  }
+
+  if (!window.__weldSettingsEscape__) {
+    document.addEventListener("keydown", event => {
+      if (event.key !== "Escape") return;
+      if (!state.meta.settingsOpen) return;
+      state.meta.settingsOpen = false;
+      renderApp();
+    });
+    window.__weldSettingsEscape__ = true;
+  }
+
+  if (state.meta.settingsOpen) {
+    requestAnimationFrame(() => {
+      const panel = container.querySelector(".settings-panel");
+      if (!panel) return;
+      const focusTarget =
+        panel.querySelector("[data-autofocus]") ||
+        panel.querySelector("input, textarea, button, select");
+      if (focusTarget) {
+        focusTarget.focus();
+      } else {
+        panel.focus();
+      }
+    });
   }
 }
 
@@ -4714,6 +5939,48 @@ function attachCustomerRedemptionsEvents(container) {
 function attachClientDashboardEvents(container) {
   if (!container) return;
   container.addEventListener("click", event => {
+    const bulkDepartment = event.target.closest("[data-bulk-department-action]");
+    if (bulkDepartment) {
+      const action = bulkDepartment.getAttribute("data-bulk-department-action");
+      if (action === "publish") {
+        setAllLeaderboardPublication(true);
+      } else if (action === "unpublish") {
+        setAllLeaderboardPublication(false);
+      }
+      return;
+    }
+
+    const departmentToggle = event.target.closest(".department-publish-toggle");
+    if (departmentToggle) {
+      const departmentId = departmentToggle.getAttribute("data-department");
+      const action = departmentToggle.getAttribute("data-action");
+      if (departmentId && action) {
+        setLeaderboardEntryPublication(departmentId, action === "publish");
+      }
+      return;
+    }
+
+    const bulkProgram = event.target.closest("[data-bulk-program-action]");
+    if (bulkProgram) {
+      const action = bulkProgram.getAttribute("data-bulk-program-action");
+      if (action === "publish") {
+        setAllEngagementProgramsPublication(true);
+      } else if (action === "unpublish") {
+        setAllEngagementProgramsPublication(false);
+      }
+      return;
+    }
+
+    const programToggle = event.target.closest(".program-publish-toggle");
+    if (programToggle) {
+      const programId = programToggle.getAttribute("data-program");
+      const action = programToggle.getAttribute("data-action");
+      if (programId && action) {
+        setEngagementProgramPublication(programId, action === "publish");
+      }
+      return;
+    }
+
     const button = event.target.closest(".client-card .table-actions [data-route]");
     if (!button) return;
     event.preventDefault();
@@ -4869,7 +6136,9 @@ function attachAddInEvents(container) {
           container.querySelectorAll('.addin-checkbox-list input[type="checkbox"]')
         )
           .filter(input => input.checked)
-          .map(input => Number(input.value));
+          .map(input => input.value)
+          .map(value => (typeof value === "string" ? value.trim() : ""))
+          .filter(Boolean);
         const notesValue = notesInput ? notesInput.value.trim() : "";
 
         if (reasonCheckboxes.length === 0 && !notesValue) {
@@ -4883,7 +6152,7 @@ function attachAddInEvents(container) {
 
         const primaryReason = reasonById(reasonCheckboxes[0]);
         const generatedSubject = primaryReason
-          ? `Suspicious email: ${primaryReason.description}`
+          ? `Suspicious email: ${primaryReason.label}`
           : notesValue
           ? `Suspicious email: ${notesValue.slice(0, 60)}`
           : "Suspicious email reported";
@@ -4960,6 +6229,7 @@ function renderApp() {
     `;
     attachHeaderEvents(app);
     attachGlobalNav(app);
+    attachSettingsEvents(app);
     attachLandingEvents(app);
     return;
   }
@@ -4975,6 +6245,7 @@ function renderApp() {
     `;
     attachHeaderEvents(app);
     attachGlobalNav(app);
+    attachSettingsEvents(app);
     const mainContent = app.querySelector("#main-content");
     if (mainContent) attachBadgeEvents(mainContent);
     return;
@@ -4992,6 +6263,8 @@ function renderApp() {
 
   attachHeaderEvents(app);
   attachGlobalNav(app);
+  attachSettingsEvents(app);
+  attachSettingsEvents(app);
   const mainContent = app.querySelector("#main-content");
   if (mainContent) attachAddInEvents(mainContent);
   return;
@@ -5036,6 +6309,7 @@ window.addEventListener("hashchange", () => {
     renderApp();
   }
 });
+
 
 
 
