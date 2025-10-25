@@ -1093,6 +1093,13 @@ button {
 
 .reward-grid--catalogue {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  justify-content: flex-start;
+}
+
+.reward-grid--catalogue .reward-card {
+  width: 100%;
+  max-width: 320px;
+  justify-self: start;
 }
 
 .reward-card--catalogue {
@@ -1200,15 +1207,61 @@ button {
   margin: 1.5rem 0 2rem;
 }
 
+.client-rewards__bulk,
+.client-quests__bulk,
 .client-badges__bulk {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
 }
 
+.catalogue-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.catalogue-card__tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 700;
+  font-size: 0.68rem;
+  line-height: 1;
+}
+
+.client-rewards__actions .badge-filter,
+.client-quests__actions .badge-filter,
 .client-badges__actions .badge-filter {
   margin-top: 0;
   justify-content: flex-start;
+}
+
+.client-rewards__filters,
+.client-quests__filters,
+.client-badges__filters {
+  flex: 1 1 100%;
+}
+
+.client-rewards__actions > .detail-table__meta,
+.client-quests__actions > .detail-table__meta {
+  margin: 0;
+  flex: 1 1 100%;
+}
+
+.client-badges__grid {
+  justify-content: flex-start;
+}
+
+.client-badges__grid .gem-badge {
+  width: 100%;
+  max-width: 280px;
+  justify-self: start;
 }
 
 @media (min-width: 768px) {
@@ -1218,6 +1271,20 @@ button {
     justify-content: space-between;
   }
 
+  .client-rewards__filters,
+  .client-quests__filters,
+  .client-badges__filters {
+    flex: 0 0 auto;
+  }
+
+  .client-rewards__actions > .detail-table__meta,
+  .client-quests__actions > .detail-table__meta {
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+
+  .client-rewards__actions .badge-filter,
+  .client-quests__actions .badge-filter,
   .client-badges__actions .badge-filter {
     justify-content: flex-end;
   }
@@ -1256,6 +1323,17 @@ button {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 1.75rem;
+}
+
+.quest-grid--catalogue {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  justify-content: flex-start;
+}
+
+.quest-grid--catalogue .quest-card {
+  width: 100%;
+  max-width: 320px;
+  justify-self: start;
 }
 
 .quest-grid--hub {
@@ -1964,7 +2042,7 @@ button {
   gap: 0.45rem;
 }
 
-.gem-badge-card__tags span {
+.gem-badge-card__tag {
   display: inline-flex;
   align-items: center;
   padding: 0.32rem 0.85rem;

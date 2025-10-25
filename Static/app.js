@@ -1166,6 +1166,8 @@ function initialState() {
       lastTotalAwarded: null,
       lastMessageId: null,
       lastClientSnapshot: null,
+      rewardFilter: null,
+      questFilter: null,
       badgeFilter: null
     },
     customer: {
@@ -1564,6 +1566,11 @@ function loadState() {
     } else {
       mergedMeta.lastMessageId = null;
     }
+    const normalizeFilter = value =>
+      typeof value === "string" && value.trim().length > 0 ? value.trim().toLowerCase() : null;
+    mergedMeta.rewardFilter = normalizeFilter(mergedMeta.rewardFilter);
+    mergedMeta.questFilter = normalizeFilter(mergedMeta.questFilter);
+    mergedMeta.badgeFilter = normalizeFilter(mergedMeta.badgeFilter);
     return {
       ...baseState,
       ...parsed,
@@ -3049,6 +3056,32 @@ function renderClientRewards() {
     return sum + (Number(reward?.remaining) || 0);
   }, 0);
 
+  const categoryMap = new Map();
+  rewards.forEach(reward => {
+    const rawCategory = typeof reward.category === "string" ? reward.category.trim() : "";
+    if (!rawCategory) return;
+    const normalized = rawCategory.toLowerCase();
+    if (!categoryMap.has(normalized)) {
+      categoryMap.set(normalized, rawCategory);
+    }
+  });
+
+  const rewardCategories = Array.from(categoryMap.entries())
+    .sort((a, b) => a[1].localeCompare(b[1], undefined, { sensitivity: "base" }))
+    .map(([value, label]) => ({ value, label }));
+
+  const activeFilter =
+    typeof state.meta.rewardFilter === "string" && state.meta.rewardFilter.length > 0
+      ? state.meta.rewardFilter
+      : null;
+
+  const filteredRewards = activeFilter
+    ? rewards.filter(reward => {
+        const category = typeof reward.category === "string" ? reward.category.trim().toLowerCase() : "";
+        return category === activeFilter;
+      })
+    : rewards;
+
   const metricsConfig = [
     {
       label: "Total catalogue",
@@ -3084,8 +3117,8 @@ function renderClientRewards() {
     )
     .join("");
 
-  const rewardsMarkup = rewards.length
-    ? rewards
+  const rewardsMarkup = filteredRewards.length
+    ? filteredRewards
         .map(reward => {
           const id = escapeHtml(String(reward.id));
           const isPublished = reward.published === true;
@@ -3097,14 +3130,20 @@ function renderClientRewards() {
             reward?.unlimited === true
               ? "Unlimited redemptions"
               : `${remainingLabel} remaining`;
+          const categoryLabel = formatCatalogueLabel(reward.category || "Reward");
+          const providerLabel = reward.provider ? reward.provider : "WeldSecure";
           return `
             <article class="reward-card reward-card--catalogue ${isPublished ? "reward-card--published" : "reward-card--draft"}" data-reward="${id}">
               <div class="reward-card__artwork" style="background:${reward.image};">
                 ${renderIcon(reward.icon || "gift", "lg")}
               </div>
-              <div class="reward-card__meta">
-                <span class="reward-card__chip reward-card__chip--category">${escapeHtml(reward.category || "Reward")}</span>
-                <span class="reward-card__chip reward-card__chip--provider">${escapeHtml(reward.provider || "WeldSecure")}</span>
+              <div class="reward-card__meta catalogue-card__tags">
+                <span class="catalogue-card__tag reward-card__chip reward-card__chip--category">${escapeHtml(
+                  categoryLabel
+                )}</span>
+                <span class="catalogue-card__tag reward-card__chip reward-card__chip--provider">${escapeHtml(
+                  providerLabel
+                )}</span>
               </div>
               <h4 class="reward-card__title">${escapeHtml(reward.name || "Reward")}</h4>
               <p class="reward-card__desc">${escapeHtml(reward.description || "")}</p>
@@ -3126,16 +3165,61 @@ function renderClientRewards() {
           `;
         })
         .join("")
-    : `<div class="customer-detail__empty">Create your first reward to spark recognition moments.</div>`;
+    : `<div class="customer-detail__empty">${
+        rewards.length
+          ? "No rewards match the selected filter."
+          : "Create your first reward to spark recognition moments."
+      }</div>`;
 
-  const catalogueMarkup = rewards.length
+  const catalogueMarkup = filteredRewards.length
     ? `<div class="reward-grid reward-grid--catalogue">${rewardsMarkup}</div>`
     : rewardsMarkup;
 
-  const inventorySummary =
+  const baseInventoryCopy =
     rewards.length && totalInventory > 0
       ? `${formatNumber(totalInventory)} total items remaining`
-      : "Inventory updates live as redemptions happen";
+      : rewards.length
+      ? "Inventory updates live as redemptions happen"
+      : "Add rewards to build your catalogue narrative.";
+
+  const filterSummary = activeFilter
+    ? `${formatNumber(filteredRewards.length)} of ${formatNumber(rewards.length)} rewards shown`
+    : "";
+
+  const actionsMeta = [filterSummary, baseInventoryCopy].filter(Boolean).join(" | ") || baseInventoryCopy;
+
+  const filterButtons = rewardCategories
+    .map(category => {
+      const value = escapeHtml(category.value);
+      const isActive = activeFilter === category.value;
+      const label = formatCatalogueLabel(category.label);
+      return `
+        <button
+          type="button"
+          class="badge-filter__item${isActive ? " badge-filter__item--active" : ""}"
+          data-reward-filter="${value}"
+          aria-pressed="${isActive ? "true" : "false"}">
+          ${escapeHtml(label)}
+        </button>
+      `;
+    })
+    .join("");
+
+  const filterMarkup =
+    rewardCategories.length > 1
+      ? `
+        <div class="catalogue-filter badge-filter client-rewards__filters" role="toolbar" aria-label="Reward categories">
+          <button
+            type="button"
+            class="badge-filter__item${activeFilter ? "" : " badge-filter__item--active"}"
+            data-reward-filter=""
+            aria-pressed="${activeFilter ? "false" : "true"}">
+            All rewards
+          </button>
+          ${filterButtons}
+        </div>
+      `
+      : "";
 
   return `
     <section class="client-catalogue__intro">
@@ -3151,7 +3235,8 @@ function renderClientRewards() {
         <button type="button" class="button-pill button-pill--primary" data-bulk-reward-action="publish">Publish all rewards</button>
         <button type="button" class="button-pill button-pill--danger-light" data-bulk-reward-action="unpublish">Unpublish all rewards</button>
       </div>
-      <p class="detail-table__meta">${inventorySummary}</p>
+      ${filterMarkup}
+      <p class="detail-table__meta">${escapeHtml(actionsMeta)}</p>
     </div>
     ${catalogueMarkup}
   `;
@@ -3171,6 +3256,32 @@ function renderClientQuests() {
         quests.reduce((sum, quest) => sum + (Number(quest.duration) || 0), 0) / quests.length
       )
     : 0;
+
+  const categoryMap = new Map();
+  quests.forEach(quest => {
+    const rawCategory = typeof quest.category === "string" ? quest.category.trim() : "";
+    if (!rawCategory) return;
+    const normalized = rawCategory.toLowerCase();
+    if (!categoryMap.has(normalized)) {
+      categoryMap.set(normalized, rawCategory);
+    }
+  });
+
+  const questCategories = Array.from(categoryMap.entries())
+    .sort((a, b) => a[1].localeCompare(b[1], undefined, { sensitivity: "base" }))
+    .map(([value, label]) => ({ value, label }));
+
+  const activeFilter =
+    typeof state.meta.questFilter === "string" && state.meta.questFilter.length > 0
+      ? state.meta.questFilter
+      : null;
+
+  const filteredQuests = activeFilter
+    ? quests.filter(quest => {
+        const category = typeof quest.category === "string" ? quest.category.trim().toLowerCase() : "";
+        return category === activeFilter;
+      })
+    : quests;
 
   const metricsConfig = [
     {
@@ -3207,24 +3318,31 @@ function renderClientQuests() {
     )
     .join("");
 
-  const questsMarkup = quests.length
-    ? quests
+  const questsMarkup = filteredQuests.length
+    ? filteredQuests
         .map(quest => {
           const id = escapeHtml(String(quest.id));
           const isPublished = quest.published === true;
           const action = isPublished ? "unpublish" : "publish";
           const actionLabel = isPublished ? "Unpublish from hubs" : "Publish to hubs";
           const actionTone = isPublished ? "button-pill--danger-light" : "button-pill--primary";
-          const difficultyChip = quest.difficulty
-            ? `<span class="quest-card__chip quest-card__chip--difficulty" data-difficulty="${escapeHtml(
+          const tagItems = [];
+          if (quest.difficulty) {
+            tagItems.push(
+              `<span class="catalogue-card__tag quest-card__chip quest-card__chip--difficulty" data-difficulty="${escapeHtml(
                 quest.difficulty
               )}">${escapeHtml(quest.difficulty)}</span>`
-            : "";
-          const categoryChip = quest.category
-            ? `<span class="quest-card__chip">${escapeHtml(quest.category)}</span>`
-            : "";
-          const chipGroup = categoryChip
-            ? `<div class="quest-card__chip-group">${categoryChip}</div>`
+            );
+          }
+          if (quest.category) {
+            tagItems.push(
+              `<span class="catalogue-card__tag quest-card__chip">${escapeHtml(
+                formatCatalogueLabel(quest.category)
+              )}</span>`
+            );
+          }
+          const tagMarkup = tagItems.length
+            ? `<div class="quest-card__chip-group catalogue-card__tags">${tagItems.join("")}</div>`
             : "";
           const focusMarkup = Array.isArray(quest.focus) && quest.focus.length
             ? `<div class="quest-card__focus">${quest.focus
@@ -3233,10 +3351,9 @@ function renderClientQuests() {
                 .join("")}</div>`
             : "";
           return `
-            <article class="quest-card ${isPublished ? "quest-card--published" : "quest-card--draft"}">
+            <article class="quest-card ${isPublished ? "quest-card--published" : "quest-card--draft"}" data-quest="${id}">
               <header class="quest-card__header">
-                ${difficultyChip}
-                ${chipGroup}
+                ${tagMarkup}
               </header>
               <h3 class="quest-card__title">${escapeHtml(quest.title || "Quest")}</h3>
               <p class="quest-card__description">${escapeHtml(quest.description || "")}</p>
@@ -3267,11 +3384,55 @@ function renderClientQuests() {
           `;
         })
         .join("")
-    : `<div class="customer-detail__empty">Build a quest to showcase how Weld coaches behaviour change.</div>`;
+    : `<div class="customer-detail__empty">${
+        quests.length
+          ? "No quests match the selected filter."
+          : "Build a quest to showcase how Weld coaches behaviour change."
+      }</div>`;
 
-  const catalogueMarkup = quests.length
-    ? `<div class="quest-grid">${questsMarkup}</div>`
+  const catalogueMarkup = filteredQuests.length
+    ? `<div class="quest-grid quest-grid--catalogue">${questsMarkup}</div>`
     : questsMarkup;
+
+  const filterButtons = questCategories
+    .map(category => {
+      const value = escapeHtml(category.value);
+      const isActive = activeFilter === category.value;
+      const label = formatCatalogueLabel(category.label);
+      return `
+        <button
+          type="button"
+          class="badge-filter__item${isActive ? " badge-filter__item--active" : ""}"
+          data-quest-filter="${value}"
+          aria-pressed="${isActive ? "true" : "false"}">
+          ${escapeHtml(label)}
+        </button>
+      `;
+    })
+    .join("");
+
+  const filterMarkup =
+    questCategories.length > 1
+      ? `
+        <div class="catalogue-filter badge-filter client-quests__filters" role="toolbar" aria-label="Quest categories">
+          <button
+            type="button"
+            class="badge-filter__item${activeFilter ? "" : " badge-filter__item--active"}"
+            data-quest-filter=""
+            aria-pressed="${activeFilter ? "false" : "true"}">
+            All quests
+          </button>
+          ${filterButtons}
+        </div>
+      `
+      : "";
+
+  const filterSummary = activeFilter
+    ? `${formatNumber(filteredQuests.length)} of ${formatNumber(quests.length)} quests shown`
+    : "";
+
+  const guidanceCopy = "Use the publish toggles to talk through seasonal programming or targeted enablement waves.";
+  const actionsMeta = [filterSummary, guidanceCopy].filter(Boolean).join(" | ");
 
   return `
     <section class="client-catalogue__intro">
@@ -3283,11 +3444,12 @@ function renderClientQuests() {
       ${metricsMarkup}
     </section>
     <div class="client-quests__actions">
-      <div class="client-badges__bulk">
+      <div class="client-quests__bulk">
         <button type="button" class="button-pill button-pill--primary" data-bulk-quest-action="publish">Publish all quests</button>
         <button type="button" class="button-pill button-pill--danger-light" data-bulk-quest-action="unpublish">Unpublish all quests</button>
       </div>
-      <p class="detail-table__meta">Use the publish toggles to talk through seasonal programming or targeted enablement waves.</p>
+      ${filterMarkup}
+      <p class="detail-table__meta">${escapeHtml(actionsMeta)}</p>
     </div>
     ${catalogueMarkup}
   `;
@@ -3318,21 +3480,30 @@ function renderClientBadges() {
   const publishedPointsTotal = publishedBadges.reduce((sum, badge) => sum + (Number(badge.points) || 0), 0);
   const totalPoints = badges.reduce((sum, badge) => sum + (Number(badge.points) || 0), 0);
 
-  const categories = Array.from(
-    new Set(
-      badges
-        .map(badge => (typeof badge.category === "string" ? badge.category.trim() : ""))
-        .filter(Boolean)
-    )
-  ).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+  const categoryMap = new Map();
+  badges.forEach(badge => {
+    const rawCategory = typeof badge.category === "string" ? badge.category.trim() : "";
+    if (!rawCategory) return;
+    const normalized = rawCategory.toLowerCase();
+    if (!categoryMap.has(normalized)) {
+      categoryMap.set(normalized, rawCategory);
+    }
+  });
+
+  const categories = Array.from(categoryMap.entries())
+    .sort((a, b) => a[1].localeCompare(b[1], undefined, { sensitivity: "base" }))
+    .map(([value, label]) => ({ value, label }));
 
   const activeFilter =
-    typeof state.meta.badgeFilter === "string" && state.meta.badgeFilter.trim().length > 0
-      ? state.meta.badgeFilter.trim()
+    typeof state.meta.badgeFilter === "string" && state.meta.badgeFilter.length > 0
+      ? state.meta.badgeFilter
       : null;
 
   const filteredBadges = activeFilter
-    ? badges.filter(badge => (typeof badge.category === "string" ? badge.category.trim() : "") === activeFilter)
+    ? badges.filter(badge => {
+        const category = typeof badge.category === "string" ? badge.category.trim().toLowerCase() : "";
+        return category === activeFilter;
+      })
     : badges;
 
   const averagePublishedPoints = publishedBadges.length ? Math.round(publishedPointsTotal / publishedBadges.length) : 0;
@@ -3341,22 +3512,24 @@ function renderClientBadges() {
 
   const filterButtons = categories
     .map(category => {
-      const isActive = activeFilter === category;
-      const safeCategory = escapeHtml(category);
+      const isActive = activeFilter === category.value;
+      const value = escapeHtml(category.value);
+      const label = formatCatalogueLabel(category.label);
       return `
         <button
           type="button"
           class="badge-filter__item${isActive ? " badge-filter__item--active" : ""}"
-          data-badge-filter="${safeCategory}"
+          data-badge-filter="${value}"
           aria-pressed="${isActive ? "true" : "false"}">
-          ${safeCategory}
+          ${escapeHtml(label)}
         </button>
       `;
     })
     .join("");
 
-  const filterMarkup = `
-      <div class="badge-gallery__filters badge-filter" role="toolbar" aria-label="Badge categories">
+  const filterMarkup = categories.length
+    ? `
+      <div class="badge-gallery__filters badge-filter client-badges__filters" role="toolbar" aria-label="Badge categories">
         <button
           type="button"
           class="badge-filter__item${activeFilter ? "" : " badge-filter__item--active"}"
@@ -3366,7 +3539,8 @@ function renderClientBadges() {
         </button>
         ${filterButtons}
       </div>
-    `;
+    `
+    : "";
 
   const gridMarkup = filteredBadges.length
     ? filteredBadges
@@ -3390,19 +3564,20 @@ function renderClientBadges() {
             typeof badge.difficulty === "string" && badge.difficulty.trim().length > 0
               ? badge.difficulty.trim()
               : "Skilled";
-          const normalizedCategory =
+          const rawCategory =
             typeof badge.category === "string" && badge.category.trim().length > 0
               ? badge.category.trim()
               : "Badge";
+          const categoryLabel = formatCatalogueLabel(rawCategory);
           const pointsValue = Number(badge.points) || 0;
           const tags = [];
-          if (normalizedCategory && normalizedCategory !== "Badge") {
-            tags.push(`<span>${escapeHtml(normalizedCategory)}</span>`);
+          if (rawCategory && rawCategory.toLowerCase() !== "badge") {
+            tags.push(`<span class="catalogue-card__tag gem-badge-card__tag">${escapeHtml(categoryLabel)}</span>`);
           }
           if (difficultyLabel) {
-            tags.push(`<span>${escapeHtml(difficultyLabel)}</span>`);
+            tags.push(`<span class="catalogue-card__tag gem-badge-card__tag">${escapeHtml(difficultyLabel)}</span>`);
           }
-          const tagsMarkup = tags.length ? `<div class="gem-badge-card__tags">${tags.join("")}</div>` : "";
+          const tagsMarkup = tags.length ? `<div class="gem-badge-card__tags catalogue-card__tags">${tags.join("")}</div>` : "";
           const statusLabel = badge.published ? "Published" : "Draft";
           const statusClass = badge.published ? "gem-badge-card__status--published" : "gem-badge-card__status--draft";
           const ariaLabel = `${badge.title} badge, ${difficultyLabel} difficulty, worth ${formatNumber(pointsValue)} points.`;
@@ -3432,7 +3607,7 @@ function renderClientBadges() {
                 <span class="gem-badge-card__orb gem-badge-card__orb--one"></span>
                 <span class="gem-badge-card__orb gem-badge-card__orb--two"></span>
                 <header class="gem-badge-card__header">
-                  <span>${escapeHtml(normalizedCategory)}</span>
+                  <span>${escapeHtml(categoryLabel)}</span>
                   <span class="gem-badge-card__status ${statusClass}">${statusLabel}</span>
                 </header>
                 <div class="gem-badge-card__main">
@@ -3465,7 +3640,7 @@ function renderClientBadges() {
         activeFilter ? "No badges match the selected filter." : "No badges are configured yet."
       }</p></div>`;
 
-  const metricsMarkup = [
+  const metricsConfig = [
     {
       label: "Total badges",
       value: formatNumber(badges.length),
@@ -3486,32 +3661,34 @@ function renderClientBadges() {
       value: formatNumber(categories.length),
       caption: "Storytelling themes"
     }
-  ]
+  ];
+
+  const metricsMarkup = metricsConfig
     .map(
       metric => `
-      <article class="badge-gallery__metric">
-        <span>${escapeHtml(metric.label)}</span>
-        <strong>${escapeHtml(String(metric.value))}</strong>
-        <span>${escapeHtml(metric.caption)}</span>
-      </article>
-    `
+        <article class="badge-gallery__metric client-badges__metric">
+          <h3>${escapeHtml(metric.label)}</h3>
+          <strong>${escapeHtml(String(metric.value))}</strong>
+          <span>${escapeHtml(metric.caption)}</span>
+        </article>
+      `
     )
     .join("");
 
   return `
     <section class="badge-gallery" aria-labelledby="badge-gallery-heading">
       <div class="badge-gallery__inner">
-        <section class="badge-gallery__hero">
-          <span class="badge-gallery__eyebrow">Badge catalogue</span>
+        <section class="badge-gallery__hero client-catalogue__intro">
+          <span class="badge-gallery__eyebrow client-catalogue__eyebrow">Badge catalogue</span>
           <h1 id="badge-gallery-heading">Badge collection</h1>
           <p>Curate the badge tiers you want squads to chase. Publish just the stories you need and bring the sparkle into every hub and add-in moment.</p>
-          <p class="badge-gallery__sub">${escapeHtml(totalPointsCopy)}</p>
+          <p class="badge-gallery__sub detail-table__meta">${escapeHtml(totalPointsCopy)}</p>
         </section>
-        <section class="badge-gallery__metrics">
+        <section class="badge-gallery__metrics client-badges__metrics">
           ${metricsMarkup}
         </section>
-        <div class="badge-gallery__actions">
-          <div class="badge-gallery__bulk">
+        <div class="badge-gallery__actions client-badges__actions">
+          <div class="badge-gallery__bulk client-badges__bulk">
             <button
               type="button"
               class="button-pill button-pill--primary"
@@ -3527,7 +3704,7 @@ function renderClientBadges() {
           </div>
           ${filterMarkup}
         </div>
-        <section class="badge-gallery__grid gem-badge-grid">
+        <section class="badge-gallery__grid gem-badge-grid client-badges__grid">
           ${gridMarkup}
         </section>
       </div>
@@ -3617,6 +3794,20 @@ function renderWeldAdmin() {
       </div>
     </section>
   `;
+}
+
+function formatCatalogueLabel(label) {
+  if (typeof label !== "string") return "";
+  const normalized = label.replace(/[_-]+/g, " ").trim();
+  if (!normalized) return "";
+  return normalized
+    .split(/\s+/)
+    .map(word => {
+      if (word.length === 0) return "";
+      if (word.toUpperCase() === word) return word;
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
 }
 
 function formatNumber(value) {
@@ -4226,14 +4417,9 @@ function attachBadgeEvents(container) {
   container.addEventListener("click", event => {
     const filterButton = event.target.closest("[data-badge-filter]");
     if (filterButton) {
-      const value = filterButton.getAttribute("data-badge-filter") || "";
-      const normalized = value.trim();
-      const nextFilter = normalized.length > 0 ? normalized : null;
-      const currentFilter =
-        typeof state.meta.badgeFilter === "string" && state.meta.badgeFilter.trim().length > 0
-          ? state.meta.badgeFilter.trim()
-          : null;
-      if (currentFilter !== nextFilter) {
+      const value = (filterButton.getAttribute("data-badge-filter") || "").trim().toLowerCase();
+      const nextFilter = value.length > 0 ? value : null;
+      if (state.meta.badgeFilter !== nextFilter) {
         state.meta.badgeFilter = nextFilter;
         persist();
         renderApp();
@@ -4543,6 +4729,18 @@ function attachClientDashboardEvents(container) {
 
 function attachClientRewardsEvents(container) {
   container.addEventListener("click", event => {
+    const filterButton = event.target.closest("[data-reward-filter]");
+    if (filterButton) {
+      const value = (filterButton.getAttribute("data-reward-filter") || "").trim().toLowerCase();
+      const nextFilter = value.length > 0 ? value : null;
+      if (state.meta.rewardFilter !== nextFilter) {
+        state.meta.rewardFilter = nextFilter;
+        persist();
+        renderApp();
+      }
+      return;
+    }
+
     const bulkButton = event.target.closest("[data-bulk-reward-action]");
     if (bulkButton) {
       const action = bulkButton.getAttribute("data-bulk-reward-action");
@@ -4567,6 +4765,18 @@ function attachClientRewardsEvents(container) {
 
 function attachClientQuestsEvents(container) {
   container.addEventListener("click", event => {
+    const filterButton = event.target.closest("[data-quest-filter]");
+    if (filterButton) {
+      const value = (filterButton.getAttribute("data-quest-filter") || "").trim().toLowerCase();
+      const nextFilter = value.length > 0 ? value : null;
+      if (state.meta.questFilter !== nextFilter) {
+        state.meta.questFilter = nextFilter;
+        persist();
+        renderApp();
+      }
+      return;
+    }
+
     const bulkButton = event.target.closest("[data-bulk-quest-action]");
     if (bulkButton) {
       const action = bulkButton.getAttribute("data-bulk-quest-action");
