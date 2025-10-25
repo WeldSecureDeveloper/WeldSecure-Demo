@@ -2403,6 +2403,35 @@ function renderAchievementsPage() {
   const categoriesCount = new Set(achievements.map(achievement => achievement.category)).size;
   const difficultyOrder = ["Starter", "Rising", "Skilled", "Expert", "Legendary"];
 
+  const difficultyPalette = {
+    Starter: ["bronze-badge", "obsidian-badge"],
+    Rising: ["silver-badge", "amethyst-badge"],
+    Skilled: ["gold-badge", "emerald-badge"],
+    Expert: ["platinum-badge", "sapphire-badge"],
+    Legendary: ["ruby-badge", "diamond-badge"]
+  };
+
+  const badgeLabels = {
+    "bronze-badge": "Bronze",
+    "obsidian-badge": "Obsidian",
+    "silver-badge": "Silver",
+    "amethyst-badge": "Amethyst",
+    "gold-badge": "Gold",
+    "emerald-badge": "Emerald",
+    "platinum-badge": "Platinum",
+    "sapphire-badge": "Sapphire",
+    "ruby-badge": "Ruby",
+    "diamond-badge": "Diamond"
+  };
+
+  const paletteOffsets = {
+    Starter: 0,
+    Rising: 0,
+    Skilled: 0,
+    Expert: 0,
+    Legendary: 0
+  };
+
   const sortedAchievements = achievements
     .slice()
     .sort((a, b) => {
@@ -2414,30 +2443,34 @@ function renderAchievementsPage() {
       return a.title.localeCompare(b.title);
     });
 
-  const cardsMarkup = sortedAchievements
+  const badgeMarkup = sortedAchievements
     .map(achievement => {
-      const toneKey = ACHIEVEMENT_TONES[achievement.tone] ? achievement.tone : "violet";
-      const background = ACHIEVEMENT_TONES[toneKey];
-      const iconBackdrop = ACHIEVEMENT_ICON_BACKDROPS[toneKey] || ACHIEVEMENT_ICON_BACKDROPS.violet;
       const difficultyLabel = achievement.difficulty || "Skilled";
+      const palette = difficultyPalette[difficultyLabel] || difficultyPalette.Skilled;
+      const offset = paletteOffsets[difficultyLabel] || 0;
+      const styleClass = palette[offset % palette.length];
+      paletteOffsets[difficultyLabel] = offset + 1;
+      const badgeLabel = badgeLabels[styleClass] || "Gold";
+
       return `
-        <article class="achievement-card" style="--card-tone:${background};" tabindex="0" role="group" aria-label="${achievement.title} achievement, ${difficultyLabel} difficulty, worth ${formatNumber(achievement.points)} points.">
-          <div class="achievement-card__glow"></div>
-          <div class="achievement-card__icon" style="background:${iconBackdrop.background}; box-shadow:0 12px 28px ${iconBackdrop.shadow};">
-            ${renderIcon(achievement.icon, "sm")}
-          </div>
-          <div class="achievement-card__body">
-            <span class="achievement-card__category">${achievement.category}</span>
-            <h3>${achievement.title}</h3>
-            <div class="achievement-card__tags">
-              <span class="achievement-card__tag">${difficultyLabel}</span>
-              <span class="achievement-card__tag achievement-card__tag--points">+${formatNumber(achievement.points)} pts</span>
+        <article class="badge-tile" tabindex="0" role="group" aria-label="${achievement.title} achievement, ${difficultyLabel} difficulty, worth ${formatNumber(achievement.points)} points.">
+          <div class="badge ${styleClass}" data-badge-style="${styleClass}">
+            <div class="badge-shine"></div>
+            <div class="badge-ring"></div>
+            <div class="particles"></div>
+            <div class="badge-inner">
+              <svg class="badge-icon" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+              </svg>
+              <span class="badge-inner__label">${badgeLabel.toUpperCase()}</span>
             </div>
           </div>
-          <div class="achievement-card__details" role="tooltip">
-            <p>${achievement.description}</p>
-            <span class="achievement-card__details-points">Worth ${formatNumber(achievement.points)} points</span>
+          <h3 class="badge-tile__name">${achievement.title}</h3>
+          <div class="badge-tile__meta">
+            <span class="badge-tile__difficulty">${difficultyLabel}</span>
+            <span class="badge-tile__points">+${formatNumber(achievement.points)} pts</span>
           </div>
+          <p class="badge-tile__description">${achievement.description}</p>
         </article>
       `;
     })
@@ -2529,135 +2562,209 @@ function renderAchievementsPage() {
               .achievement-gallery__grid {
                 display: grid;
                 gap: 1.5rem;
-                grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
               }
 
-              .achievement-card {
+              .badge-tile {
                 position: relative;
-                border-radius: 1.25rem;
-                padding: 1.75rem;
-                background: var(--card-tone, linear-gradient(135deg, #f8fafc, #e2e8f0));
-                box-shadow: 0 18px 34px rgba(15, 23, 42, 0.1);
-                overflow: hidden;
-                transition: transform 0.35s ease, box-shadow 0.35s ease;
+                border-radius: 1rem;
+                background: rgba(255, 255, 255, 0.92);
+                padding: 1.75rem 1.25rem 1.75rem;
+                text-align: center;
+                box-shadow: 0 24px 36px rgba(15, 23, 42, 0.12);
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
                 outline: none;
               }
 
-              .achievement-card__glow {
-                position: absolute;
-                inset: 0;
-                background: linear-gradient(160deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0) 55%);
-                opacity: 0;
-                transition: opacity 0.35s ease;
-                pointer-events: none;
+              .badge-tile:focus-visible {
+                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35);
               }
 
-              .achievement-card__icon {
-                width: 3rem;
-                height: 3rem;
-                border-radius: 1rem;
+              .badge-tile:hover,
+              .badge-tile:focus-within {
+                transform: translateY(-8px);
+                box-shadow: 0 28px 44px rgba(15, 23, 42, 0.18);
+              }
+
+              .badge {
+                position: relative;
+                width: 6rem;
+                height: 6rem;
+                border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                margin-bottom: 1.25rem;
-                transition: transform 0.35s ease;
+                transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                overflow: hidden;
+                margin: 0 auto 1rem;
               }
 
-              .achievement-card__body {
+              .badge-tile:hover .badge,
+              .badge-tile:focus-within .badge {
+                transform: scale(1.08);
+              }
+
+              .badge-inner {
+                position: relative;
+                z-index: 2;
                 display: flex;
                 flex-direction: column;
-                gap: 0.75rem;
+                align-items: center;
               }
 
-              .achievement-card__category {
+              .badge-inner__label {
+                margin-top: 0.35rem;
+                font-weight: 700;
                 font-size: 0.75rem;
-                letter-spacing: 0.08em;
+                letter-spacing: 0.12em;
+                color: #ffffff;
+              }
+
+              .badge-icon {
+                width: 2.5rem;
+                height: 2.5rem;
+                color: #ffffff;
+                animation: altBadgePulse 2s infinite;
+              }
+
+              .badge-shine {
+                position: absolute;
+                top: 0;
+                left: -110%;
+                width: 220%;
+                height: 100%;
+                background: linear-gradient(
+                  to right,
+                  rgba(255, 255, 255, 0) 0%,
+                  rgba(255, 255, 255, 0.3) 50%,
+                  rgba(255, 255, 255, 0) 100%
+                );
+                transform: skewX(-20deg);
+                transition: all 0.7s ease;
+                z-index: 1;
+              }
+
+              .badge-tile:hover .badge-shine,
+              .badge-tile:focus-within .badge-shine {
+                left: 100%;
+              }
+
+              .badge-ring {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                border-radius: 50%;
+                border: 2px solid rgba(255, 255, 255, 0.35);
+                animation: altBadgeSpin 14s linear infinite;
+                z-index: 0;
+              }
+
+              .particles {
+                position: absolute;
+                inset: 0;
+                pointer-events: none;
+                z-index: 1;
+              }
+
+              .particle {
+                position: absolute;
+                background-color: rgba(255, 255, 255, 0.7);
+                border-radius: 50%;
+                opacity: 0;
+              }
+
+              .badge-tile:hover .particle,
+              .badge-tile:focus-within .particle {
+                animation: altBadgeFloat 2s ease-in-out infinite;
+              }
+
+              .badge-tile__name {
+                font-size: 1.1rem;
+                font-weight: 600;
+                color: #0f172a;
+              }
+
+              .badge-tile__meta {
+                display: flex;
+                justify-content: center;
+                gap: 0.5rem;
+                margin-top: 0.75rem;
+                font-size: 0.7rem;
                 text-transform: uppercase;
+                letter-spacing: 0.1em;
                 color: #475569;
               }
 
-              .achievement-card h3 {
-                font-size: 1.35rem;
-                font-weight: 600;
-                color: #0f172a;
+              .badge-tile__points {
+                font-weight: 700;
+                color: #1f2937;
               }
 
-              .achievement-card__tags {
-                display: flex;
-                gap: 0.5rem;
-                flex-wrap: wrap;
-              }
-
-              .achievement-card__tag {
-                font-size: 0.75rem;
-                font-weight: 600;
-                padding: 0.35rem 0.6rem;
-                border-radius: 999px;
-                background: rgba(15, 23, 42, 0.08);
-                color: #0f172a;
-              }
-
-              .achievement-card__tag--points {
-                background: rgba(15, 23, 42, 0.12);
-              }
-
-              .achievement-card__details {
-                position: absolute;
-                inset: 0;
-                background: rgba(15, 23, 42, 0.92);
-                color: #f8fafc;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                gap: 1rem;
-                padding: 2rem;
+              .badge-tile__description {
+                margin-top: 0.9rem;
+                color: #475569;
+                line-height: 1.55;
                 opacity: 0;
-                transform: translateY(20px);
-                transition: opacity 0.3s ease, transform 0.3s ease;
-                pointer-events: none;
-                text-align: left;
+                transform: translateY(10px);
+                transition: opacity 0.25s ease, transform 0.25s ease;
               }
 
-              .achievement-card__details p {
-                line-height: 1.6;
-              }
-
-              .achievement-card__details-points {
-                font-weight: 600;
-                letter-spacing: 0.04em;
-                text-transform: uppercase;
-                color: #cbd5f5;
-              }
-
-              .achievement-card:hover,
-              .achievement-card:focus-within,
-              .achievement-card--active {
-                transform: translateY(-8px);
-                box-shadow: 0 26px 48px rgba(15, 23, 42, 0.18);
-              }
-
-              .achievement-card:hover .achievement-card__glow,
-              .achievement-card:focus-within .achievement-card__glow,
-              .achievement-card--active .achievement-card__glow {
-                opacity: 1;
-              }
-
-              .achievement-card:hover .achievement-card__icon,
-              .achievement-card:focus-within .achievement-card__icon,
-              .achievement-card--active .achievement-card__icon {
-                transform: translateY(-4px);
-              }
-
-              .achievement-card:hover .achievement-card__details,
-              .achievement-card:focus-within .achievement-card__details,
-              .achievement-card--active .achievement-card__details {
+              .badge-tile:hover .badge-tile__description,
+              .badge-tile:focus-within .badge-tile__description {
                 opacity: 1;
                 transform: translateY(0);
-                pointer-events: auto;
               }
 
-              .achievement-card:focus-visible {
-                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35);
+              .diamond-badge {
+                background: linear-gradient(135deg, #b3fffc 0%, #48aaad 100%);
+                box-shadow: 0 10px 20px rgba(72, 170, 173, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
+              }
+
+              .platinum-badge {
+                background: linear-gradient(135deg, #e5e5e5 0%, #b7b7b7 100%);
+                box-shadow: 0 10px 20px rgba(183, 183, 183, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
+              }
+
+              .gold-badge {
+                background: linear-gradient(135deg, #f9d423 0%, #e2a139 100%);
+                box-shadow: 0 10px 20px rgba(242, 185, 65, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
+              }
+
+              .silver-badge {
+                background: linear-gradient(135deg, #e3e3e3 0%, #b8b8b8 100%);
+                box-shadow: 0 10px 20px rgba(184, 184, 184, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
+              }
+
+              .bronze-badge {
+                background: linear-gradient(135deg, #d1913c 0%, #a16522 100%);
+                box-shadow: 0 10px 20px rgba(161, 101, 34, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
+              }
+
+              .ruby-badge {
+                background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+                box-shadow: 0 10px 20px rgba(255, 75, 43, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
+              }
+
+              .sapphire-badge {
+                background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+                box-shadow: 0 10px 20px rgba(33, 147, 176, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
+              }
+
+              .emerald-badge {
+                background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+                box-shadow: 0 10px 20px rgba(17, 153, 142, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
+              }
+
+              .amethyst-badge {
+                background: linear-gradient(135deg, #9d50bb 0%, #6e48aa 100%);
+                box-shadow: 0 10px 20px rgba(110, 72, 170, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
+              }
+
+              .obsidian-badge {
+                background: linear-gradient(135deg, #434343 0%, #000000 100%);
+                box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3), inset 0 -3px 0 rgba(255, 255, 255, 0.1);
               }
 
               @media (max-width: 768px) {
@@ -2667,6 +2774,42 @@ function renderAchievementsPage() {
 
                 .achievement-gallery__hero h1 {
                   font-size: 1.85rem;
+                }
+              }
+
+              @keyframes altBadgeFloat {
+                0% {
+                  transform: translateY(0) rotate(0deg);
+                  opacity: 0;
+                }
+                20% {
+                  opacity: 1;
+                }
+                80% {
+                  opacity: 1;
+                }
+                100% {
+                  transform: translateY(-18px) rotate(360deg);
+                  opacity: 0;
+                }
+              }
+
+              @keyframes altBadgePulse {
+                0%,
+                100% {
+                  transform: scale(1);
+                }
+                50% {
+                  transform: scale(1.08);
+                }
+              }
+
+              @keyframes altBadgeSpin {
+                0% {
+                  transform: rotate(0deg);
+                }
+                100% {
+                  transform: rotate(360deg);
                 }
               }
             </style>
@@ -2699,7 +2842,7 @@ function renderAchievementsPage() {
                 </article>
               </section>
               <section class="achievement-gallery__grid">
-                ${cardsMarkup}
+                ${badgeMarkup}
               </section>
             </div>
           </div>
@@ -4115,43 +4258,42 @@ function renderContent() {
 
 function attachAchievementsEvents(container) {
   if (!container) return;
-  const cards = Array.from(container.querySelectorAll(".achievement-card"));
-  if (cards.length === 0) return;
+  const gallery = container.querySelector(".achievement-gallery");
+  if (!gallery) return;
 
-  cards.forEach(card => {
-    if (card.dataset.bound === "true") return;
-    card.dataset.bound = "true";
+  const badges = gallery.querySelectorAll(".badge");
+  badges.forEach(badge => {
+    if (badge.dataset.particlesReady === "true") return;
+    badge.dataset.particlesReady = "true";
 
-    card.addEventListener("click", () => {
-      card.focus();
-    });
+    const particlesContainer = badge.querySelector(".particles");
+    if (!particlesContainer) return;
 
-    card.addEventListener("keydown", event => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        card.classList.remove("achievement-card--active");
-        card.blur();
-        return;
-      }
+    const particleCount = 10;
+    for (let index = 0; index < particleCount; index += 1) {
+      const particle = document.createElement("div");
+      particle.className = "particle";
+      const size = Math.random() * 3 + 3;
+      particle.style.width = `${size.toFixed(2)}px`;
+      particle.style.height = `${size.toFixed(2)}px`;
+      particle.style.left = `${Math.random() * 100}%`;
+      particle.style.top = `${Math.random() * 100}%`;
+      particle.style.animationDelay = `${(Math.random() * 2).toFixed(2)}s`;
+      particlesContainer.appendChild(particle);
+    }
 
-      if (event.key === " " || event.key === "Enter") {
-        event.preventDefault();
-        const wasActive = card.classList.contains("achievement-card--active");
-        cards.forEach(other => {
-          if (other !== card) other.classList.remove("achievement-card--active");
-        });
-        if (wasActive) {
-          card.classList.remove("achievement-card--active");
-          card.blur();
-        } else {
-          card.classList.add("achievement-card--active");
-        }
-      }
-    });
+    const refreshParticles = () => {
+      const particles = particlesContainer.querySelectorAll(".particle");
+      particles.forEach((particle, index) => {
+        particle.style.animationDelay = `${(index * 0.12).toFixed(2)}s`;
+      });
+    };
 
-    card.addEventListener("blur", () => {
-      card.classList.remove("achievement-card--active");
-    });
+    badge.addEventListener("mouseenter", refreshParticles);
+    const tile = badge.closest(".badge-tile");
+    if (tile) {
+      tile.addEventListener("focusin", refreshParticles);
+    }
   });
 }
 
