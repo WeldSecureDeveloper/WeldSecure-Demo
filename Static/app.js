@@ -482,11 +482,122 @@ const POINTS_CARD_ICONS = {
 
 const ACHIEVEMENTS = [
   {
+    id: "welcome-wave",
+    title: "Welcome Wave",
+    description: "Log into the WeldSecure hub within your first 24 hours.",
+    category: "Onboarding",
+    points: 20,
+    difficulty: "Starter",
+    icon: "spark",
+    tone: "violet"
+  },
+  {
+    id: "hub-hopper",
+    title: "Hub Hopper",
+    description: "Visit every navigation section during your first week.",
+    category: "Onboarding",
+    points: 30,
+    difficulty: "Starter",
+    icon: "network",
+    tone: "aqua"
+  },
+  {
+    id: "profile-polisher",
+    title: "Profile Polisher",
+    description: "Complete your profile and set your security preferences.",
+    category: "Onboarding",
+    points: 25,
+    difficulty: "Starter",
+    icon: "badge",
+    tone: "slate"
+  },
+  {
+    id: "orientation-ace",
+    title: "Orientation Ace",
+    description: "Watch the orientation walkthrough and pass the recap quiz.",
+    category: "Onboarding",
+    points: 30,
+    difficulty: "Starter",
+    icon: "lightbulb",
+    tone: "amber"
+  },
+  {
+    id: "tour-trailblazer",
+    title: "Tour Trailblazer",
+    description: "Finish the interactive product tour without skipping a stop.",
+    category: "Onboarding",
+    points: 35,
+    difficulty: "Rising",
+    icon: "compass",
+    tone: "aqua"
+  },
+  {
+    id: "kickoff-kudos",
+    title: "Kickoff Kudos",
+    description: "Send your first kudos or recognition note from the hub.",
+    category: "Onboarding",
+    points: 30,
+    difficulty: "Rising",
+    icon: "heart",
+    tone: "coral"
+  },
+  {
+    id: "launch-checklist",
+    title: "Launch Checklist",
+    description: "Complete every task on the onboarding checklist.",
+    category: "Onboarding",
+    points: 40,
+    difficulty: "Rising",
+    icon: "clipboard",
+    tone: "emerald"
+  },
+  {
+    id: "alert-acknowledged",
+    title: "Alert Acknowledged",
+    description: "Enable notifications across the channels your team uses.",
+    category: "Onboarding",
+    points: 25,
+    difficulty: "Rising",
+    icon: "whistle",
+    tone: "cobalt"
+  },
+  {
+    id: "mission-briefing",
+    title: "Mission Briefing",
+    description: "Complete your first interactive training mission.",
+    category: "Onboarding",
+    points: 35,
+    difficulty: "Rising",
+    icon: "book",
+    tone: "midnight"
+  },
+  {
+    id: "hub-habit",
+    title: "Hub Habit",
+    description: "Log in three consecutive days during onboarding.",
+    category: "Onboarding",
+    points: 40,
+    difficulty: "Skilled",
+    icon: "laurel",
+    tone: "emerald"
+  },
+  {
+    id: "toolkit-tour",
+    title: "Toolkit Tour",
+    description: "Install the WeldSecure add-ins and connect your devices.",
+    category: "Onboarding",
+    points: 40,
+    difficulty: "Skilled",
+    icon: "gear",
+    tone: "slate"
+  },
+  {
     id: "first-catch",
     title: "First Catch",
     description: "Report your very first suspicious email through WeldSecure.",
-    category: "Activation",
+    category: "Onboarding",
     points: 40,
+    difficulty: "Starter",
     icon: "medal",
     tone: "violet"
   },
@@ -494,10 +605,31 @@ const ACHIEVEMENTS = [
     id: "launch-pad",
     title: "Launch Pad",
     description: "Complete every onboarding checklist item in your first week.",
-    category: "Activation",
+    category: "Onboarding",
     points: 50,
+    difficulty: "Rising",
     icon: "rocket",
     tone: "aqua"
+  },
+  {
+    id: "reward-ready",
+    title: "Reward Ready",
+    description: "Earn enough points to unlock your first WeldSecure reward.",
+    category: "Onboarding",
+    points: 80,
+    difficulty: "Skilled",
+    icon: "gift",
+    tone: "gold"
+  },
+  {
+    id: "first-redemption",
+    title: "First Redemption",
+    description: "Redeem your first reward to celebrate getting started.",
+    category: "Onboarding",
+    points: 90,
+    difficulty: "Skilled",
+    icon: "trophy",
+    tone: "gold"
   },
   {
     id: "rapid-reporter",
@@ -505,17 +637,119 @@ const ACHIEVEMENTS = [
     description: "Flag a potentially risky message within 10 minutes of receiving it.",
     category: "Speed",
     points: 60,
+    difficulty: "Rising",
     icon: "hourglass",
     tone: "cobalt"
   },
   {
-    id: "hype-herald",
-    title: "Hype Herald",
-    description: "Promote WeldSecure reporting in a company-wide channel.",
-    category: "Culture",
-    points: 60,
-    icon: "megaphone",
+    id: "whistle-watch",
+    title: "Whistle Watch",
+    description: "Escalate a suspicious phone call or SMS using WeldSecure tools.",
+    category: "Speed",
+    points: 115,
+    difficulty: "Expert",
+    icon: "whistle",
+    tone: "cobalt"
+  },
+  {
+    id: "resilience-ranger",
+    title: "Resilience Ranger",
+    description: "Coordinate a cross-team response that closes a high-severity incident in under an hour.",
+    category: "Speed",
+    points: 165,
+    difficulty: "Legendary",
+    icon: "shield",
     tone: "emerald"
+  },
+  {
+    id: "spark-starter",
+    title: "Spark Starter",
+    description: "Be the first reporter to raise a newly trending threat subject.",
+    category: "Impact",
+    points: 85,
+    difficulty: "Skilled",
+    icon: "spark",
+    tone: "blush"
+  },
+  {
+    id: "automation-ally",
+    title: "Automation Ally",
+    description: "Trigger an automated secure response with your report metadata.",
+    category: "Impact",
+    points: 125,
+    difficulty: "Expert",
+    icon: "gear",
+    tone: "midnight"
+  },
+  {
+    id: "intel-curator",
+    title: "Intel Curator",
+    description: "Publish a weekly threat digest that five teammates subscribe to.",
+    category: "Impact",
+    points: 135,
+    difficulty: "Expert",
+    icon: "lightbulb",
+    tone: "amber"
+  },
+  {
+    id: "golden-signal",
+    title: "Golden Signal",
+    description: "Submit intel that leads to a high-severity threat takedown.",
+    category: "Impact",
+    points: 150,
+    difficulty: "Legendary",
+    icon: "diamond",
+    tone: "amber"
+  },
+  {
+    id: "threat-cartographer",
+    title: "Threat Cartographer",
+    description: "Map an emerging campaign across regions with actionable insights.",
+    category: "Impact",
+    points: 195,
+    difficulty: "Legendary",
+    icon: "globe",
+    tone: "midnight"
+  },
+  {
+    id: "zero-day-zeal",
+    title: "Zero-Day Zeal",
+    description: "Raise the first report tied to a zero-day alert in the news.",
+    category: "Impact",
+    points: 155,
+    difficulty: "Legendary",
+    icon: "flame",
+    tone: "gold"
+  },
+  {
+    id: "signal-sculptor",
+    title: "Signal Sculptor",
+    description: "Deliver ten high-confidence reports with full remediation playbooks.",
+    category: "Precision",
+    points: 190,
+    difficulty: "Legendary",
+    icon: "target",
+    tone: "cobalt"
+  },
+  {
+    id: "bullseye-breaker",
+    title: "Bullseye Breaker",
+    description: "Identify a targeted phishing attempt that hits multiple peers.",
+    category: "Precision",
+    points: 90,
+    difficulty: "Expert",
+    icon: "target",
+    tone: "cobalt"
+  },
+  {
+    id: "pattern-decoder",
+    title: "Pattern Decoder",
+    description: "Connect three related phishing emails across different days.",
+    category: "Impact",
+    points: 145,
+    difficulty: "Expert",
+    icon: "puzzle",
+    tone: "midnight"
   },
   {
     id: "context-captain",
@@ -523,16 +757,8 @@ const ACHIEVEMENTS = [
     description: "Provide detailed notes and evidence for five consecutive reports.",
     category: "Mastery",
     points: 65,
+    difficulty: "Skilled",
     icon: "clipboard",
-    tone: "emerald"
-  },
-  {
-    id: "culture-spark",
-    title: "Culture Spark",
-    description: "Share a vigilance tip that inspires three coworkers to report.",
-    category: "Culture",
-    points: 70,
-    icon: "heart",
     tone: "emerald"
   },
   {
@@ -541,44 +767,49 @@ const ACHIEVEMENTS = [
     description: "Complete every interactive training mission in the reporter hub.",
     category: "Mastery",
     points: 75,
+    difficulty: "Skilled",
     icon: "book",
     tone: "slate"
   },
   {
-    id: "reward-ready",
-    title: "Reward Ready",
-    description: "Earn enough points to unlock your first WeldSecure reward.",
-    category: "Rewards",
-    points: 80,
-    icon: "gift",
+    id: "playbook-architect",
+    title: "Playbook Architect",
+    description: "Design a custom response playbook adopted by your security team.",
+    category: "Mastery",
+    points: 185,
+    difficulty: "Legendary",
+    icon: "gear",
+    tone: "slate"
+  },
+  {
+    id: "insight-whisperer",
+    title: "Insight Whisperer",
+    description: "Spot a new attacker tactic before it appears in threat advisories.",
+    category: "Impact",
+    points: 140,
+    difficulty: "Expert",
+    icon: "lightbulb",
     tone: "coral"
   },
   {
-    id: "network-node",
-    title: "Network Node",
-    description: "Share a WeldSecure threat insight that sparks a team discussion.",
-    category: "Collaboration",
-    points: 80,
-    icon: "network",
-    tone: "aqua"
+    id: "hype-herald",
+    title: "Hype Herald",
+    description: "Promote WeldSecure reporting in a company-wide channel.",
+    category: "Culture",
+    points: 60,
+    difficulty: "Skilled",
+    icon: "megaphone",
+    tone: "emerald"
   },
   {
-    id: "spark-starter",
-    title: "Spark Starter",
-    description: "Be the first reporter to raise a newly trending threat subject.",
-    category: "Impact",
-    points: 85,
-    icon: "spark",
-    tone: "blush"
-  },
-  {
-    id: "bullseye-breaker",
-    title: "Bullseye Breaker",
-    description: "Identify a targeted phishing attempt that hits multiple peers.",
-    category: "Precision",
-    points: 90,
-    icon: "target",
-    tone: "cobalt"
+    id: "culture-spark",
+    title: "Culture Spark",
+    description: "Share a vigilance tip that inspires three coworkers to report.",
+    category: "Culture",
+    points: 70,
+    difficulty: "Skilled",
+    icon: "heart",
+    tone: "emerald"
   },
   {
     id: "buddy-system",
@@ -586,6 +817,27 @@ const ACHIEVEMENTS = [
     description: "Coach a colleague through their first WeldSecure report.",
     category: "Collaboration",
     points: 90,
+    difficulty: "Skilled",
+    icon: "handshake",
+    tone: "emerald"
+  },
+  {
+    id: "network-node",
+    title: "Network Node",
+    description: "Share a WeldSecure threat insight that sparks a team discussion.",
+    category: "Collaboration",
+    points: 80,
+    difficulty: "Skilled",
+    icon: "network",
+    tone: "aqua"
+  },
+  {
+    id: "mentor-maven",
+    title: "Mentor Maven",
+    description: "Guide three teammates to unlock their first advanced achievement.",
+    category: "Collaboration",
+    points: 175,
+    difficulty: "Legendary",
     icon: "handshake",
     tone: "emerald"
   },
@@ -595,8 +847,39 @@ const ACHIEVEMENTS = [
     description: "Contribute to three weekly momentum report spikes in a quarter.",
     category: "Consistency",
     points: 95,
+    difficulty: "Expert",
     icon: "chart",
     tone: "slate"
+  },
+  {
+    id: "guardian-streak",
+    title: "Guardian Streak",
+    description: "Report suspicious content for seven days in a row.",
+    category: "Consistency",
+    points: 120,
+    difficulty: "Expert",
+    icon: "shield",
+    tone: "emerald"
+  },
+  {
+    id: "streak-ribbon",
+    title: "Streak Ribbon",
+    description: "Maintain a fourteen-day reporting streak without missing a beat.",
+    category: "Consistency",
+    points: 130,
+    difficulty: "Expert",
+    icon: "ribbon",
+    tone: "aqua"
+  },
+  {
+    id: "seasoned-sentinel",
+    title: "Seasoned Sentinel",
+    description: "Report suspicious activity every month for six consecutive months.",
+    category: "Consistency",
+    points: 160,
+    difficulty: "Legendary",
+    icon: "laurel",
+    tone: "amber"
   },
   {
     id: "global-scout",
@@ -604,6 +887,7 @@ const ACHIEVEMENTS = [
     description: "Submit a report while traveling outside your primary office.",
     category: "Mobility",
     points: 100,
+    difficulty: "Skilled",
     icon: "globe",
     tone: "midnight"
   },
@@ -613,6 +897,7 @@ const ACHIEVEMENTS = [
     description: "Submit a high-quality report while traveling on business day one.",
     category: "Mobility",
     points: 100,
+    difficulty: "Expert",
     icon: "plane",
     tone: "blush"
   },
@@ -622,6 +907,7 @@ const ACHIEVEMENTS = [
     description: "Submit the first report from a newly onboarded location.",
     category: "Activation",
     points: 105,
+    difficulty: "Skilled",
     icon: "compass",
     tone: "slate"
   },
@@ -631,79 +917,18 @@ const ACHIEVEMENTS = [
     description: "Reach 500 lifetime WeldSecure points as a reporter.",
     category: "Rewards",
     points: 110,
+    difficulty: "Skilled",
     icon: "mountain",
     tone: "midnight"
   },
   {
-    id: "whistle-watch",
-    title: "Whistle Watch",
-    description: "Escalate a suspicious phone call or SMS using WeldSecure tools.",
-    category: "Speed",
-    points: 115,
-    icon: "whistle",
-    tone: "cobalt"
-  },
-  {
-    id: "guardian-streak",
-    title: "Guardian Streak",
-    description: "Report suspicious content for seven days in a row.",
-    category: "Consistency",
-    points: 120,
-    icon: "shield",
-    tone: "emerald"
-  },
-  {
-    id: "automation-ally",
-    title: "Automation Ally",
-    description: "Trigger an automated secure response with your report metadata.",
-    category: "Impact",
-    points: 125,
-    icon: "gear",
-    tone: "midnight"
-  },
-  {
-    id: "streak-ribbon",
-    title: "Streak Ribbon",
-    description: "Maintain a fourteen-day reporting streak without missing a beat.",
-    category: "Consistency",
-    points: 130,
-    icon: "ribbon",
-    tone: "aqua"
-  },
-  {
-    id: "insight-whisperer",
-    title: "Insight Whisperer",
-    description: "Spot a new attacker tactic before it appears in threat advisories.",
-    category: "Impact",
-    points: 140,
-    icon: "lightbulb",
-    tone: "coral"
-  },
-  {
-    id: "pattern-decoder",
-    title: "Pattern Decoder",
-    description: "Connect three related phishing emails across different days.",
-    category: "Impact",
-    points: 145,
-    icon: "puzzle",
-    tone: "midnight"
-  },
-  {
-    id: "golden-signal",
-    title: "Golden Signal",
-    description: "Submit intel that leads to a high-severity threat takedown.",
-    category: "Impact",
-    points: 150,
-    icon: "diamond",
-    tone: "amber"
-  },
-  {
-    id: "zero-day-zeal",
-    title: "Zero-Day Zeal",
-    description: "Raise the first report tied to a zero-day alert in the news.",
-    category: "Impact",
-    points: 155,
-    icon: "flame",
+    id: "vanguard-veteran",
+    title: "Vanguard Veteran",
+    description: "Accumulate 1,000 lifetime points and keep your streak active.",
+    category: "Rewards",
+    points: 250,
+    difficulty: "Legendary",
+    icon: "crown",
     tone: "gold"
   },
   {
@@ -712,17 +937,9 @@ const ACHIEVEMENTS = [
     description: "Finish a month at the top of the reporter leaderboard.",
     category: "Recognition",
     points: 160,
+    difficulty: "Legendary",
     icon: "trophy",
     tone: "gold"
-  },
-  {
-    id: "seasoned-sentinel",
-    title: "Seasoned Sentinel",
-    description: "Report suspicious activity every month for six consecutive months.",
-    category: "Consistency",
-    points: 160,
-    icon: "laurel",
-    tone: "amber"
   },
   {
     id: "spotlight-star",
@@ -730,6 +947,7 @@ const ACHIEVEMENTS = [
     description: "Be featured on the company vigilance wall of fame.",
     category: "Recognition",
     points: 170,
+    difficulty: "Legendary",
     icon: "star",
     tone: "gold"
   },
@@ -739,8 +957,19 @@ const ACHIEVEMENTS = [
     description: "Earn the monthly champion recognition from security leaders.",
     category: "Recognition",
     points: 180,
+    difficulty: "Legendary",
     icon: "crown",
     tone: "gold"
+  },
+  {
+    id: "sentinel-summit",
+    title: "Sentinel Summit",
+    description: "Headline a global security summit with a WeldSecure success story.",
+    category: "Recognition",
+    points: 210,
+    difficulty: "Legendary",
+    icon: "trophy",
+    tone: "midnight"
   },
   {
     id: "badge-binge",
@@ -748,6 +977,7 @@ const ACHIEVEMENTS = [
     description: "Unlock five unique reporter achievements in a single quarter.",
     category: "Meta",
     points: 200,
+    difficulty: "Legendary",
     icon: "badge",
     tone: "amber"
   }
@@ -757,8 +987,13 @@ const ACHIEVEMENT_DRAFTS = new Set([
   "culture-spark",
   "buddy-system",
   "network-node",
-  "badge-binge",
-  "playbook-pro"
+  "playbook-pro",
+  "mentor-maven",
+  "playbook-architect",
+  "threat-cartographer",
+  "signal-sculptor",
+  "vanguard-veteran",
+  "sentinel-summit"
 ]);
 
 
@@ -2162,143 +2397,312 @@ function renderFeatureShowcase() {
 
 function renderAchievementsPage() {
   const achievements = getAchievements();
+  const onboardingCount = achievements.filter(achievement => achievement.category === "Onboarding").length;
+  const publishedCount = achievements.filter(achievement => achievement.published).length;
   const totalPoints = achievements.reduce((sum, achievement) => sum + achievement.points, 0);
-  const categories = Array.from(new Set(achievements.map(achievement => achievement.category))).sort((a, b) =>
-    a.localeCompare(b)
-  );
-  const filteredAchievements = state.meta.achievementFilter
-    ? achievements.filter(achievement => achievement.category === state.meta.achievementFilter)
-    : achievements;
-  const visiblePoints = filteredAchievements.reduce((sum, achievement) => sum + achievement.points, 0);
-  const publishedAchievements = achievements.filter(achievement => achievement.published);
-  const draftAchievements = achievements.filter(achievement => !achievement.published);
-  const averagePoints = achievements.length ? Math.round(totalPoints / achievements.length) : 0;
+  const categoriesCount = new Set(achievements.map(achievement => achievement.category)).size;
+  const difficultyOrder = ["Starter", "Rising", "Skilled", "Expert", "Legendary"];
 
-  const filterButtons = [
-    {
-      label: "All themes",
-      value: "all",
-      active: state.meta.achievementFilter === null
-    },
-    ...categories.map(category => ({
-      label: category,
-      value: category,
-      active: state.meta.achievementFilter === category
-    }))
-  ]
-    .map(
-      filter => `
-        <button
-          type="button"
-          class="achievements-filter__item ${filter.active ? "achievements-filter__item--active" : ""}"
-          data-filter="${filter.value}"
-          aria-pressed="${filter.active ? "true" : "false"}">
-          ${filter.label}
-        </button>
-      `
-    )
-    .join("");
+  const sortedAchievements = achievements
+    .slice()
+    .sort((a, b) => {
+      const difficultyA = difficultyOrder.indexOf(a.difficulty || "Skilled");
+      const difficultyB = difficultyOrder.indexOf(b.difficulty || "Skilled");
+      if (difficultyA !== difficultyB) return difficultyA - difficultyB;
+      if (a.category !== b.category) return a.category.localeCompare(b.category);
+      if (b.points !== a.points) return b.points - a.points;
+      return a.title.localeCompare(b.title);
+    });
 
-  const cardsMarkup = filteredAchievements
+  const cardsMarkup = sortedAchievements
     .map(achievement => {
-      const tone = ACHIEVEMENT_TONES[achievement.tone] || ACHIEVEMENT_TONES.violet;
-      const action = achievement.published ? "unpublish" : "publish";
-      const actionLabel = achievement.published ? "Unpublish from hubs" : "Publish to hubs";
-      const actionTone = achievement.published ? "button-pill--danger-light" : "button-pill--primary";
-      const statusLabel = achievement.published ? "Published" : "Draft";
-      const statusMod = achievement.published ? "badge-card__status--published" : "badge-card__status--draft";
+      const toneKey = ACHIEVEMENT_TONES[achievement.tone] ? achievement.tone : "violet";
+      const background = ACHIEVEMENT_TONES[toneKey];
+      const iconBackdrop = ACHIEVEMENT_ICON_BACKDROPS[toneKey] || ACHIEVEMENT_ICON_BACKDROPS.violet;
+      const difficultyLabel = achievement.difficulty || "Skilled";
       return `
-        <article class="badge-card ${achievement.published ? "badge-card--published" : "badge-card--draft"}" data-achievement="${achievement.id}" style="--badge-card-tone:${tone};">
-          <header class="badge-card__header">
-            <span class="badge-card__category">${achievement.category}</span>
-            <span class="badge-card__status ${statusMod}">${statusLabel}</span>
-          </header>
-          <div class="badge-card__icon">
-            ${renderIcon(achievement.icon, "md")}
+        <article class="achievement-card" style="--card-tone:${background};" tabindex="0" role="group" aria-label="${achievement.title} achievement, ${difficultyLabel} difficulty, worth ${formatNumber(achievement.points)} points.">
+          <div class="achievement-card__glow"></div>
+          <div class="achievement-card__icon" style="background:${iconBackdrop.background}; box-shadow:0 12px 28px ${iconBackdrop.shadow};">
+            ${renderIcon(achievement.icon, "sm")}
           </div>
-          <h4 class="badge-card__title">${achievement.title}</h4>
-          <p class="badge-card__description">${achievement.description}</p>
-          <div class="badge-card__footer">
-            <span class="badge-card__points"><strong>+${formatNumber(achievement.points)}</strong><span>pts</span></span>
-            <button
-              type="button"
-              class="button-pill ${actionTone} badge-publish-toggle"
-              data-action="${action}"
-              data-achievement="${achievement.id}">
-              ${actionLabel}
-            </button>
+          <div class="achievement-card__body">
+            <span class="achievement-card__category">${achievement.category}</span>
+            <h3>${achievement.title}</h3>
+            <div class="achievement-card__tags">
+              <span class="achievement-card__tag">${difficultyLabel}</span>
+              <span class="achievement-card__tag achievement-card__tag--points">+${formatNumber(achievement.points)} pts</span>
+            </div>
+          </div>
+          <div class="achievement-card__details" role="tooltip">
+            <p>${achievement.description}</p>
+            <span class="achievement-card__details-points">Worth ${formatNumber(achievement.points)} points</span>
           </div>
         </article>
       `;
     })
     .join("");
 
-  const catalogueMarkup = filteredAchievements.length
-    ? `<div class="badge-grid">${cardsMarkup}</div>`
-    : `<div class="reward-empty">No badges in this view yet.</div>`;
-
-  const sectionTitle = state.meta.achievementFilter
-    ? `${state.meta.achievementFilter} badges`
-    : "Badge catalogue";
-
   return `
     <div class="page page--achievements">
       ${renderHeader()}
       <div class="page__inner page__inner--single">
-        <main class="layout-content" id="main-content">
-          <header class="client-catalogue__intro">
-            <span class="client-catalogue__eyebrow">Badge catalogue</span>
-            <h1>Badge catalogue management</h1>
-            <p>Publish badges to employee hubs and showcase how WeldSecure celebrates vigilant reporters.</p>
-          </header>
-          <section class="client-achievements__metrics">
-            <article class="client-achievements__metric">
-              <h3>Published badges</h3>
-              <strong>${publishedAchievements.length}</strong>
-              <span>Visible in hubs</span>
-            </article>
-            <article class="client-achievements__metric">
-              <h3>Draft badges</h3>
-              <strong>${draftAchievements.length}</strong>
-              <span>Awaiting publication</span>
-            </article>
-            <article class="client-achievements__metric">
-              <h3>Total catalogue</h3>
-              <strong>${achievements.length}</strong>
-              <span>Across all themes</span>
-            </article>
-            <article class="client-achievements__metric">
-              <h3>Average points</h3>
-              <strong>${averagePoints} pts</strong>
-              <span>${formatNumber(visiblePoints)} pts in view</span>
-            </article>
-          </section>
-          <div class="client-achievements__actions">
-            <div class="client-achievements__bulk">
-              <button
-                type="button"
-                class="button-pill button-pill--primary"
-                data-bulk-achievement-action="publish">
-                Publish all badges
-              </button>
-              <button
-                type="button"
-                class="button-pill button-pill--danger-light"
-                data-bulk-achievement-action="unpublish">
-                Unpublish all badges
-              </button>
-            </div>
-            <div class="achievements-filter" role="toolbar" aria-label="Filter badges by theme">
-              ${filterButtons}
+        <main class="layout-content layout-content--flush" id="main-content">
+          <div class="achievement-gallery">
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+              .achievement-gallery {
+                font-family: 'Poppins', sans-serif;
+                background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+                min-height: 100vh;
+                width: 100%;
+                padding: 2.5rem 1.5rem 3.5rem;
+                box-sizing: border-box;
+              }
+
+              .achievement-gallery__inner {
+                max-width: 1120px;
+                margin: 0 auto;
+                display: flex;
+                flex-direction: column;
+                gap: 2.5rem;
+              }
+
+              .achievement-gallery__hero {
+                text-align: center;
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+              }
+
+              .achievement-gallery__eyebrow {
+                text-transform: uppercase;
+                letter-spacing: 0.2em;
+                font-size: 0.75rem;
+                color: #6366f1;
+              }
+
+              .achievement-gallery__hero h1 {
+                font-size: 2.25rem;
+                font-weight: 700;
+                color: #0f172a;
+              }
+
+              .achievement-gallery__hero p {
+                max-width: 640px;
+                margin: 0 auto;
+                color: #475569;
+                line-height: 1.6;
+              }
+
+              .achievement-gallery__metrics {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 1.25rem;
+              }
+
+              .achievement-gallery__metric {
+                background: rgba(255, 255, 255, 0.85);
+                border-radius: 0.85rem;
+                padding: 1.25rem 1.5rem;
+                box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+                backdrop-filter: blur(6px);
+                display: flex;
+                flex-direction: column;
+                gap: 0.35rem;
+              }
+
+              .achievement-gallery__metric span {
+                font-size: 0.85rem;
+                color: #64748b;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+              }
+
+              .achievement-gallery__metric strong {
+                font-size: 1.75rem;
+                font-weight: 700;
+                color: #0f172a;
+              }
+
+              .achievement-gallery__grid {
+                display: grid;
+                gap: 1.5rem;
+                grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+              }
+
+              .achievement-card {
+                position: relative;
+                border-radius: 1.25rem;
+                padding: 1.75rem;
+                background: var(--card-tone, linear-gradient(135deg, #f8fafc, #e2e8f0));
+                box-shadow: 0 18px 34px rgba(15, 23, 42, 0.1);
+                overflow: hidden;
+                transition: transform 0.35s ease, box-shadow 0.35s ease;
+                outline: none;
+              }
+
+              .achievement-card__glow {
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(160deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0) 55%);
+                opacity: 0;
+                transition: opacity 0.35s ease;
+                pointer-events: none;
+              }
+
+              .achievement-card__icon {
+                width: 3rem;
+                height: 3rem;
+                border-radius: 1rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 1.25rem;
+                transition: transform 0.35s ease;
+              }
+
+              .achievement-card__body {
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+              }
+
+              .achievement-card__category {
+                font-size: 0.75rem;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: #475569;
+              }
+
+              .achievement-card h3 {
+                font-size: 1.35rem;
+                font-weight: 600;
+                color: #0f172a;
+              }
+
+              .achievement-card__tags {
+                display: flex;
+                gap: 0.5rem;
+                flex-wrap: wrap;
+              }
+
+              .achievement-card__tag {
+                font-size: 0.75rem;
+                font-weight: 600;
+                padding: 0.35rem 0.6rem;
+                border-radius: 999px;
+                background: rgba(15, 23, 42, 0.08);
+                color: #0f172a;
+              }
+
+              .achievement-card__tag--points {
+                background: rgba(15, 23, 42, 0.12);
+              }
+
+              .achievement-card__details {
+                position: absolute;
+                inset: 0;
+                background: rgba(15, 23, 42, 0.92);
+                color: #f8fafc;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                gap: 1rem;
+                padding: 2rem;
+                opacity: 0;
+                transform: translateY(20px);
+                transition: opacity 0.3s ease, transform 0.3s ease;
+                pointer-events: none;
+                text-align: left;
+              }
+
+              .achievement-card__details p {
+                line-height: 1.6;
+              }
+
+              .achievement-card__details-points {
+                font-weight: 600;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+                color: #cbd5f5;
+              }
+
+              .achievement-card:hover,
+              .achievement-card:focus-within,
+              .achievement-card--active {
+                transform: translateY(-8px);
+                box-shadow: 0 26px 48px rgba(15, 23, 42, 0.18);
+              }
+
+              .achievement-card:hover .achievement-card__glow,
+              .achievement-card:focus-within .achievement-card__glow,
+              .achievement-card--active .achievement-card__glow {
+                opacity: 1;
+              }
+
+              .achievement-card:hover .achievement-card__icon,
+              .achievement-card:focus-within .achievement-card__icon,
+              .achievement-card--active .achievement-card__icon {
+                transform: translateY(-4px);
+              }
+
+              .achievement-card:hover .achievement-card__details,
+              .achievement-card:focus-within .achievement-card__details,
+              .achievement-card--active .achievement-card__details {
+                opacity: 1;
+                transform: translateY(0);
+                pointer-events: auto;
+              }
+
+              .achievement-card:focus-visible {
+                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35);
+              }
+
+              @media (max-width: 768px) {
+                .achievement-gallery {
+                  padding: 2rem 1.25rem 3rem;
+                }
+
+                .achievement-gallery__hero h1 {
+                  font-size: 1.85rem;
+                }
+              }
+            </style>
+            <div class="achievement-gallery__inner">
+              <section class="achievement-gallery__hero">
+                <span class="achievement-gallery__eyebrow">Achievement Catalogue</span>
+                <h1>Celebrate every milestone</h1>
+                <p>Hover over any badge to see how the achievement is earned and the points your reporters unlock along the way.</p>
+              </section>
+              <section class="achievement-gallery__metrics">
+                <article class="achievement-gallery__metric">
+                  <span>Total achievements</span>
+                  <strong>${formatNumber(achievements.length)}</strong>
+                </article>
+                <article class="achievement-gallery__metric">
+                  <span>Onboarding journeys</span>
+                  <strong>${formatNumber(onboardingCount)}</strong>
+                </article>
+                <article class="achievement-gallery__metric">
+                  <span>Categories represented</span>
+                  <strong>${formatNumber(categoriesCount)}</strong>
+                </article>
+                <article class="achievement-gallery__metric">
+                  <span>Published today</span>
+                  <strong>${formatNumber(publishedCount)}</strong>
+                </article>
+                <article class="achievement-gallery__metric">
+                  <span>Total points on offer</span>
+                  <strong>${formatNumber(totalPoints)}</strong>
+                </article>
+              </section>
+              <section class="achievement-gallery__grid">
+                ${cardsMarkup}
+              </section>
             </div>
           </div>
-          <section>
-            <div class="section-header">
-              <h2>${sectionTitle}</h2>
-              <p>Toggle publication status to control which badges appear inside employee hubs.</p>
-            </div>
-            ${catalogueMarkup}
-          </section>
         </main>
       </div>
     </div>
@@ -3711,35 +4115,43 @@ function renderContent() {
 
 function attachAchievementsEvents(container) {
   if (!container) return;
-  container.addEventListener("click", event => {
-    const bulkButton = event.target.closest("[data-bulk-achievement-action]");
-    if (bulkButton) {
-      const action = bulkButton.getAttribute("data-bulk-achievement-action");
-      if (action === "publish") {
-        setAllAchievementsPublication(true);
-      } else if (action === "unpublish") {
-        setAllAchievementsPublication(false);
+  const cards = Array.from(container.querySelectorAll(".achievement-card"));
+  if (cards.length === 0) return;
+
+  cards.forEach(card => {
+    if (card.dataset.bound === "true") return;
+    card.dataset.bound = "true";
+
+    card.addEventListener("click", () => {
+      card.focus();
+    });
+
+    card.addEventListener("keydown", event => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        card.classList.remove("achievement-card--active");
+        card.blur();
+        return;
       }
-      return;
-    }
 
-    const toggleButton = event.target.closest(".badge-publish-toggle");
-    if (toggleButton) {
-      const achievementId = toggleButton.getAttribute("data-achievement");
-      const action = toggleButton.getAttribute("data-action");
-      if (!achievementId || !action) return;
-      setAchievementPublication(achievementId, action === "publish");
-      return;
-    }
+      if (event.key === " " || event.key === "Enter") {
+        event.preventDefault();
+        const wasActive = card.classList.contains("achievement-card--active");
+        cards.forEach(other => {
+          if (other !== card) other.classList.remove("achievement-card--active");
+        });
+        if (wasActive) {
+          card.classList.remove("achievement-card--active");
+          card.blur();
+        } else {
+          card.classList.add("achievement-card--active");
+        }
+      }
+    });
 
-    const filterButton = event.target.closest(".achievements-filter [data-filter]");
-    if (!filterButton) return;
-    const value = filterButton.getAttribute("data-filter");
-    const nextFilter = value === "all" ? null : value;
-    if (state.meta.achievementFilter === nextFilter) return;
-    state.meta.achievementFilter = nextFilter;
-    persist();
-    renderApp();
+    card.addEventListener("blur", () => {
+      card.classList.remove("achievement-card--active");
+    });
   });
 }
 
