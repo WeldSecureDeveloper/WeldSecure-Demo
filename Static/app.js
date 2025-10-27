@@ -74,6 +74,8 @@ const SETTINGS_CATEGORIES = [
 
 const DEFAULT_REPORTER_PROMPT = "Why are you reporting this?";
 const DEFAULT_EMERGENCY_LABEL =
+  "I clicked a link, opened an attachment, or entered credentials";
+const PREVIOUS_EMERGENCY_LABEL =
   "Recipient clicked a link, opened an attachment, or entered credentials";
 
 const DEFAULT_REPORTER_REASONS = [
@@ -1815,6 +1817,13 @@ function loadState() {
           : baseReporterSettings.emergencyLabel,
       reasons: reporterReasons
     };
+    if (
+      typeof normalizedReporterSettings.emergencyLabel === "string" &&
+      normalizedReporterSettings.emergencyLabel.trim().toLowerCase() ===
+        PREVIOUS_EMERGENCY_LABEL.toLowerCase()
+    ) {
+      normalizedReporterSettings.emergencyLabel = DEFAULT_EMERGENCY_LABEL;
+    }
     const normalizedSettings = {
       ...baseState.settings,
       ...(parsedSettings && typeof parsedSettings === "object" ? parsedSettings : {}),
@@ -4801,9 +4810,10 @@ function setupCelebrationSup(celebrationRoot, onBurstsComplete) {
     const rawAbsorb = Number(burst.dataset.burstAbsorb) || 1;
     const absorbSeconds = Number.isFinite(rawAbsorb) ? rawAbsorb : 0;
     const absorbMs = absorbSeconds * 1000;
+    const minVisibleMs = 8000;
     const cleanupMs = Number.isFinite(durationSeconds)
-      ? Math.max(durationSeconds * 1000, absorbMs + 120)
-      : absorbMs + 120;
+      ? Math.max(durationSeconds * 1000, absorbMs + 120, minVisibleMs)
+      : Math.max(absorbMs + 120, minVisibleMs);
 
     burst.classList.add("points-burst--active");
 
