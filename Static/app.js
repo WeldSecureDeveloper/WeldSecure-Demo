@@ -31,7 +31,7 @@ const NAV_GROUPS = [
   {
     label: "Reporter",
     items: [
-      { label: "Reporter Journey", route: "addin", role: "customer" },
+      { label: "Reporter", route: "addin", role: "customer" },
       { label: "Hub", route: "customer", role: "customer" }
     ]
   },
@@ -2996,6 +2996,10 @@ function closeDialog() {
 function renderGlobalNav(activeRoute) {
   return `
     <nav class="global-nav" aria-label="Primary navigation">
+      <button type="button" class="brand global-nav__brand" id="brand-button">
+        <span class="brand__glyph">W</span>
+        <span>WeldSecure</span>
+      </button>
       <div class="global-nav__groups">
         ${NAV_GROUPS.map(group => {
           const isGroupActive = group.items.some(item => item.route === activeRoute);
@@ -3024,13 +3028,10 @@ function renderGlobalNav(activeRoute) {
         }).join("")}
       </div>
       <div class="global-nav__actions">
-      ${activeRoute === "landing"
-        ? `<button type="button" class="button-pill button-pill--primary global-nav__reset" id="landing-reset">Reset</button>`
-        : ""}
-      <button type="button" class="button-pill button-pill--primary global-nav__journey" id="global-journey">
-        Home
-      </button>
-      <button
+        <button type="button" class="button-pill button-pill--primary global-nav__reset" id="global-reset">
+          Reset
+        </button>
+        <button
         type="button"
         class="global-nav__icon-button"
         id="global-settings"
@@ -6394,10 +6395,6 @@ function renderHeader() {
   return `
     ${navMarkup}
     <header class="header">
-      <button class="brand" id="brand-button">
-        <span class="brand__glyph">W</span>
-        <span>WeldSecure</span>
-      </button>
       <div class="header__actions">
         ${
           role
@@ -6536,12 +6533,24 @@ function attachGlobalNav(container) {
     });
   });
 
-  const journeyButton = container.querySelector("#global-journey");
-  if (journeyButton) {
-    journeyButton.addEventListener("click", event => {
+  const resetButton = container.querySelector("#global-reset");
+  if (resetButton && resetButton.dataset.resetBound !== "true") {
+    resetButton.dataset.resetBound = "true";
+    resetButton.addEventListener("click", event => {
+      event.preventDefault();
       event.stopPropagation();
       closeGroups();
-      navigate("landing");
+      openDialog({
+        title: "Reset demo data?",
+        description: "This will return every journey to the default product narrative.",
+        confirmLabel: "Reset now",
+        cancelLabel: "Cancel",
+        tone: "critical",
+        onConfirm: close => {
+          resetDemo();
+          close();
+        }
+      });
     });
   }
 
@@ -6866,22 +6875,6 @@ function attachLandingEvents(container) {
     });
   }
 
-  const resetBtn = container.querySelector("#landing-reset");
-  if (resetBtn) {
-    resetBtn.addEventListener("click", () => {
-      openDialog({
-        title: "Reset demo data?",
-        description: "This will return every journey to the default product narrative.",
-        confirmLabel: "Reset now",
-        cancelLabel: "Cancel",
-        tone: "critical",
-        onConfirm: close => {
-          resetDemo();
-          close();
-        }
-      });
-    });
-  }
 }
 
 function attachHeaderEvents(container) {
