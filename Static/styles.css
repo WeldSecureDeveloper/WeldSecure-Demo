@@ -1517,6 +1517,34 @@ button {
   margin-top: 0.2rem;
 }
 
+.quest-card__points {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.38rem 1.05rem 0.42rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #9333ea, #c084fc);
+  box-shadow: 0 22px 42px rgba(147, 51, 234, 0.28);
+  color: #fff;
+  text-transform: uppercase;
+  line-height: 1;
+  font-size: 1rem;
+  letter-spacing: 0.16em;
+}
+
+.quest-card__points-value {
+  font-size: 1.08rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.quest-card__points-unit {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  opacity: 0.85;
+}
+
 .quest-card__focus {
   display: flex;
   flex-wrap: wrap;
@@ -1563,8 +1591,14 @@ button {
 .quest-card__footer {
   margin-top: auto;
   display: flex;
-  justify-content: flex-start;
-  align-items: flex-start;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+}
+
+.quest-card__footer .quest-publish-toggle {
+  margin-left: auto;
 }
 
 .quest-card__footer--hub {
@@ -1837,6 +1871,63 @@ button {
 
 .gem-badge-grid--hub .gem-badge {
   width: min(100%, 260px);
+}
+
+.badge-showcase {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.badge-showcase__list,
+.badge-showcase__recent {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: flex-start;
+  align-items: stretch;
+}
+
+.badge-showcase__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.badge-showcase__item .gem-badge {
+  width: min(100%, 260px);
+}
+
+.badge-showcase__meta {
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.badge-showcase__separator {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.badge-showcase__separator::before,
+.badge-showcase__separator::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(148, 163, 184, 0.35);
+}
+
+.badge-showcase__cta {
+  margin-top: 2.5rem;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.badge-showcase__cta-button {
+  min-width: 220px;
 }
 
 .gem-badge {
@@ -2336,6 +2427,31 @@ button {
   background: rgba(251, 191, 36, 0.14);
   color: #b45309;
 }
+.reward-card__chip--points {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.38rem 1.05rem 0.42rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+  box-shadow: 0 22px 42px rgba(14, 165, 233, 0.28);
+  color: #fff;
+  text-transform: uppercase;
+  line-height: 1;
+  font-size: 1rem;
+  letter-spacing: 0.16em;
+}
+.reward-card__points-value {
+  font-size: 1.08rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.reward-card__points-unit {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  opacity: 0.85;
+}
 .reward-card__chip .icon-token {
   width: 1rem;
   height: 1rem;
@@ -2364,12 +2480,27 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-weight: 600;
-  color: #4338ca;
-}
-.reward-card__footer span {
   font-weight: 500;
   color: #64748b;
+}
+.reward-card__footer span {
+  font-weight: inherit;
+  color: inherit;
+}
+
+.reward-card__actions {
+  margin-top: auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.reward-card__actions .reward-publish-toggle {
+  margin-left: auto;
+}
+.reward-card__actions .reward-card__cta {
+  margin-left: auto;
 }
 .timeline {
   background: #111827;
@@ -2780,6 +2911,15 @@ button {
   align-items: flex-start;
 }
 
+.department-leaderboard__actions .table-actions {
+  align-self: flex-end;
+  margin-top: auto;
+}
+
+.department-leaderboard__actions .department-publish-toggle {
+  margin-left: auto;
+}
+
 .department-leaderboard__state {
   display: inline-flex;
   align-items: center;
@@ -2939,9 +3079,11 @@ button {
 
 .engagement-card__footer {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 0.75rem;
+  margin-top: auto;
+  width: 100%;
 }
 
 .engagement-card__footer .detail-table__meta {

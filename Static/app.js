@@ -3249,6 +3249,7 @@ function renderCustomer() {
   const rewardsHtml = publishedRewards
     .map(reward => {
       const remainingLabel = rewardRemainingLabel(reward);
+      const pointsCost = Number(reward.pointsCost) || 0;
       return `
       <article class="reward-card reward-card--catalogue reward-card--hub" data-reward="${escapeHtml(String(reward.id))}">
         <div class="reward-card__artwork" style="background:${reward.image};">
@@ -3261,10 +3262,15 @@ function renderCustomer() {
         <h4 class="reward-card__title">${escapeHtml(reward.name || "Reward")}</h4>
         <p class="reward-card__desc">${escapeHtml(reward.description || "")}</p>
         <div class="reward-card__footer">
-          <strong>${formatNumber(reward.pointsCost || 0)} pts</strong>
           <span>${remainingLabel} left</span>
         </div>
-        <button type="button" class="reward-card__cta button-pill button-pill--primary">Redeem reward</button>
+        <div class="reward-card__actions">
+          <span class="reward-card__chip reward-card__chip--points">
+            <strong class="reward-card__points-value">${formatNumber(pointsCost)}</strong>
+            <span class="reward-card__points-unit">pts</span>
+          </span>
+          <button type="button" class="reward-card__cta button-pill button-pill--primary">Redeem reward</button>
+        </div>
       </article>
     `;
     })
@@ -3296,14 +3302,17 @@ function renderCustomer() {
           <li><span>Duration</span><strong>${escapeHtml(String(quest.duration))} min</strong></li>
           <li><span>Questions</span><strong>${escapeHtml(String(quest.questions))}</strong></li>
           <li><span>Format</span><strong>${escapeHtml(quest.format || "")}</strong></li>
-          <li><span>Points</span><strong>${formatNumber(quest.points || 0)}</strong></li>
         </ul>
         ${focusBlock}
         <div class="quest-card__footer quest-card__footer--hub">
+          <span class="quest-card__points">
+            <strong class="quest-card__points-value">${formatNumber(quest.points || 0)}</strong>
+            <span class="quest-card__points-unit">pts</span>
+          </span>
           <button type="button" class="button-pill button-pill--primary quest-card__cta" data-quest="${escapeHtml(
             String(quest.id)
           )}">
-            View in catalogue
+            Take Quiz
           </button>
         </div>
       </article>
@@ -3311,44 +3320,87 @@ function renderCustomer() {
     })
     .join("");
 
-  const badgesHtml = publishedBadges
-    .slice(0, 4)
-    .map(badge => {
-      const safeId = escapeHtml(String(badge.id));
-      const cardId = `${safeId}-card`;
-      const tone = BADGE_TONES[badge.tone] || BADGE_TONES.violet;
-      const iconBackdrop =
-        BADGE_ICON_BACKDROPS[badge.tone]?.background ||
-        BADGE_ICON_BACKDROPS.violet?.background ||
-        "linear-gradient(135deg, #c7d2fe, #818cf8)";
-      const iconShadow =
-        BADGE_ICON_BACKDROPS[badge.tone]?.shadow ||
-        BADGE_ICON_BACKDROPS.violet?.shadow ||
-        "rgba(79, 70, 229, 0.32)";
-      const normalizedCategory =
-        typeof badge.category === "string" && badge.category.trim().length > 0
-          ? badge.category.trim()
-          : "Badge";
-      const difficultyLabel =
-        typeof badge.difficulty === "string" && badge.difficulty.trim().length > 0
-          ? badge.difficulty.trim()
-          : null;
-      const tags = [];
-      if (normalizedCategory && normalizedCategory !== "Badge") {
-        tags.push(`<span class="catalogue-card__tag gem-badge-card__tag">${escapeHtml(normalizedCategory)}</span>`);
-      }
-      if (difficultyLabel) {
-        tags.push(`<span class="catalogue-card__tag gem-badge-card__tag">${escapeHtml(difficultyLabel)}</span>`);
-      }
-      const tagsMarkup = tags.length
-        ? `<div class="gem-badge-card__tags catalogue-card__tags">${tags.join("")}</div>`
-        : "";
-      const pointsValue = Number(badge.points) || 0;
-      const toggleTitle = difficultyLabel
-        ? `${escapeHtml(difficultyLabel)} • ${formatNumber(pointsValue)} pts`
-        : `${formatNumber(pointsValue)} pts`;
-      const ariaLabel = `${badge.title} badge, worth ${formatNumber(pointsValue)} points in the collection.`;
-      return `
+  const rarityOrder = ["Legendary", "Expert", "Skilled", "Rising", "Starter"];
+  const demoBadgeAchievements = [
+    { id: "resilience-ranger", achievedAt: "2025-03-14T10:45:00Z" },
+    { id: "zero-day-zeal", achievedAt: "2025-03-02T09:10:00Z" },
+    { id: "automation-ally", achievedAt: "2025-02-21T16:30:00Z" },
+    { id: "bullseye-breaker", achievedAt: "2025-02-12T08:15:00Z" },
+    { id: "hub-hopper", achievedAt: "2025-03-18T12:05:00Z", highlight: "recent" }
+  ];
+  const demoBadges = demoBadgeAchievements
+    .map(entry => {
+      const badge = publishedBadges.find(item => item.id === entry.id);
+      if (!badge) return null;
+      return { ...badge, achievedAt: entry.achievedAt, highlight: entry.highlight || null };
+    })
+    .filter(Boolean);
+  const recentBadge =
+    demoBadges.find(item => item.highlight === "recent") ||
+    demoBadges
+      .slice()
+      .sort((a, b) => {
+        const timeA = new Date(a.achievedAt || 0).getTime();
+        const timeB = new Date(b.achievedAt || 0).getTime();
+        return timeB - timeA;
+      })[0];
+  const getRarityRank = badge => {
+    const difficulty = typeof badge.difficulty === "string" ? badge.difficulty : "";
+    const index = rarityOrder.indexOf(difficulty);
+    return index === -1 ? rarityOrder.length : index;
+  };
+  const topRarityBadges = demoBadges
+    .filter(badge => !recentBadge || badge.id !== recentBadge.id)
+    .sort((a, b) => {
+      const rarityDiff = getRarityRank(a) - getRarityRank(b);
+      if (rarityDiff !== 0) return rarityDiff;
+      const pointsDiff = (Number(b.points) || 0) - (Number(a.points) || 0);
+      if (pointsDiff !== 0) return pointsDiff;
+      const timeA = new Date(a.achievedAt || 0).getTime();
+      const timeB = new Date(b.achievedAt || 0).getTime();
+      return timeB - timeA;
+    })
+    .slice(0, 4);
+  const fallbackTopBadges = recentBadge
+    ? publishedBadges.filter(badge => badge.id !== recentBadge.id)
+    : publishedBadges.slice();
+  const displayTopBadges = topRarityBadges.length > 0 ? topRarityBadges : fallbackTopBadges.slice(0, 4);
+  const renderBadgeCard = badge => {
+    const safeId = escapeHtml(String(badge.id));
+    const cardId = `${safeId}-card`;
+    const tone = BADGE_TONES[badge.tone] || BADGE_TONES.violet;
+    const iconBackdrop =
+      BADGE_ICON_BACKDROPS[badge.tone]?.background ||
+      BADGE_ICON_BACKDROPS.violet?.background ||
+      "linear-gradient(135deg, #c7d2fe, #818cf8)";
+    const iconShadow =
+      BADGE_ICON_BACKDROPS[badge.tone]?.shadow ||
+      BADGE_ICON_BACKDROPS.violet?.shadow ||
+      "rgba(79, 70, 229, 0.32)";
+    const normalizedCategory =
+      typeof badge.category === "string" && badge.category.trim().length > 0
+        ? badge.category.trim()
+        : "Badge";
+    const difficultyLabel =
+      typeof badge.difficulty === "string" && badge.difficulty.trim().length > 0
+        ? badge.difficulty.trim()
+        : null;
+    const tags = [];
+    if (normalizedCategory && normalizedCategory !== "Badge") {
+      tags.push(`<span class="catalogue-card__tag gem-badge-card__tag">${escapeHtml(normalizedCategory)}</span>`);
+    }
+    if (difficultyLabel) {
+      tags.push(`<span class="catalogue-card__tag gem-badge-card__tag">${escapeHtml(difficultyLabel)}</span>`);
+    }
+    const tagsMarkup = tags.length
+      ? `<div class="gem-badge-card__tags catalogue-card__tags">${tags.join("")}</div>`
+      : "";
+    const pointsValue = Number(badge.points) || 0;
+    const toggleTitle = difficultyLabel
+      ? `${escapeHtml(difficultyLabel)} • ${formatNumber(pointsValue)} pts`
+      : `${formatNumber(pointsValue)} pts`;
+    const ariaLabel = `${badge.title} badge, worth ${formatNumber(pointsValue)} points in the collection.`;
+    return `
       <article
         class="gem-badge gem-badge--hub"
         data-badge="${safeId}"
@@ -3390,8 +3442,46 @@ function renderCustomer() {
         </div>
       </article>
     `;
-    })
-    .join("");
+  };
+  const renderBadgeShowcaseItem = badge => {
+    const achievedDate = badge?.achievedAt ? new Date(badge.achievedAt) : null;
+    const metaMarkup =
+      achievedDate && !Number.isNaN(achievedDate.getTime())
+        ? `<span class="badge-showcase__meta">Unlocked ${escapeHtml(formatDateTime(badge.achievedAt))}</span>`
+        : "";
+    return `
+      <div class="badge-showcase__item" role="listitem">
+        ${renderBadgeCard(badge)}
+        ${metaMarkup}
+      </div>
+    `;
+  };
+  const topBadgesMarkup = displayTopBadges.length
+    ? `
+      <div class="badge-showcase__list" role="list" aria-label="Top badges by rarity">
+        ${displayTopBadges.map(renderBadgeShowcaseItem).join("")}
+      </div>
+    `
+    : "";
+  const recentBadgeSection = recentBadge
+    ? `
+      <div class="badge-showcase__separator" role="separator">
+        <span>Most recent badge</span>
+      </div>
+      <div class="badge-showcase__recent" role="list" aria-label="Most recent badge">
+        ${renderBadgeShowcaseItem(recentBadge)}
+      </div>
+    `
+    : "";
+  const badgesHtml =
+    displayTopBadges.length || recentBadge
+      ? `
+      <div class="badge-showcase">
+        ${topBadgesMarkup}
+        ${recentBadgeSection}
+      </div>
+    `
+      : `<div class="badge-empty"><p>No badges are currently published. Switch to the organisation catalogue to curate them.</p></div>`;
 
   return `
     <header class="customer-hero">
@@ -3446,6 +3536,18 @@ function renderCustomer() {
         </div>
       </article>
     </section>
+    <section class="customer-section customer-section--badges">
+      <div class="section-header">
+        <h2>Your badges</h2>
+        <p>Preview the badges your organisation curates. Published badges appear here and inside the add-in spotlight.</p>
+      </div>
+      ${badgesHtml}
+      <div class="badge-showcase__cta">
+        <button type="button" class="button-pill button-pill--ghost badge-showcase__cta-button" data-route="client-badges" data-role="client">
+          Show full badge catalogue
+        </button>
+      </div>
+    </section>
     <section id="customer-rewards" class="customer-section customer-section--rewards">
       <div class="section-header">
         <h2>Your rewards</h2>
@@ -3466,17 +3568,6 @@ function renderCustomer() {
         questsHtml
           ? `<div class="quest-grid quest-grid--hub">${questsHtml}</div>`
           : `<div class="reward-empty"><p>No quests are currently published. Check back soon!</p></div>`
-      }
-    </section>
-    <section class="customer-section customer-section--badges">
-      <div class="section-header">
-        <h2>Your badges</h2>
-        <p>Preview the badges your organisation curates. Published badges appear here and inside the add-in spotlight.</p>
-      </div>
-      ${
-        badgesHtml
-          ? `<div class="gem-badge-grid gem-badge-grid--hub">${badgesHtml}</div>`
-          : `<div class="badge-empty"><p>No badges are currently published. Switch to the organisation catalogue to curate them.</p></div>`
       }
     </section>
   `;
@@ -3733,7 +3824,7 @@ function renderClientDashboard() {
               ? `<p class="department-leaderboard__focus">${escapeHtml(entry.focusNarrative)}</p>`
               : "";
           const action = entry.published ? "unpublish" : "publish";
-          const actionLabel = entry.published ? "Unpublish from hub" : "Publish to hub";
+          const actionLabel = entry.published ? "Unpublish" : "Publish";
           const actionTone = entry.published ? "button-pill--danger-light" : "button-pill--primary";
           const statusLabel = entry.published ? "Published" : "Draft";
           const statusClass = entry.published
@@ -3865,7 +3956,7 @@ function renderClientDashboard() {
             ? "engagement-card__status--published"
             : "engagement-card__status--draft";
           const action = program.published ? "unpublish" : "publish";
-          const actionLabel = program.published ? "Unpublish from hub" : "Publish to hub";
+          const actionLabel = program.published ? "Unpublish" : "Publish";
           const actionTone = program.published ? "button-pill--danger-light" : "button-pill--primary";
           const metricValue =
             typeof program.metricValue === "string" && program.metricValue.trim().length > 0
@@ -3924,6 +4015,7 @@ function renderClientDashboard() {
               ${metaMarkup}
               ${successMarkup}
               <footer class="engagement-card__footer">
+                <span class="detail-table__meta">${escapeHtml(program.published ? "Visible in hub" : "Draft only")}</span>
                 <button
                   type="button"
                   class="button-pill ${actionTone} program-publish-toggle"
@@ -3931,7 +4023,6 @@ function renderClientDashboard() {
                   data-action="${action}">
                   ${actionLabel}
                 </button>
-                <span class="detail-table__meta">${escapeHtml(program.published ? "Visible in hub" : "Draft only")}</span>
               </footer>
             </article>
           `;
@@ -4167,13 +4258,14 @@ function renderClientRewards() {
           const id = escapeHtml(String(reward.id));
           const isPublished = reward.published === true;
           const action = isPublished ? "unpublish" : "publish";
-          const actionLabel = isPublished ? "Unpublish from hubs" : "Publish to hubs";
+          const actionLabel = isPublished ? "Unpublish" : "Publish";
           const actionTone = isPublished ? "button-pill--danger-light" : "button-pill--primary";
           const remainingLabel = rewardRemainingLabel(reward);
           const remainingCopy =
             reward?.unlimited === true
               ? "Unlimited redemptions"
               : `${remainingLabel} remaining`;
+          const pointsCost = Number(reward.pointsCost) || 0;
           const categoryLabel = formatCatalogueLabel(reward.category || "Reward");
           const providerLabel = reward.provider ? reward.provider : "WeldSecure";
           return `
@@ -4192,11 +4284,13 @@ function renderClientRewards() {
               <h4 class="reward-card__title">${escapeHtml(reward.name || "Reward")}</h4>
               <p class="reward-card__desc">${escapeHtml(reward.description || "")}</p>
               <div class="reward-card__footer">
-                <strong>${formatNumber(Number(reward.pointsCost) || 0)} pts</strong>
                 <span>${remainingCopy}</span>
               </div>
               <div class="reward-card__actions">
-                <span class="detail-table__meta">${isPublished ? "Published to hubs" : "Draft only"}</span>
+                <span class="catalogue-card__tag reward-card__chip reward-card__chip--points">
+                  <strong class="reward-card__points-value">${formatNumber(pointsCost)}</strong>
+                  <span class="reward-card__points-unit">pts</span>
+                </span>
                 <button
                   type="button"
                   class="button-pill ${actionTone} reward-publish-toggle"
@@ -4430,7 +4524,7 @@ function renderClientQuests() {
           const id = escapeHtml(String(quest.id));
           const isPublished = quest.published === true;
           const action = isPublished ? "unpublish" : "publish";
-          const actionLabel = isPublished ? "Unpublish from hubs" : "Publish to hubs";
+          const actionLabel = isPublished ? "Unpublish" : "Publish";
           const actionTone = isPublished ? "button-pill--danger-light" : "button-pill--primary";
           const tagItems = [];
           if (quest.difficulty) {
@@ -4467,7 +4561,6 @@ function renderClientQuests() {
                 <li><span>Format</span><strong>${escapeHtml(quest.format || "Interactive")}</strong></li>
                 <li><span>Duration</span><strong>${formatNumber(Number(quest.duration) || 0)} min</strong></li>
                 <li><span>Questions</span><strong>${formatNumber(Number(quest.questions) || 0)}</strong></li>
-                <li><span>Points</span><strong>${formatNumber(Number(quest.points) || 0)} pts</strong></li>
               </ul>
               ${focusMarkup}
               ${
@@ -4478,6 +4571,10 @@ function renderClientQuests() {
                   : ""
               }
               <footer class="quest-card__footer">
+                <span class="quest-card__points">
+                  <strong class="quest-card__points-value">${formatNumber(Number(quest.points) || 0)}</strong>
+                  <span class="quest-card__points-unit">pts</span>
+                </span>
                 <button
                   type="button"
                   class="button-pill ${actionTone} quest-publish-toggle"
@@ -4758,7 +4855,7 @@ function renderClientBadges() {
     const id = escapeHtml(rawId);
     const cardId = escapeHtml(`badge-card-${index}-${sanitizedId || "detail"}`);
     const action = badge.published ? "unpublish" : "publish";
-    const actionLabel = badge.published ? "Unpublish from hubs" : "Publish to hubs";
+    const actionLabel = badge.published ? "Unpublish" : "Publish";
     const actionTone = badge.published ? "button-pill--danger-light" : "button-pill--primary";
     const toneKey = BADGE_TONES[badge.tone] ? badge.tone : "violet";
     const tone = BADGE_TONES[toneKey] || BADGE_TONES.violet;
