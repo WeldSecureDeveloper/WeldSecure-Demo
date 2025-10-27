@@ -3538,6 +3538,7 @@ button {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-size: 0.66rem;
+  margin-left: auto;
 }
 .points-celebration {
   width: 100%;

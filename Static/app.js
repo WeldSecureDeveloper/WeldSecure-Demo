@@ -1316,6 +1316,7 @@ function initialState() {
       lastBalanceBefore: null,
       lastBalanceAfter: null,
       lastBadgeId: null,
+      lastBadgeIds: [],
       lastBadgePoints: null,
       lastTotalAwarded: null,
       lastMessageId: null,
@@ -1903,6 +1904,22 @@ function loadState() {
     mergedMeta.rewardFilter = normalizeFilter(mergedMeta.rewardFilter);
     mergedMeta.questFilter = normalizeFilter(mergedMeta.questFilter);
     mergedMeta.badgeFilter = normalizeFilter(mergedMeta.badgeFilter);
+    if (Array.isArray(mergedMeta.lastBadgeIds)) {
+      mergedMeta.lastBadgeIds = mergedMeta.lastBadgeIds
+        .map(id => {
+          if (typeof id === "string") {
+            const trimmed = id.trim();
+            return trimmed.length > 0 ? trimmed : null;
+          }
+          if (Number.isFinite(id)) {
+            return String(id);
+          }
+          return null;
+        })
+        .filter(Boolean);
+    } else {
+      mergedMeta.lastBadgeIds = [];
+    }
     mergedMeta.settingsOpen = false;
     if (
       mergedMeta.settingsCategory &&
@@ -2263,10 +2280,50 @@ function reportMessage(payload) {
   message.pointsOnMessage = pointsOnMessage;
   state.meta.lastMessageId = internalMessageId;
 
-  const selectedBadge = selectRandomBadge(state.meta.lastBadgeId);
-  const badgePoints = selectedBadge ? selectedBadge.points : 0;
-  if (badgePoints > 0) {
-    state.customer.currentPoints += badgePoints;
+  const eligibleBadges = getBadges().filter(badge => badge && badge.icon);
+  const badgeBundle = [];
+  let primaryBadge = null;
+  if (eligibleBadges.length > 0) {
+    primaryBadge = selectRandomBadge(state.meta.lastBadgeId);
+    if (!primaryBadge) {
+      primaryBadge = eligibleBadges[Math.floor(Math.random() * eligibleBadges.length)];
+    }
+    if (primaryBadge) {
+      badgeBundle.push(primaryBadge);
+    }
+    let extraPool = eligibleBadges.filter(
+      badge => !badgeBundle.some(selected => selected && selected.id === badge.id)
+    );
+    if (extraPool.length > 1) {
+      extraPool = extraPool.slice();
+      for (let i = extraPool.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [extraPool[i], extraPool[j]] = [extraPool[j], extraPool[i]];
+      }
+    }
+    const maxExtras = Math.min(3, extraPool.length);
+    let extrasNeeded = 0;
+    if (maxExtras > 0) {
+      extrasNeeded = Math.max(1, Math.floor(Math.random() * (maxExtras + 1)));
+      extrasNeeded = Math.min(maxExtras, extrasNeeded);
+    }
+    if (!primaryBadge && extraPool.length > 0) {
+      primaryBadge = extraPool.shift();
+      if (primaryBadge) {
+        badgeBundle.push(primaryBadge);
+        if (extrasNeeded > 0) extrasNeeded = Math.max(0, extrasNeeded - 1);
+      }
+    }
+    if (extrasNeeded > 0 && extraPool.length > 0) {
+      badgeBundle.push(...extraPool.slice(0, extrasNeeded));
+    }
+  }
+  const badgePointsTotal = badgeBundle.reduce((sum, badge) => {
+    const raw = Number(badge?.points);
+    return sum + (Number.isFinite(raw) ? raw : 0);
+  }, 0);
+  if (badgePointsTotal > 0) {
+    state.customer.currentPoints += badgePointsTotal;
   }
   const afterPoints = state.customer.currentPoints;
   const totalAwarded = afterPoints - beforePoints;
@@ -2283,8 +2340,9 @@ function reportMessage(payload) {
   state.meta.lastReportPoints = pointsOnMessage;
   state.meta.lastBalanceBefore = beforePoints;
   state.meta.lastBalanceAfter = afterPoints;
-  state.meta.lastBadgePoints = badgePoints;
-  state.meta.lastBadgeId = selectedBadge ? selectedBadge.id : null;
+  state.meta.lastBadgePoints = badgePointsTotal;
+  state.meta.lastBadgeId = badgeBundle.length > 0 ? badgeBundle[0].id : null;
+  state.meta.lastBadgeIds = badgeBundle.map(badge => badge.id);
   state.meta.lastTotalAwarded = totalAwarded;
   if (Array.isArray(payload.emergencyFlags) && payload.emergencyFlags.length > 0) {
     message.emergencyFlags = payload.emergencyFlags;
@@ -2382,6 +2440,7 @@ function revertLastReportAward() {
   state.meta.lastBalanceBefore = null;
   state.meta.lastBalanceAfter = null;
   state.meta.lastBadgeId = null;
+  state.meta.lastBadgeIds = [];
   state.meta.lastBadgePoints = null;
   state.meta.lastTotalAwarded = null;
   state.meta.lastClientSnapshot = null;
@@ -4850,7 +4909,7 @@ function renderBadgeSpotlight(badgeInput) {
           </ul>
           ${
             hasMoreExtras
-              ? `<button type="button" class="badge-spotlight-extra__more" data-route="client-badges">…more badges</button>`
+              ? `<button type="button" class="badge-spotlight-extra__more" data-route="client-badges">...more badges</button>`
               : ""
           }
         </div>
@@ -4907,26 +4966,24 @@ function setupBadgeShowcase(container) {
     return;
   }
 
-  const published = eligible.filter(badge => badge.published !== false);
-  const pool = published.length > 0 ? published : eligible;
-  const awardedBadge =
-    state.meta.lastBadgeId !== null ? pool.find(badge => badge.id === state.meta.lastBadgeId) || null : null;
+  const storedBadgeIds = Array.isArray(state.meta.lastBadgeIds) ? state.meta.lastBadgeIds : [];
+  let selections = storedBadgeIds.map(id => badgeById(id)).filter(Boolean);
 
-  let desiredCount = pool.length >= 3 ? (Math.random() < 0.5 ? 2 : 3) : Math.min(pool.length, 3);
-  if (desiredCount <= 0) desiredCount = 1;
-
-  const selections = [];
-  if (awardedBadge) {
-    selections.push(awardedBadge);
-  }
-
-  const remainingPool = pool.filter(badge => !selections.some(selected => selected.id === badge.id));
-  for (let i = remainingPool.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [remainingPool[i], remainingPool[j]] = [remainingPool[j], remainingPool[i]];
-  }
-  while (selections.length < desiredCount && remainingPool.length > 0) {
-    selections.push(remainingPool.shift());
+  if (selections.length === 0) {
+    const published = eligible.filter(badge => badge.published !== false);
+    const pool = published.length > 0 ? published : eligible;
+    if (pool.length === 0) {
+      badgeContainer.innerHTML = "";
+      return;
+    }
+    let desiredCount = pool.length >= 3 ? (Math.random() < 0.5 ? 2 : 3) : Math.min(pool.length, 3);
+    if (desiredCount <= 0) desiredCount = 1;
+    const poolCopy = pool.slice();
+    for (let i = poolCopy.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [poolCopy[i], poolCopy[j]] = [poolCopy[j], poolCopy[i]];
+    }
+    selections = poolCopy.slice(0, desiredCount);
   }
 
   badgeContainer.innerHTML = renderBadgeSpotlight(selections);
