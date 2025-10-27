@@ -10,6 +10,7 @@ const ROUTES = {
   landing: { requiresRole: false },
   customer: { requiresRole: "customer" },
   "customer-reports": { requiresRole: "customer" },
+  "customer-badges": { requiresRole: "customer" },
   "customer-redemptions": { requiresRole: "customer" },
   "client-dashboard": { requiresRole: "client" },
   "client-reporting": { requiresRole: "client" },
@@ -1165,7 +1166,67 @@ const DEFAULT_QUESTS = [
     bonusDetail: "Wrap the quiz under four minutes to trigger a real-time kudos animation.",
     description: "Short stories recreate remote mishaps from global deployments with choose-your-fix prompts.",
     sampleQuestion:
-      "Your teammate joins a call from a cafe with customer dashboards on screen. What is the fastest mitigation?"
+      "Your teammate joins a call from a cafe with customer dashboards on screen. What is the fastest mitigation?",
+    walkthrough: {
+      summary: "Use this quest to show how remote teammates stay sharp without a SOC on standby.",
+      learningObjectives: [
+        "Normalise quick remote environment checks before meetings.",
+        "Reinforce one-tap escalation from the Reporter add-in when context changes.",
+        "Celebrate streak momentum with bonus cues that feel rewarding, not punitive."
+      ],
+      setup: {
+        narrative: "Frame the story around Will, a revenue analyst dialing in from a pop-up coworking space.",
+        steps: [
+          "From the Reporter Hub, spotlight the quest card and mention the +15 fast finish incentive.",
+          "Call out that the quest is five micro-scenarios designed to be answered inside two minutes.",
+          "Explain that picking a risky option brings up instant guidance instead of just marking the answer wrong."
+        ]
+      },
+      storyBeats: [
+        {
+          title: "Beat 1 — Pop-up coworking chaos",
+          scenario: "Will squeezes into shared seating minutes before a customer renewal call.",
+          prompt: "Quiz asks whether to continue on the open floor, hunt for a focus room, or drop to audio only.",
+          idealAction: "Choose the focus room option and mention the in-quest reminder about badge access and privacy screens.",
+          callout: "Emphasise that the side panel presents the remote work checklist the moment the answer is submitted."
+        },
+        {
+          title: "Beat 2 — Shoulder surfing risk",
+          scenario: "A passer-by glances at pipeline dashboards while screen share is still active.",
+          prompt: "Learners decide between pausing the share, enabling blur, or continuing because the call is internal.",
+          idealAction: "Select 'Pause share + trigger WeldSecure alert' to show how the quest nudges the escalation flow.",
+          callout: "Point to the copy that reassures them a pre-filled Teams message is ready in the add-in."
+        },
+        {
+          title: "Beat 3 — VPN drop mid-call",
+          scenario: "The cafe Wi-Fi blips and the device quietly falls back to a hotspot.",
+          prompt: "Options include ignoring the change, reconnecting later, or re-authenticating immediately.",
+          idealAction: "Pick the immediate re-auth option to surface the fast finish tip for staying under four minutes.",
+          callout: "Note how the final screen tees up a recognition post security can paste into Slack."
+        }
+      ],
+      instrumentation: [
+        {
+          label: "Signals tracked",
+          detail: "VPN reconnect confirmations, device posture pings, and focus room bookings feed into Security Dashboards."
+        },
+        {
+          label: "Auto nudges",
+          detail: "Unsafe answers trigger microcopy nudging remote work policy, plus a one-click escalation draft."
+        }
+      ],
+      followUp: {
+        highlight: "Mention that completing the quest unlocks a templated kudos message security can send instantly.",
+        actions: [
+          "Jump to the Reporter points card to show the +15 fast finish bonus stacking on streaks.",
+          "Switch to the Security Team dashboard to highlight the remote context signal on the next sync."
+        ]
+      },
+      demoTips: [
+        "If time is tight, narrate Beat 2 in detail and summarise the others to keep momentum.",
+        "Reset demo data after the walkthrough to quickly rerun it with another audience."
+      ]
+    }
   },
   {
     id: "gen-ai-guardrails",
@@ -1365,8 +1426,143 @@ function initialState() {
       email: "rachel.summers@example.com",
       currentPoints: 540,
       redeemedPoints: 180,
-      clientId: 101
+      clientId: 101,
+      bonusPoints: {
+        weeklyCap: 150,
+        earnedThisWeek: 110,
+        breakdown: [
+          {
+            id: "quests",
+            label: "Quests completed",
+            description: "First quest this month triggered the double-points boost.",
+            points: 60,
+            firstOfMonthDouble: true
+          },
+          {
+            id: "boosters",
+            label: "Learning boosters",
+            description: "Inbox coaching nudges acknowledged within 24 hours.",
+            points: 30
+          },
+          {
+            id: "team",
+            label: "Team streak bonus",
+            description: "Squad hit its weekly response streak target.",
+            points: 20
+          }
+        ]
+      },
+      questCompletions: []
     },
+    teamMembers: [
+      {
+        id: "rachel-summers",
+        name: "Rachel Summers",
+        email: "rachel.summers@example.com",
+        title: "Operations Lead",
+        location: "London HQ",
+        specialty: "Finance workflows",
+        avatarTone: "violet"
+      },
+      {
+        id: "priya-shah",
+        name: "Priya Shah",
+        email: "priya.shah@example.com",
+        title: "Senior Security Analyst",
+        location: "London SOC",
+        specialty: "Payment diversion",
+        avatarTone: "teal"
+      },
+      {
+        id: "will-adams",
+        name: "Will Adams",
+        email: "will.adams@example.com",
+        title: "Risk Champion — Finance",
+        location: "Birmingham",
+        specialty: "Executive impersonation",
+        avatarTone: "amber"
+      },
+      {
+        id: "daniel-cho",
+        name: "Daniel Cho",
+        email: "daniel.cho@example.com",
+        title: "Trading Operations Associate",
+        location: "London HQ",
+        specialty: "Market alerts",
+        avatarTone: "blue"
+      },
+      {
+        id: "hannah-elliott",
+        name: "Hannah Elliott",
+        email: "hannah.elliott@example.com",
+        title: "Employee Success Partner",
+        location: "Manchester",
+        specialty: "Awareness programmes",
+        avatarTone: "rose"
+      }
+    ],
+    recognitions: [
+      {
+        id: "rec-1001",
+        senderEmail: "priya.shah@example.com",
+        senderName: "Priya Shah",
+        senderTitle: "Senior Security Analyst",
+        recipientEmail: "rachel.summers@example.com",
+        recipientName: "Rachel Summers",
+        recipientTitle: "Operations Lead",
+        points: 35,
+        focus: "Vendor payment spoof",
+        message:
+          "Rachel spotted the spoofed supplier account change before finance processed it and kept GBP 32k in our accounts.",
+        channel: "Hub spotlight",
+        createdAt: "2025-10-08T09:55:00Z"
+      },
+      {
+        id: "rec-1002",
+        senderEmail: "will.adams@example.com",
+        senderName: "Will Adams",
+        senderTitle: "Risk Champion — Finance",
+        recipientEmail: "rachel.summers@example.com",
+        recipientName: "Rachel Summers",
+        recipientTitle: "Operations Lead",
+        points: 20,
+        focus: "BEC attempt escalated",
+        message:
+          "Thanks for looping me in on the fake CEO request. Your context helped us warn the exec team before any funds moved.",
+        channel: "Slack kudos",
+        createdAt: "2025-10-06T14:25:00Z"
+      },
+      {
+        id: "rec-1003",
+        senderEmail: "hannah.elliott@example.com",
+        senderName: "Hannah Elliott",
+        senderTitle: "Employee Success Partner",
+        recipientEmail: "rachel.summers@example.com",
+        recipientName: "Rachel Summers",
+        recipientTitle: "Operations Lead",
+        points: 25,
+        focus: "Awareness champion",
+        message:
+          "Rachel’s town hall walkthrough on spotting bogus invoices gave every squad a playbook to challenge risky requests.",
+        channel: "Town hall shout-out",
+        createdAt: "2025-10-04T17:20:00Z"
+      },
+      {
+        id: "rec-1004",
+        senderEmail: "rachel.summers@example.com",
+        senderName: "Rachel Summers",
+        senderTitle: "Operations Lead",
+        recipientEmail: "daniel.cho@example.com",
+        recipientName: "Daniel Cho",
+        recipientTitle: "Trading Operations Associate",
+        points: 15,
+        focus: "Credential lure spotted",
+        message:
+          "Daniel reset credentials within minutes of the lure email and blocked the follow-up attempt from reaching the desk.",
+        channel: "Hub spotlight",
+        createdAt: "2025-10-05T11:02:00Z"
+      }
+    ],
     rewards: [
       {
         id: 1,
@@ -1755,6 +1951,111 @@ function loadState() {
           ...entry,
           id: normalizeId(entry.id, "redemption") ?? generateId("redemption")
         }));
+    const baseTeamMembers = Array.isArray(baseState.teamMembers) ? baseState.teamMembers : [];
+    const normalizedTeamMembers = Array.isArray(parsed.teamMembers)
+      ? (() => {
+          const seenEmails = new Set();
+          const normalized = [];
+          parsed.teamMembers.forEach(member => {
+            if (!member) return;
+            const email =
+              typeof member.email === "string" && member.email.trim().length > 0
+                ? member.email.trim()
+                : null;
+            if (!email) return;
+            const emailKey = email.toLowerCase();
+            if (seenEmails.has(emailKey)) return;
+            seenEmails.add(emailKey);
+            const candidateId = normalizeId(member.id, "member") ?? generateId("member");
+            const baseMatch =
+              baseTeamMembers.find(baseMember => {
+                if (!baseMember) return false;
+                if (baseMember.id && baseMember.id === candidateId) return true;
+                if (typeof baseMember.email !== "string") return false;
+                return baseMember.email.trim().toLowerCase() === emailKey;
+              }) || null;
+            normalized.push({
+              ...(baseMatch ? { ...baseMatch } : {}),
+              ...member,
+              id: candidateId,
+              email
+            });
+          });
+          baseTeamMembers.forEach(baseMember => {
+            if (!baseMember || typeof baseMember.email !== "string") return;
+            const emailKey = baseMember.email.trim().toLowerCase();
+            if (!emailKey || seenEmails.has(emailKey)) return;
+            seenEmails.add(emailKey);
+            normalized.push({ ...baseMember });
+          });
+          return normalized;
+        })()
+      : baseTeamMembers.map(member => ({ ...member }));
+    const teamMemberLookup = new Map();
+    normalizedTeamMembers.forEach(member => {
+      if (!member || typeof member.email !== "string") return;
+      const key = member.email.trim().toLowerCase();
+      if (!key || teamMemberLookup.has(key)) return;
+      teamMemberLookup.set(key, member);
+    });
+    const normalizedRecognitions = Array.isArray(parsed.recognitions)
+      ? (() => {
+          const seenIds = new Set();
+          return parsed.recognitions
+            .map(entry => {
+              if (!entry) return null;
+              const id = normalizeId(entry.id, "recognition") ?? generateId("recognition");
+              if (seenIds.has(id)) return null;
+              seenIds.add(id);
+              const senderEmail =
+                typeof entry.senderEmail === "string" && entry.senderEmail.trim().length > 0
+                  ? entry.senderEmail.trim()
+                  : null;
+              const recipientEmail =
+                typeof entry.recipientEmail === "string" && entry.recipientEmail.trim().length > 0
+                  ? entry.recipientEmail.trim()
+                  : null;
+              if (!senderEmail || !recipientEmail) return null;
+              const senderMember = teamMemberLookup.get(senderEmail.toLowerCase()) || null;
+              const recipientMember = teamMemberLookup.get(recipientEmail.toLowerCase()) || null;
+              const rawPoints = Number(entry.points);
+              const normalizedPoints =
+                Number.isFinite(rawPoints) && rawPoints > 0 ? Math.round(rawPoints) : 0;
+              const focusLabel =
+                typeof entry.focus === "string" && entry.focus.trim().length > 0
+                  ? entry.focus.trim()
+                  : "Recognition spotlight";
+              const channelLabel =
+                typeof entry.channel === "string" && entry.channel.trim().length > 0
+                  ? entry.channel.trim()
+                  : "Hub spotlight";
+              const message =
+                typeof entry.message === "string" && entry.message.trim().length > 0
+                  ? entry.message.trim()
+                  : null;
+              if (!message) return null;
+              const createdAt =
+                typeof entry.createdAt === "string" && entry.createdAt.trim().length > 0
+                  ? entry.createdAt.trim()
+                  : new Date().toISOString();
+              return {
+                id,
+                senderEmail,
+                senderName: entry.senderName || senderMember?.name || senderEmail,
+                senderTitle: entry.senderTitle || senderMember?.title || "",
+                recipientEmail,
+                recipientName: entry.recipientName || recipientMember?.name || recipientEmail,
+                recipientTitle: entry.recipientTitle || recipientMember?.title || "",
+                points: normalizedPoints,
+                focus: focusLabel,
+                message,
+                channel: channelLabel,
+                createdAt
+              };
+            })
+            .filter(Boolean);
+        })()
+      : (baseState.recognitions || []).map(entry => ({ ...entry }));
     const normalizedLeaderboard = Array.isArray(parsed.departmentLeaderboard)
       ? (() => {
           const baseMap = new Map(
@@ -2083,9 +2384,184 @@ function loadState() {
         SETTINGS_CATEGORIES.find(category => !category.disabled) || SETTINGS_CATEGORIES[0] || null;
       mergedMeta.settingsCategory = fallbackCategory ? fallbackCategory.id : null;
     }
+    const { customer: storedCustomer, ...restPassthrough } = passthrough;
+    const normalizeBonusPoints = (candidate, baseBonus) => {
+      const fallback = baseBonus && typeof baseBonus === "object" ? baseBonus : {};
+      const baseBreakdown = Array.isArray(fallback.breakdown) ? fallback.breakdown : [];
+      const cloneBaseBreakdown = () => baseBreakdown.map(item => ({ ...item }));
+      if (!candidate || typeof candidate !== "object") {
+        const weeklyCapFallback = Number(fallback.weeklyCap);
+        const earnedFallback = Number(fallback.earnedThisWeek);
+        return {
+          weeklyCap: Math.max(0, Number.isFinite(weeklyCapFallback) ? weeklyCapFallback : 0),
+          earnedThisWeek: Math.max(0, Number.isFinite(earnedFallback) ? earnedFallback : 0),
+          breakdown: cloneBaseBreakdown()
+        };
+      }
+      const weeklyCapRaw = Number(candidate.weeklyCap);
+      const earnedRaw = Number(
+        candidate.earnedThisWeek ?? candidate.earned ?? candidate.current ?? fallback.earnedThisWeek
+      );
+      const weeklyCap = Math.max(
+        0,
+        Number.isFinite(weeklyCapRaw) ? weeklyCapRaw : Number(fallback.weeklyCap) || 0
+      );
+      const earnedThisWeek = Math.max(
+        0,
+        Number.isFinite(earnedRaw) ? earnedRaw : Number(fallback.earnedThisWeek) || 0
+      );
+      const sourceBreakdown = Array.isArray(candidate.breakdown) ? candidate.breakdown : [];
+      const baseMap = new Map(
+        baseBreakdown
+          .map(entry => {
+            if (!entry || typeof entry !== "object") return null;
+            const key =
+              typeof entry.id === "string" && entry.id.trim().length > 0 ? entry.id.trim() : null;
+            return key ? [key, entry] : null;
+          })
+          .filter(Boolean)
+      );
+      const normalizedBreakdown = sourceBreakdown
+        .map((entry, index) => {
+          if (!entry || typeof entry !== "object") return null;
+          const rawId =
+            typeof entry.id === "string" && entry.id.trim().length > 0 ? entry.id.trim() : null;
+          const baseEntry = (rawId && baseMap.get(rawId)) || baseBreakdown[index] || null;
+          const labelCandidate =
+            typeof entry.label === "string" && entry.label.trim().length > 0
+              ? entry.label.trim()
+              : typeof baseEntry?.label === "string"
+              ? baseEntry.label
+              : "";
+          if (!labelCandidate) return null;
+          const normalizedId =
+            rawId ||
+            (typeof baseEntry?.id === "string" && baseEntry.id.trim().length > 0
+              ? baseEntry.id.trim()
+              : generateId(`bonus-${index + 1}`));
+          const descriptionCandidate =
+            typeof entry.description === "string" && entry.description.trim().length > 0
+              ? entry.description.trim()
+              : typeof baseEntry?.description === "string"
+              ? baseEntry.description
+              : "";
+          const pointsCandidate = Number(entry.points);
+          const basePointsCandidate = Number(baseEntry?.points);
+          const points = Number.isFinite(pointsCandidate)
+            ? pointsCandidate
+            : Number.isFinite(basePointsCandidate)
+            ? basePointsCandidate
+            : 0;
+          const firstOfMonthDouble =
+            entry.firstOfMonthDouble === true ||
+            (baseEntry && baseEntry.firstOfMonthDouble === true);
+          return {
+            id: normalizedId,
+            label: labelCandidate,
+            description: descriptionCandidate,
+            points,
+            firstOfMonthDouble
+          };
+        })
+        .filter(Boolean);
+      const breakdown =
+        normalizedBreakdown.length > 0 ? normalizedBreakdown : cloneBaseBreakdown();
+      return {
+        weeklyCap,
+        earnedThisWeek,
+        breakdown
+      };
+    };
+    const normalizeQuestCompletions = (source, baseHistory) => {
+      const baseList = Array.isArray(baseHistory) ? baseHistory : [];
+      const cloneBaseList = () => baseList.map(entry => ({ ...entry }));
+      if (!Array.isArray(source)) {
+        return cloneBaseList();
+      }
+      const normalized = source
+        .map((entry, index) => {
+          if (!entry || typeof entry !== "object") return null;
+          const questIdSource =
+            entry.questId !== undefined && entry.questId !== null ? String(entry.questId) : null;
+          const questId = questIdSource ? questIdSource.trim() : "";
+          if (!questId) return null;
+          const rawCompleted =
+            typeof entry.completedAt === "string" ? entry.completedAt.trim() : "";
+          let completedAt = null;
+          if (rawCompleted) {
+            const parsed = new Date(rawCompleted);
+            if (!Number.isNaN(parsed.getTime())) {
+              completedAt = parsed.toISOString();
+            }
+          }
+          if (!completedAt) {
+            const baseEntry = baseList[index];
+            if (baseEntry && typeof baseEntry.completedAt === "string") {
+              const parsed = new Date(baseEntry.completedAt);
+              if (!Number.isNaN(parsed.getTime())) {
+                completedAt = parsed.toISOString();
+              }
+            }
+          }
+          if (!completedAt) {
+            completedAt = new Date().toISOString();
+          }
+          const rawAwarded = Number(entry.pointsAwarded);
+          const rawBase = Number(entry.basePoints);
+          const pointsAwarded = Number.isFinite(rawAwarded)
+            ? rawAwarded
+            : Number.isFinite(rawBase)
+            ? rawBase
+            : 0;
+          const basePoints = Number.isFinite(rawBase) ? rawBase : null;
+          const doubled = entry.doubled === true;
+          const idSource =
+            typeof entry.id === "string" && entry.id.trim().length > 0
+              ? entry.id.trim()
+              : null;
+          const id = idSource || generateId(`quest-completion-${index + 1}`);
+          return {
+            id,
+            questId,
+            completedAt,
+            pointsAwarded,
+            basePoints,
+            doubled
+          };
+        })
+        .filter(Boolean);
+      if (normalized.length === 0) {
+        return cloneBaseList();
+      }
+      const maxEntries = 50;
+      return normalized.slice(0, maxEntries);
+    };
+    const baseCustomer =
+      baseState.customer && typeof baseState.customer === "object" ? baseState.customer : {};
+    const normalizedCustomer = (() => {
+      if (!storedCustomer || typeof storedCustomer !== "object") {
+        const baseBonus = baseCustomer.bonusPoints || {};
+        return {
+          ...baseCustomer,
+          bonusPoints: normalizeBonusPoints(null, baseBonus),
+          questCompletions: normalizeQuestCompletions(null, baseCustomer.questCompletions)
+        };
+      }
+      const baseBonus = baseCustomer.bonusPoints || {};
+      return {
+        ...baseCustomer,
+        ...storedCustomer,
+        bonusPoints: normalizeBonusPoints(storedCustomer.bonusPoints, baseBonus),
+        questCompletions: normalizeQuestCompletions(
+          storedCustomer.questCompletions,
+          baseCustomer.questCompletions
+        )
+      };
+    })();
     return {
       ...baseState,
-      ...passthrough,
+      ...restPassthrough,
+      customer: normalizedCustomer,
       meta: mergedMeta,
       rewards: normalizedRewards,
       quests: normalizedQuests,
@@ -2093,6 +2569,8 @@ function loadState() {
       messages: normalizedMessages,
       clients: normalizedClients,
       rewardRedemptions: normalizedRewardRedemptions,
+      teamMembers: normalizedTeamMembers,
+      recognitions: normalizedRecognitions,
       departmentLeaderboard: normalizedLeaderboard,
       engagementPrograms: normalizedPrograms,
       labs: normalizedLabs,
@@ -2174,7 +2652,99 @@ function resetDemo() {
 }
 
 function rewardById(id) {
-  return state.rewards.find(item => item.id === id);
+  const target = id;
+  return state.rewards.find(item => {
+    if (item?.id === target) return true;
+    return String(item?.id) === String(target);
+  });
+}
+
+function questById(id) {
+  if (!Array.isArray(state.quests)) return null;
+  const targetId = String(id);
+  return (
+    state.quests.find(item => {
+      return String(item.id) === targetId;
+    }) || null
+  );
+}
+
+function completeQuest(questId, options = {}) {
+  const quest = questById(questId);
+  if (!quest) {
+    return { success: false, reason: "Quest not found." };
+  }
+  const providedDate = options.completedAt ? new Date(options.completedAt) : new Date();
+  const completedDate = Number.isNaN(providedDate.getTime()) ? new Date() : providedDate;
+  const completedAt = completedDate.toISOString();
+  if (!Array.isArray(state.customer.questCompletions)) {
+    state.customer.questCompletions = [];
+  }
+  const hasCompletionThisMonth = state.customer.questCompletions.some(entry => {
+    if (!entry || typeof entry.completedAt !== "string") return false;
+    const parsed = new Date(entry.completedAt);
+    if (Number.isNaN(parsed.getTime())) return false;
+    return (
+      parsed.getFullYear() === completedDate.getFullYear() &&
+      parsed.getMonth() === completedDate.getMonth()
+    );
+  });
+  const basePointsRaw = Number(quest.points);
+  const basePoints = Number.isFinite(basePointsRaw) ? basePointsRaw : 0;
+  const doubled = !hasCompletionThisMonth && basePoints > 0;
+  const multiplier = doubled ? 2 : 1;
+  const awardedPoints = basePoints * multiplier;
+  if (awardedPoints > 0) {
+    state.customer.currentPoints += awardedPoints;
+  }
+  state.customer.questCompletions.unshift({
+    id: generateId("quest-completion"),
+    questId: quest.id,
+    completedAt,
+    pointsAwarded: awardedPoints,
+    basePoints,
+    doubled
+  });
+  if (state.customer.questCompletions.length > 50) {
+    state.customer.questCompletions.length = 50;
+  }
+  const bonus = state.customer.bonusPoints;
+  if (bonus && typeof bonus === "object") {
+    const currentEarned = Number(bonus.earnedThisWeek);
+    const updatedEarned = (Number.isFinite(currentEarned) ? currentEarned : 0) + awardedPoints;
+    bonus.earnedThisWeek = Math.max(0, updatedEarned);
+    if (!Array.isArray(bonus.breakdown)) {
+      bonus.breakdown = [];
+    }
+    let questSource = bonus.breakdown.find(entry => {
+      if (!entry || entry.id === undefined || entry.id === null) return false;
+      return String(entry.id).trim().toLowerCase() === "quests";
+    });
+    if (!questSource) {
+      questSource = {
+        id: "quests",
+        label: "Quests completed",
+        description: "Quest completions recorded this week.",
+        points: 0
+      };
+      bonus.breakdown.push(questSource);
+    }
+    const existingPoints = Number(questSource.points);
+    const newPoints = (Number.isFinite(existingPoints) ? existingPoints : 0) + awardedPoints;
+    questSource.points = newPoints;
+    if (doubled) {
+      questSource.firstOfMonthDouble = true;
+      if (
+        typeof questSource.description !== "string" ||
+        questSource.description.trim().length === 0
+      ) {
+        questSource.description = "First quest completion this month triggered double points.";
+      }
+    }
+  }
+  persist();
+  renderApp();
+  return { success: true, awardedPoints, doubled, completedAt };
 }
 
 function getBadges() {
@@ -2205,6 +2775,33 @@ function reasonById(id) {
 
 function messageBelongsToCustomer(message) {
   return message?.reporterEmail === state.customer.email;
+}
+
+function getTeamMembers() {
+  if (Array.isArray(state.teamMembers)) {
+    return state.teamMembers;
+  }
+  return [];
+}
+
+function teamMemberByEmail(email) {
+  if (typeof email !== "string") return null;
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) return null;
+  const members = getTeamMembers();
+  return (
+    members.find(member => {
+      if (!member || typeof member.email !== "string") return false;
+      return member.email.trim().toLowerCase() === normalized;
+    }) || null
+  );
+}
+
+function getRecognitions() {
+  if (Array.isArray(state.recognitions)) {
+    return state.recognitions;
+  }
+  return [];
 }
 
 function redeemReward(rewardId) {
@@ -2239,6 +2836,226 @@ function redeemReward(rewardId) {
   renderApp();
 
   return { success: true, redemption };
+}
+
+function recordRecognition({ recipientEmail, points, focus, message, channel }) {
+  const sender = state.customer || {};
+  const senderEmail =
+    typeof sender.email === "string" && sender.email.trim().length > 0 ? sender.email.trim() : null;
+  if (!senderEmail) {
+    return { success: false, reason: "Select a reporter profile before sharing recognition." };
+  }
+
+  const normalizedRecipient =
+    typeof recipientEmail === "string" && recipientEmail.trim().length > 0
+      ? recipientEmail.trim()
+      : null;
+  if (!normalizedRecipient) {
+    return { success: false, reason: "Choose a teammate to recognise." };
+  }
+  if (normalizedRecipient.toLowerCase() === senderEmail.toLowerCase()) {
+    return { success: false, reason: "You cannot award recognition to yourself." };
+  }
+
+  const trimmedMessage = typeof message === "string" ? message.trim() : "";
+  if (!trimmedMessage) {
+    return { success: false, reason: "Add a short note so your teammate knows what they did well." };
+  }
+
+  const senderMember = teamMemberByEmail(senderEmail);
+  const recipientMember = teamMemberByEmail(normalizedRecipient);
+  const rawPoints = Number(points);
+  const normalizedPoints =
+    Number.isFinite(rawPoints) && rawPoints > 0 ? Math.round(rawPoints) : 0;
+  const focusLabel =
+    typeof focus === "string" && focus.trim().length > 0 ? focus.trim() : "Recognition spotlight";
+  const channelLabel =
+    typeof channel === "string" && channel.trim().length > 0 ? channel.trim() : "Hub spotlight";
+
+  const recognition = {
+    id: generateId("recognition"),
+    senderEmail: senderEmail,
+    senderName: senderMember?.name || sender.name || senderEmail,
+    senderTitle: senderMember?.title || sender.title || "",
+    recipientEmail: recipientMember?.email || normalizedRecipient,
+    recipientName: recipientMember?.name || normalizedRecipient,
+    recipientTitle: recipientMember?.title || "",
+    points: normalizedPoints,
+    focus: focusLabel,
+    message: trimmedMessage,
+    channel: channelLabel,
+    createdAt: new Date().toISOString()
+  };
+
+  if (!Array.isArray(state.recognitions)) {
+    state.recognitions = [];
+  }
+  state.recognitions.unshift(recognition);
+  state.meta.recognitionFilter = "given";
+
+  persist();
+  renderApp();
+
+  return { success: true, recognition };
+}
+
+function openRecognitionFormDialog() {
+  const teammateList = getTeamMembers();
+  const lowerCustomerEmail =
+    typeof state.customer?.email === "string"
+      ? state.customer.email.trim().toLowerCase()
+      : "";
+  const teammateOptions = teammateList
+    .filter(member => {
+      if (!member || typeof member.email !== "string") return false;
+      const email = member.email.trim();
+      if (!email) return false;
+      if (lowerCustomerEmail && email.toLowerCase() === lowerCustomerEmail) {
+        return false;
+      }
+      return true;
+    })
+    .map(member => {
+      const email = member.email.trim();
+      const title =
+        typeof member.title === "string" && member.title.trim().length > 0
+          ? member.title.trim()
+          : "";
+      const titleMarkup = title ? ` - ${escapeHtml(title)}` : "";
+      const displayName = member.name || email;
+      return `<option value="${escapeHtml(email)}">${escapeHtml(
+        displayName
+      )}${titleMarkup}</option>`;
+    })
+    .join("");
+  const teammateSelectOptions = teammateOptions
+    ? `<option value="" disabled selected>Select teammate</option>${teammateOptions}`
+    : `<option value="" disabled selected>No teammates available</option>`;
+  const recognitionPointChoices = [
+    { value: 10, label: "+10 pts - Quick kudos" },
+    { value: 15, label: "+15 pts - Awareness boost", default: true },
+    { value: 25, label: "+25 pts - Incident averted" },
+    { value: 35, label: "+35 pts - High-risk stop" }
+  ];
+  const pointsOptionsMarkup = recognitionPointChoices
+    .map(choice => {
+      const selectedAttr = choice.default ? " selected" : "";
+      return `<option value="${escapeHtml(
+        String(choice.value)
+      )}"${selectedAttr}>${escapeHtml(choice.label)}</option>`;
+    })
+    .join("");
+  const recognitionFocusChoices = [
+    "Suspicious supplier update",
+    "Credential lure stopped",
+    "Business email compromise attempt",
+    "Unexpected bank change",
+    "Phishing simulation debrief"
+  ];
+  const focusOptionsMarkup = recognitionFocusChoices
+    .map((label, index) => {
+      const selectedAttr = index === 0 ? " selected" : "";
+      return `<option value="${escapeHtml(label)}"${selectedAttr}>${escapeHtml(
+        label
+      )}</option>`;
+    })
+    .join("");
+
+  const container = document.createElement("div");
+  container.innerHTML = `
+    <section class="recognition-form recognition-form--dialog">
+      <p class="recognition-form__intro">Grant bonus points when a teammate spots a threat or shares intel.</p>
+      <form id="recognition-form" class="recognition-form__fields">
+        <label class="recognition-form__field">
+          <span>Team mate</span>
+          <select name="recipient" required>
+            ${teammateSelectOptions}
+          </select>
+        </label>
+        <div class="recognition-form__row">
+          <label class="recognition-form__field recognition-form__field--inline">
+            <span>Bonus points</span>
+            <select name="points" required>
+              ${pointsOptionsMarkup}
+            </select>
+          </label>
+          <label class="recognition-form__field recognition-form__field--inline">
+            <span>Threat focus</span>
+            <select name="focus">
+              ${focusOptionsMarkup}
+            </select>
+          </label>
+        </div>
+        <label class="recognition-form__field">
+          <span>Recognition message</span>
+          <textarea name="message" rows="4" maxlength="280" placeholder="Share the context so everyone knows what to watch for..." required></textarea>
+        </label>
+        <p class="recognition-form__helper">Security amplifies these stories in the weekly wrap-up and your next quest together pays out double points.</p>
+        <p class="recognition-form__error" role="alert" aria-live="assertive"></p>
+        <button type="submit" class="button-pill button-pill--primary recognition-form__submit">
+          Share recognition
+        </button>
+      </form>
+    </section>
+  `;
+
+  const form = container.querySelector("#recognition-form");
+  const errorEl = container.querySelector(".recognition-form__error");
+  if (errorEl) {
+    errorEl.hidden = true;
+  }
+  if (form) {
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+      if (errorEl) {
+        errorEl.textContent = "";
+        errorEl.hidden = true;
+      }
+      const formData = new FormData(form);
+      const recipientEmail = String(formData.get("recipient") || "").trim();
+      const pointsValue = Number(formData.get("points") || 0);
+      const focusValue = String(formData.get("focus") || "").trim();
+      const messageValue = String(formData.get("message") || "").trim();
+
+      const result = recordRecognition({
+        recipientEmail,
+        points: pointsValue,
+        focus: focusValue,
+        message: messageValue,
+        channel: "Hub spotlight"
+      });
+
+      if (!result.success) {
+        if (errorEl) {
+          errorEl.textContent = result.reason || "Please try again.";
+          errorEl.hidden = false;
+        }
+        return;
+      }
+
+      closeDialog();
+
+      const teammate = teamMemberByEmail(recipientEmail);
+      const recipientName = teammate?.name || recipientEmail;
+      const normalizedPoints =
+        Number.isFinite(pointsValue) && pointsValue > 0 ? pointsValue : 0;
+      const pointsSnippet =
+        normalizedPoints > 0 ? ` and earn +${formatNumber(normalizedPoints)} pts` : "";
+      openDialog({
+        title: "Recognition shared",
+        description: `${recipientName} will see your note${pointsSnippet}. Next quest together: double points.`,
+        confirmLabel: "Close",
+        onConfirm: closeDialog
+      });
+    });
+  }
+
+  openDialog({
+    title: "Share recognition",
+    description: "Award kudos, pass on bonus points, and unlock a double quest boost.",
+    content: container,
+    cancelLabel: "Close"
+  });
 }
 
 function setRewardPublication(rewardId, published) {
@@ -2993,6 +3810,514 @@ function closeDialog() {
   delete document.body.dataset.previousOverflow;
 }
 
+function buildQuestWalkthroughContent(quest) {
+  const walkthrough = quest?.walkthrough;
+  if (!walkthrough) {
+    return "Walkthrough content coming soon.";
+  }
+  if (typeof document === "undefined") {
+    return "Quest walkthroughs are available in the interactive demo.";
+  }
+
+  const container = document.createElement("div");
+  container.className = "quest-walkthrough";
+
+  const learningObjectives = Array.isArray(walkthrough.learningObjectives)
+    ? walkthrough.learningObjectives.filter(item => typeof item === "string" && item.trim())
+    : [];
+  const setupSteps =
+    walkthrough.setup && Array.isArray(walkthrough.setup.steps)
+      ? walkthrough.setup.steps.filter(item => typeof item === "string" && item.trim())
+      : [];
+  const storyBeats = Array.isArray(walkthrough.storyBeats)
+    ? walkthrough.storyBeats.filter(beat => beat && (beat.title || beat.scenario || beat.prompt || beat.idealAction))
+    : [];
+  const instrumentation = Array.isArray(walkthrough.instrumentation)
+    ? walkthrough.instrumentation.filter(entry => entry && (entry.label || entry.detail))
+    : [];
+  const followUpActions =
+    walkthrough.followUp && Array.isArray(walkthrough.followUp.actions)
+      ? walkthrough.followUp.actions.filter(item => typeof item === "string" && item.trim())
+      : [];
+  const demoTips = Array.isArray(walkthrough.demoTips)
+    ? walkthrough.demoTips.filter(item => typeof item === "string" && item.trim())
+    : [];
+
+  function createSection(title) {
+    const section = document.createElement("section");
+    section.className = "quest-walkthrough__section";
+    if (title) {
+      const heading = document.createElement("h3");
+      heading.textContent = title;
+      section.appendChild(heading);
+    }
+    return section;
+  }
+
+  function createDetailParagraph(label, value) {
+    if (!value) return null;
+    const paragraph = document.createElement("p");
+    paragraph.className = "quest-walkthrough__detail";
+    if (label) {
+      const strong = document.createElement("strong");
+      const normalized = label.endsWith(":") ? label : `${label}:`;
+      strong.textContent = normalized;
+      paragraph.appendChild(strong);
+      paragraph.appendChild(document.createTextNode(` ${value}`));
+    } else {
+      paragraph.textContent = value;
+    }
+    return paragraph;
+  }
+
+  if (walkthrough.summary) {
+    const summary = document.createElement("p");
+    summary.className = "quest-walkthrough__summary";
+    summary.textContent = walkthrough.summary;
+    container.appendChild(summary);
+  }
+
+  if (learningObjectives.length) {
+    const section = createSection("Learning objectives");
+    const list = document.createElement("ul");
+    list.className = "quest-walkthrough__list";
+    learningObjectives.forEach(item => {
+      const li = document.createElement("li");
+      li.textContent = item;
+      list.appendChild(li);
+    });
+    section.appendChild(list);
+    container.appendChild(section);
+  }
+
+  if (walkthrough.setup && (walkthrough.setup.narrative || setupSteps.length)) {
+    const section = createSection("How to set it up");
+    if (walkthrough.setup.narrative) {
+      const narrative = document.createElement("p");
+      narrative.textContent = walkthrough.setup.narrative;
+      section.appendChild(narrative);
+    }
+    if (setupSteps.length) {
+      const list = document.createElement("ol");
+      list.className = "quest-walkthrough__list quest-walkthrough__list--numbered";
+      setupSteps.forEach(step => {
+        const li = document.createElement("li");
+        li.textContent = step;
+        list.appendChild(li);
+      });
+      section.appendChild(list);
+    }
+    container.appendChild(section);
+  }
+
+  if (storyBeats.length) {
+    const section = createSection("Story beats");
+    const list = document.createElement("ol");
+    list.className = "quest-walkthrough__beats";
+    storyBeats.forEach(beat => {
+      const item = document.createElement("li");
+      item.className = "quest-walkthrough__beat";
+      if (beat.title) {
+        const heading = document.createElement("h4");
+        heading.textContent = beat.title;
+        item.appendChild(heading);
+      }
+      const scenario = createDetailParagraph("Scenario", beat.scenario);
+      if (scenario) item.appendChild(scenario);
+      const prompt = createDetailParagraph("Prompt", beat.prompt);
+      if (prompt) item.appendChild(prompt);
+      const ideal = createDetailParagraph("Ideal action", beat.idealAction);
+      if (ideal) item.appendChild(ideal);
+      const callout = createDetailParagraph("Callout", beat.callout);
+      if (callout) item.appendChild(callout);
+      list.appendChild(item);
+    });
+    section.appendChild(list);
+    container.appendChild(section);
+  }
+
+  if (instrumentation.length) {
+    const section = createSection("Instrumentation & signals");
+    const list = document.createElement("ul");
+    list.className = "quest-walkthrough__list quest-walkthrough__list--dense";
+    instrumentation.forEach(entry => {
+      const li = document.createElement("li");
+      if (entry.label) {
+        const strong = document.createElement("strong");
+        strong.textContent = entry.label;
+        li.appendChild(strong);
+      }
+      if (entry.detail) {
+        const span = document.createElement("span");
+        span.textContent = entry.detail;
+        li.appendChild(span);
+      }
+      list.appendChild(li);
+    });
+    section.appendChild(list);
+    container.appendChild(section);
+  }
+
+  if (walkthrough.followUp && (walkthrough.followUp.highlight || followUpActions.length)) {
+    const section = createSection("Bring it home");
+    if (walkthrough.followUp.highlight) {
+      const highlight = document.createElement("p");
+      highlight.textContent = walkthrough.followUp.highlight;
+      section.appendChild(highlight);
+    }
+    if (followUpActions.length) {
+      const list = document.createElement("ul");
+      list.className = "quest-walkthrough__list";
+      followUpActions.forEach(action => {
+        const li = document.createElement("li");
+        li.textContent = action;
+        list.appendChild(li);
+      });
+      section.appendChild(list);
+    }
+    container.appendChild(section);
+  }
+
+  if (demoTips.length) {
+    const section = createSection("Demo tips");
+    const list = document.createElement("ul");
+    list.className = "quest-walkthrough__list quest-walkthrough__list--bullet";
+    demoTips.forEach(tip => {
+      const li = document.createElement("li");
+      li.textContent = tip;
+      list.appendChild(li);
+    });
+    section.appendChild(list);
+    container.appendChild(section);
+  }
+
+  return container;
+}
+
+function openQuestWalkthrough(questId) {
+  const quest = questById(questId);
+  if (!quest || !quest.walkthrough) return false;
+  const description = quest.description || quest.walkthrough.summary || "";
+  openDialog({
+    title: `${quest.title || "Quest"} walkthrough`,
+    description,
+    content: () => buildQuestWalkthroughContent(quest),
+    confirmLabel: "Close",
+    onConfirm: close => close()
+  });
+  return true;
+}
+
+function buildQuestConfigContent(quest) {
+  if (typeof document === "undefined") {
+    return "Quest configuration is available in the live demo.";
+  }
+
+  const container = document.createElement("div");
+  container.className = "quest-config";
+
+  const metaList = document.createElement("ul");
+  metaList.className = "quest-config__meta";
+  const metaEntries = [
+    { label: "Difficulty", value: quest.difficulty || "Starter" },
+    { label: "Format", value: quest.format || "Interactive" },
+    {
+      label: "Status",
+      value: quest.published ? "Published to hubs" : "Draft only"
+    },
+    { label: "Duration", value: `${formatNumber(Number(quest.duration) || 0)} min` },
+    { label: "Questions", value: formatNumber(Number(quest.questions) || 0) }
+  ];
+
+  metaEntries.forEach(entry => {
+    const li = document.createElement("li");
+    const label = document.createElement("span");
+    label.textContent = entry.label;
+    const value = document.createElement("strong");
+    value.textContent = entry.value;
+    li.appendChild(label);
+    li.appendChild(value);
+    metaList.appendChild(li);
+  });
+  container.appendChild(metaList);
+
+  const actions = document.createElement("div");
+  actions.className = "quest-config__actions";
+  const baseQuestPoints = Number(quest.points) || 0;
+
+  const completionBtn = document.createElement("button");
+  completionBtn.type = "button";
+  completionBtn.className = "button-pill button-pill--ghost quest-config__action";
+  completionBtn.textContent = "Simulate completion";
+  completionBtn.addEventListener("click", () => {
+    const result = completeQuest(quest.id);
+    closeDialog();
+    requestAnimationFrame(() => {
+      if (!result.success) {
+        openDialog({
+          title: "Unable to complete quest",
+          description: result.reason || "Please try again.",
+          confirmLabel: "Close",
+          onConfirm: close => close()
+        });
+        return;
+      }
+      const pointsLabel = formatNumber(result.awardedPoints);
+      const baseLabel = formatNumber(baseQuestPoints);
+      const completionMoment = formatDateTime(result.completedAt);
+      const successTitle = result.doubled ? "Double points applied" : "Quest completion recorded";
+      const successDescription = result.doubled
+        ? `First quest completed this month (${completionMoment}) delivered ${pointsLabel} points instead of the usual ${baseLabel}.`
+        : `Quest completion logged on ${completionMoment} for ${pointsLabel} points.`;
+      openDialog({
+        title: successTitle,
+        description: successDescription,
+        confirmLabel: "Back to hub",
+        onConfirm: close => close()
+      });
+    });
+  });
+  actions.appendChild(completionBtn);
+
+  if (quest.walkthrough) {
+    const walkthroughBtn = document.createElement("button");
+    walkthroughBtn.type = "button";
+    walkthroughBtn.className = "button-pill button-pill--primary quest-config__action";
+    walkthroughBtn.textContent = "View walkthrough";
+    walkthroughBtn.addEventListener("click", () => {
+      closeDialog();
+      requestAnimationFrame(() => {
+        openQuestWalkthrough(quest.id);
+      });
+    });
+    actions.appendChild(walkthroughBtn);
+  } else {
+    const noWalkthrough = document.createElement("p");
+    noWalkthrough.className = "quest-config__hint";
+    noWalkthrough.textContent = "Walkthrough coming soon for this quest.";
+    actions.appendChild(noWalkthrough);
+  }
+
+  container.appendChild(actions);
+  return container;
+}
+
+function openQuestConfig(questId) {
+  const quest = questById(questId);
+  if (!quest) return false;
+  const title = quest.title ? `${quest.title} controls` : "Quest controls";
+  openDialog({
+    title,
+    description: "Configure how this quest appears in the demo catalogue.",
+    content: () => buildQuestConfigContent(quest),
+    confirmLabel: "Close",
+    onConfirm: close => close()
+  });
+  return true;
+}
+
+function buildRewardConfigContent(reward) {
+  if (typeof document === "undefined") {
+    return "Reward configuration is available in the interactive demo.";
+  }
+
+  const form = document.createElement("form");
+  form.className = "reward-config";
+  form.addEventListener("submit", event => event.preventDefault());
+
+  const intro = document.createElement("p");
+  intro.className = "reward-config__intro";
+  intro.textContent = "Adjust the catalogue-facing reward cost and remaining quantity.";
+  form.appendChild(intro);
+
+  const fields = document.createElement("div");
+  fields.className = "reward-config__fields";
+
+  const remainingField = document.createElement("label");
+  remainingField.className = "reward-config__field";
+  const remainingLabel = document.createElement("span");
+  remainingLabel.textContent = "Remaining";
+  const remainingInput = document.createElement("input");
+  remainingInput.type = "number";
+  remainingInput.min = "0";
+  remainingInput.step = "1";
+  remainingInput.dataset.rewardConfig = "remaining";
+  if (reward.unlimited === true) {
+    remainingInput.value = "";
+    remainingInput.placeholder = "Unlimited";
+  } else if (Number.isFinite(Number(reward.remaining))) {
+    remainingInput.value = String(Math.max(0, Number(reward.remaining)));
+    remainingInput.placeholder = "0";
+  } else {
+    remainingInput.value = "0";
+    remainingInput.placeholder = "0";
+  }
+  remainingField.appendChild(remainingLabel);
+  remainingField.appendChild(remainingInput);
+
+  const unlimitedField = document.createElement("label");
+  unlimitedField.className = "reward-config__checkbox";
+  const unlimitedInput = document.createElement("input");
+  unlimitedInput.type = "checkbox";
+  unlimitedInput.dataset.rewardConfig = "unlimited";
+  unlimitedInput.checked = reward.unlimited === true;
+  const unlimitedLabel = document.createElement("span");
+  unlimitedLabel.textContent = "Unlimited redemptions";
+  unlimitedField.appendChild(unlimitedInput);
+  unlimitedField.appendChild(unlimitedLabel);
+
+  const pointsField = document.createElement("label");
+  pointsField.className = "reward-config__field";
+  const pointsLabel = document.createElement("span");
+  pointsLabel.textContent = "Points cost";
+  const pointsInput = document.createElement("input");
+  pointsInput.type = "number";
+  pointsInput.min = "0";
+  pointsInput.step = "1";
+  pointsInput.dataset.rewardConfig = "points";
+  pointsInput.value = Number.isFinite(Number(reward.pointsCost))
+    ? String(Math.max(0, Number(reward.pointsCost)))
+    : "0";
+  pointsField.appendChild(pointsLabel);
+  pointsField.appendChild(pointsInput);
+
+  fields.appendChild(remainingField);
+  fields.appendChild(pointsField);
+  form.appendChild(fields);
+  form.appendChild(unlimitedField);
+
+  const guidance = document.createElement("p");
+  guidance.className = "reward-config__hint";
+  guidance.textContent = "When unlimited is enabled, the remaining count is hidden from the reporter hub.";
+  form.appendChild(guidance);
+
+  const error = document.createElement("p");
+  error.className = "reward-config__error";
+  error.hidden = true;
+  form.appendChild(error);
+
+  function syncRemainingState() {
+    const unlimited = unlimitedInput.checked;
+    remainingInput.disabled = unlimited;
+    if (unlimited) {
+      remainingInput.value = "";
+      remainingInput.placeholder = "Unlimited";
+    } else {
+      if (remainingInput.value === "") {
+        remainingInput.value = "0";
+      }
+      remainingInput.placeholder = "0";
+    }
+  }
+
+  unlimitedInput.addEventListener("change", () => {
+    syncRemainingState();
+  });
+  syncRemainingState();
+
+  form.__rewardConfigRefs = {
+    remainingInput,
+    pointsInput,
+    unlimitedInput,
+    errorNode: error
+  };
+
+  return form;
+}
+
+function openRewardConfig(rewardId) {
+  const reward = rewardById(rewardId);
+  if (!reward) return false;
+  const title = reward.name ? `${reward.name} controls` : "Reward controls";
+  let configForm = null;
+  openDialog({
+    title,
+    description: "Configure the reward's presentation for the demo catalogue.",
+    content: () => {
+      const node = buildRewardConfigContent(reward);
+      if (node instanceof HTMLElement) {
+        configForm = node;
+      } else {
+        configForm = null;
+      }
+      return node;
+    },
+    confirmLabel: "Save changes",
+    cancelLabel: "Cancel",
+    onConfirm: close => {
+      if (!configForm || !(configForm instanceof HTMLElement)) {
+        close();
+        return;
+      }
+      const refs = configForm.__rewardConfigRefs || {};
+      const remainingInput = refs.remainingInput;
+      const pointsInput = refs.pointsInput;
+      const unlimitedInput = refs.unlimitedInput;
+      const errorNode = refs.errorNode;
+
+      const showError = message => {
+        if (errorNode) {
+          errorNode.textContent = message;
+          errorNode.hidden = false;
+        }
+      };
+      if (errorNode) {
+        errorNode.hidden = true;
+      }
+
+      const unlimited = unlimitedInput ? unlimitedInput.checked === true : false;
+
+      let remainingValue = null;
+      if (!unlimited && remainingInput) {
+        const rawRemaining = (remainingInput.value || "").trim();
+        if (rawRemaining.length === 0) {
+          showError("Enter the number of rewards remaining or enable unlimited redemptions.");
+          remainingInput.focus();
+          return;
+        }
+        const parsedRemaining = Number(rawRemaining);
+        if (!Number.isFinite(parsedRemaining) || parsedRemaining < 0) {
+          showError("Remaining must be a non-negative number.");
+          remainingInput.focus();
+          return;
+        }
+        remainingValue = Math.round(parsedRemaining);
+      }
+
+      if (!pointsInput) {
+        close();
+        return;
+      }
+      const rawPoints = (pointsInput.value || "").trim();
+      if (rawPoints.length === 0) {
+        showError("Enter a points cost for this reward.");
+        pointsInput.focus();
+        return;
+      }
+      const parsedPoints = Number(rawPoints);
+      if (!Number.isFinite(parsedPoints) || parsedPoints < 0) {
+        showError("Points cost must be a non-negative number.");
+        pointsInput.focus();
+        return;
+      }
+      const pointsValue = Math.round(parsedPoints);
+
+      reward.pointsCost = pointsValue;
+      if (unlimited) {
+        reward.unlimited = true;
+      } else {
+        reward.unlimited = false;
+        reward.remaining = remainingValue ?? 0;
+      }
+
+      persist();
+      renderApp();
+      close();
+    }
+  });
+  return true;
+}
+
 function renderGlobalNav(activeRoute) {
   return `
     <nav class="global-nav" aria-label="Primary navigation">
@@ -3086,13 +4411,6 @@ function renderLanding() {
       tone: "linear-gradient(135deg, #0ea5e9, #2563eb)",
       role: "admin",
       route: "weld-admin"
-    },
-    {
-      title: "Weld Labs",
-      description: "Explore experimental features and toggle preview access across organisations.",
-      tone: "linear-gradient(135deg, #38bdf8, #8b5cf6)",
-      role: "admin",
-      route: "weld-labs"
     }
   ]
     .map(card => {
@@ -3237,6 +4555,152 @@ function renderFeatureShowcase() {
 }
 
 
+function renderHubBadgeCard(badge) {
+  if (!badge) return "";
+  const rawId = String(badge.id ?? generateId("badge"));
+  const normalizedId = rawId.trim().length > 0 ? rawId.trim() : generateId("badge");
+  const safeDataId = escapeHtml(normalizedId);
+  const sanitizedId = normalizedId.replace(/[^a-zA-Z0-9:_-]/g, "-");
+  const cardId = escapeHtml(`${sanitizedId}-card`);
+  const toneKey = BADGE_TONES[badge.tone] ? badge.tone : "violet";
+  const tone = BADGE_TONES[toneKey] || BADGE_TONES.violet;
+  const iconBackdrop =
+    BADGE_ICON_BACKDROPS[toneKey]?.background ||
+    BADGE_ICON_BACKDROPS.violet?.background ||
+    "linear-gradient(135deg, #c7d2fe, #818cf8)";
+  const iconShadow =
+    BADGE_ICON_BACKDROPS[toneKey]?.shadow ||
+    BADGE_ICON_BACKDROPS.violet?.shadow ||
+    "rgba(79, 70, 229, 0.32)";
+  const normalizedCategory =
+    typeof badge.category === "string" && badge.category.trim().length > 0
+      ? badge.category.trim()
+      : "Badge";
+  const difficultyLabel =
+    typeof badge.difficulty === "string" && badge.difficulty.trim().length > 0
+      ? badge.difficulty.trim()
+      : null;
+  const tags = [];
+  if (normalizedCategory && normalizedCategory !== "Badge") {
+    tags.push(`<span class="catalogue-card__tag gem-badge-card__tag">${escapeHtml(normalizedCategory)}</span>`);
+  }
+  if (difficultyLabel) {
+    tags.push(`<span class="catalogue-card__tag gem-badge-card__tag">${escapeHtml(difficultyLabel)}</span>`);
+  }
+  const tagsMarkup = tags.length
+    ? `<div class="gem-badge-card__tags catalogue-card__tags">${tags.join("")}</div>`
+    : "";
+  const pointsValue = Number(badge.points) || 0;
+  const toggleTitle = difficultyLabel
+    ? `${escapeHtml(difficultyLabel)}  ${formatNumber(pointsValue)} pts`
+    : `${formatNumber(pointsValue)} pts`;
+  const ariaLabel = `${badge.title} badge, worth ${formatNumber(pointsValue)} points in the collection.`;
+
+  return `
+    <article
+      class="gem-badge gem-badge--hub"
+      data-badge="${safeDataId}"
+      style="--badge-tone:${escapeHtml(tone)};--badge-icon-tone:${escapeHtml(iconBackdrop)};--badge-icon-shadow:${escapeHtml(
+        iconShadow
+      )};">
+      <button
+        type="button"
+        class="gem-badge__trigger"
+        aria-haspopup="true"
+        aria-label="${escapeHtml(badge.title)} badge details"
+        aria-controls="${cardId}"
+        title="${escapeHtml(toggleTitle)}">
+        <span class="gem-badge__icon" style="background:${iconBackdrop}; box-shadow:0 18px 32px ${iconShadow};">
+          ${renderIcon(badge.icon || "medal", "sm")}
+        </span>
+      </button>
+      <span class="gem-badge__label">${escapeHtml(badge.title)}</span>
+      <div id="${cardId}" class="gem-badge-card gem-badge-card--hub" role="group" aria-label="${escapeHtml(ariaLabel)}">
+        <span class="gem-badge-card__halo"></span>
+        <span class="gem-badge-card__orb gem-badge-card__orb--one"></span>
+        <span class="gem-badge-card__orb gem-badge-card__orb--two"></span>
+        <div class="gem-badge-card__main">
+          <h3 class="gem-badge-card__title">${escapeHtml(badge.title)}</h3>
+          ${tagsMarkup}
+          <p class="gem-badge-card__description">${escapeHtml(badge.description)}</p>
+        </div>
+        <footer class="gem-badge-card__footer">
+          <span class="gem-badge-card__points">
+            <span class="gem-badge-card__points-value">+${formatNumber(pointsValue)}</span>
+            <span class="gem-badge-card__points-unit">pts</span>
+          </span>
+        </footer>
+      </div>
+    </article>
+  `;
+}
+
+
+function renderRecognitionCard(entry, currentEmail) {
+  if (!entry) return "";
+  const currentKey = typeof currentEmail === "string" ? currentEmail.trim().toLowerCase() : "";
+  const recipientEmail =
+    typeof entry.recipientEmail === "string" ? entry.recipientEmail.trim() : "";
+  const senderName = entry.senderName || entry.senderEmail || "Teammate";
+  const recipientName = entry.recipientName || recipientEmail || "Teammate";
+  const isForCurrentUser =
+    currentKey && recipientEmail && recipientEmail.toLowerCase() === currentKey;
+  const pointsValue = Number(entry.points) || 0;
+  const pointsMarkup =
+    pointsValue > 0
+      ? `<span class="recognition-card__points">+${formatNumber(pointsValue)} pts</span>`
+      : "";
+  const focusLabel =
+    typeof entry.focus === "string" && entry.focus.trim().length > 0
+      ? entry.focus.trim()
+      : "Recognition spotlight";
+  const channelLabel =
+    typeof entry.channel === "string" && entry.channel.trim().length > 0
+      ? entry.channel.trim()
+      : null;
+  const contextLabel = isForCurrentUser ? "For you" : `For ${recipientName}`;
+  const createdAt = typeof entry.createdAt === "string" ? entry.createdAt : "";
+  const parsedDate = createdAt ? new Date(createdAt) : null;
+  const hasValidDate = parsedDate && !Number.isNaN(parsedDate.getTime());
+  const relativeLabel = hasValidDate ? relativeTime(createdAt) : "Just now";
+  const absoluteLabel = hasValidDate ? formatDateTime(createdAt) : "";
+  const timeMarkup = hasValidDate
+    ? `<time datetime="${escapeHtml(createdAt)}" title="${escapeHtml(absoluteLabel)}">${escapeHtml(
+        relativeLabel
+      )}</time>`
+    : `<span class="recognition-card__time">Just now</span>`;
+  const tagMarkup = channelLabel
+    ? `<span class="recognition-card__tag">${escapeHtml(channelLabel)}</span>`
+    : "";
+  const entryId =
+    entry?.id !== undefined && entry?.id !== null
+      ? escapeHtml(String(entry.id))
+      : escapeHtml(generateId("recognition"));
+
+  return `
+    <article class="recognition-card${isForCurrentUser ? " recognition-card--highlight" : ""}" data-recognition="${entryId}">
+      <header class="recognition-card__header">
+        <span class="recognition-card__eyebrow">${escapeHtml(contextLabel)}</span>
+        ${tagMarkup}
+        ${pointsMarkup}
+      </header>
+      <div class="recognition-card__body">
+        <h4 class="recognition-card__title">${escapeHtml(focusLabel)}</h4>
+        <p class="recognition-card__message">${escapeHtml(entry.message || "")}</p>
+      </div>
+      <footer class="recognition-card__footer">
+        <div class="recognition-card__actors">
+          <span>${escapeHtml(senderName)}</span>
+          <span aria-hidden="true">&rarr;</span>
+          <span>${escapeHtml(recipientName)}</span>
+        </div>
+        ${timeMarkup}
+      </footer>
+    </article>
+  `;
+}
+
+
 function renderCustomer() {
   const customerMessages = state.messages.filter(messageBelongsToCustomer);
   const pendingMessages = customerMessages.filter(message => message.status === MessageStatus.PENDING);
@@ -3246,6 +4710,332 @@ function renderCustomer() {
     ? state.quests.filter(quest => quest.published).sort(compareQuestsByDifficulty)
     : [];
   const publishedBadges = getBadges().filter(badge => badge.published);
+  const bonusConfig = state.customer?.bonusPoints || {};
+  const rawCap = Number(bonusConfig.weeklyCap);
+  const weeklyCap = Math.max(0, Number.isFinite(rawCap) ? rawCap : 0);
+  const earnedRaw = Number(
+    bonusConfig.earnedThisWeek ?? bonusConfig.earned ?? bonusConfig.current ?? 0
+  );
+  const earnedThisWeek = Math.max(0, Number.isFinite(earnedRaw) ? earnedRaw : 0);
+  const progressPercent =
+    weeklyCap > 0 ? Math.min(100, Math.round((earnedThisWeek / weeklyCap) * 100)) : 0;
+  const remainingThisWeek = weeklyCap > 0 ? Math.max(0, weeklyCap - earnedThisWeek) : 0;
+  const bonusProgressLabel =
+    weeklyCap > 0
+      ? `Bonus points earned this week: ${formatNumber(earnedThisWeek)} of ${formatNumber(weeklyCap)} points.`
+      : `Bonus points earned this week: ${formatNumber(earnedThisWeek)} points.`;
+  const breakdownEntries = Array.isArray(bonusConfig.breakdown) ? bonusConfig.breakdown : [];
+  const doublePointsTotal = breakdownEntries.reduce((sum, entry) => {
+    if (!entry || entry.firstOfMonthDouble !== true) return sum;
+    const value = Number(entry.points);
+    return sum + (Number.isFinite(value) ? value : 0);
+  }, 0);
+  const boostPercentOfTrackRaw =
+    weeklyCap > 0 ? Math.round((doublePointsTotal / weeklyCap) * 100) : 0;
+  const boostPercentOfTrack = Math.max(
+    0,
+    Math.min(progressPercent, boostPercentOfTrackRaw)
+  );
+  const boostActive = boostPercentOfTrack > 0;
+  const boostDescription = boostActive
+    ? `Double points segment: ${formatNumber(doublePointsTotal)} bonus points.`
+    : "";
+  const boostMarkup = boostActive
+    ? `<span class="points-bonus__meter-boost" style="--bonus-boost:${boostPercentOfTrack}%;" aria-label="${escapeHtml(
+        boostDescription
+      )}">
+        <span class="points-bonus__boost-label" aria-hidden="true">x2</span>
+      </span>`
+    : "";
+  const bonusMeterLabel = boostActive
+    ? `${bonusProgressLabel} Includes an orange x2 segment representing ${formatNumber(doublePointsTotal)} double points.`
+    : bonusProgressLabel;
+  let bonusSourcesCount = 0;
+  const bonusBreakdownMarkup = (() => {
+    const items = breakdownEntries
+      .map((entry, index) => {
+        if (!entry || typeof entry !== "object") return null;
+        const label =
+          typeof entry.label === "string" && entry.label.trim().length > 0 ? entry.label.trim() : "";
+        if (!label) return null;
+        const normalizedId =
+          typeof entry.id === "string" && entry.id.trim().length > 0
+            ? entry.id.trim()
+            : `bonus-source-${index + 1}`;
+        const description =
+          typeof entry.description === "string" && entry.description.trim().length > 0
+            ? entry.description.trim()
+            : "";
+        const pointsValue = Number(entry.points);
+        const points = Number.isFinite(pointsValue) ? pointsValue : 0;
+        const isDouble = entry.firstOfMonthDouble === true;
+        const tooltipParts = [];
+        if (description) tooltipParts.push(description);
+        const pointsLabel = `+${formatNumber(points)} pts${isDouble ? " (double)" : ""}`;
+        tooltipParts.push(pointsLabel);
+        if (isDouble) {
+          tooltipParts.push("First quest completion this month delivered double points.");
+        }
+        const tooltipText = tooltipParts.join(" · ");
+        const sourceClasses = [
+          "points-bonus__source",
+          isDouble ? "points-bonus__source--boost" : ""
+        ]
+          .filter(Boolean)
+          .join(" ");
+        const boostBadge = isDouble
+          ? `<span class="points-bonus__source-boost" aria-hidden="true">x2</span>`
+          : "";
+        return `
+          <span
+            class="${sourceClasses}"
+            role="listitem"
+            tabindex="0"
+            data-source="${escapeHtml(normalizedId)}"
+            data-tooltip="${escapeHtml(tooltipText)}"
+            title="${escapeHtml(tooltipText)}"
+            aria-label="${escapeHtml(tooltipText)}">
+            <span class="points-bonus__source-label">${escapeHtml(label)}</span>
+            ${boostBadge}
+            <span class="points-bonus__source-points">+${formatNumber(points)} pts</span>
+          </span>
+        `;
+      })
+      .filter(Boolean);
+    bonusSourcesCount = items.length;
+    if (items.length === 0) {
+      return `<p class="points-bonus__empty">Activate quests and behaviour nudges to unlock bonus point sources.</p>`;
+    }
+    return `<div class="points-bonus__sources" role="list">${items.join("")}</div>`;
+  })();
+  const bonusHoverNote =
+    bonusSourcesCount > 0
+      ? `<p class="points-bonus__note">Hover or focus a source to see this week's bonus story.</p>`
+      : "";
+  const remainingLabelMarkup =
+    weeklyCap > 0
+      ? remainingThisWeek === 0
+        ? `<span class="points-bonus__meter-remaining points-bonus__meter-remaining--met">Cap reached</span>`
+        : `<span class="points-bonus__meter-remaining">${formatNumber(remainingThisWeek)} pts left</span>`
+      : `<span class="points-bonus__meter-remaining">No cap set</span>`;
+  const bonusCapLabel = weeklyCap > 0 ? `${formatNumber(weeklyCap)} pt cap` : "No cap set";
+  const bonusScaleHtml = `
+      <div class="points-bonus" role="region" aria-label="Weekly bonus points">
+        <div class="points-bonus__header">
+          <h3>Weekly bonus points</h3>
+          <span class="points-bonus__cap">${escapeHtml(bonusCapLabel)}</span>
+        </div>
+        <p class="points-bonus__summary">
+          Earn extra points from quests and team boosts. Reporting suspicious emails always awards your core points outside this cap.
+        </p>
+        <div class="points-bonus__meter" role="img" aria-label="${escapeHtml(bonusMeterLabel)}">
+          <div class="points-bonus__meter-track">
+            <span class="points-bonus__meter-fill" style="--bonus-progress:${progressPercent}%;"></span>
+            ${boostMarkup}
+          </div>
+          <div class="points-bonus__meter-labels">
+            <span class="points-bonus__meter-value">+${formatNumber(earnedThisWeek)} pts</span>
+            ${remainingLabelMarkup}
+          </div>
+        </div>
+        ${bonusBreakdownMarkup}
+        ${bonusHoverNote}
+      </div>
+    `;
+
+  const recognitionEntries = getRecognitions()
+    .slice()
+    .sort(
+      (a, b) =>
+        new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime()
+    );
+  const lowerCustomerEmail =
+    typeof state.customer?.email === "string"
+      ? state.customer.email.trim().toLowerCase()
+      : "";
+  const recognitionReceived = lowerCustomerEmail
+    ? recognitionEntries.filter(entry => {
+        const email =
+          typeof entry.recipientEmail === "string"
+            ? entry.recipientEmail.trim().toLowerCase()
+            : "";
+        return email === lowerCustomerEmail;
+      })
+    : [];
+  const recognitionGiven = lowerCustomerEmail
+    ? recognitionEntries.filter(entry => {
+        const email =
+          typeof entry.senderEmail === "string"
+            ? entry.senderEmail.trim().toLowerCase()
+            : "";
+        return email === lowerCustomerEmail;
+      })
+    : [];
+  const recognitionPointsTotal = recognitionReceived.reduce(
+    (sum, entry) => sum + (Number(entry.points) || 0),
+    0
+  );
+  const recognitionGivenPoints = recognitionGiven.reduce(
+    (sum, entry) => sum + (Number(entry.points) || 0),
+    0
+  );
+  const recognitionPeerCount = (() => {
+    const peers = new Set();
+    recognitionReceived.forEach(entry => {
+      const email =
+        typeof entry.senderEmail === "string"
+          ? entry.senderEmail.trim().toLowerCase()
+          : "";
+      if (email) peers.add(email);
+    });
+    return peers.size;
+  })();
+  const validRecognitionFilters = ["received", "given", "all"];
+  const storedFilter =
+    typeof state.meta.recognitionFilter === "string"
+      ? state.meta.recognitionFilter.trim().toLowerCase()
+      : "";
+  const activeRecognitionFilter = validRecognitionFilters.includes(storedFilter)
+    ? storedFilter
+    : "received";
+  const recognitionFeedSource =
+    activeRecognitionFilter === "received"
+      ? recognitionReceived
+      : activeRecognitionFilter === "given"
+      ? recognitionGiven
+      : recognitionEntries;
+  const recognitionFeedEntries = recognitionFeedSource.slice(0, 4);
+  const recognitionEmptyCopy =
+    activeRecognitionFilter === "given"
+      ? "Share a recognition note to spotlight a teammate's vigilance, award bonus points, and trigger a x2 quest boost for you both."
+      : activeRecognitionFilter === "received"
+      ? "No teammate recognition yet. Highlight a story to invite recognition from the wider team and unlock that x2 quest boost."
+      : "Recognition moments will appear here as teams swap kudos and line up double quest points.";
+  const recognitionFeedMarkup = recognitionFeedEntries.length
+    ? recognitionFeedEntries
+        .map(entry => renderRecognitionCard(entry, state.customer.email))
+        .join("")
+    : `<div class="recognition-empty"><p>${escapeHtml(recognitionEmptyCopy)}</p></div>`;
+  const recognitionFilterButtons = [
+    { id: "received", label: "Got" },
+    { id: "given", label: "Gave" },
+    { id: "all", label: "All" }
+  ]
+    .map(filter => {
+      const isActive = activeRecognitionFilter === filter.id;
+      return `<button type="button" class="recognition-filter${isActive ? " recognition-filter--active" : ""}" data-recognition-filter="${filter.id}">${escapeHtml(filter.label)}</button>`;
+    })
+    .join("");
+  const recognitionControlsMarkup = `
+    <div class="recognition-feed__controls" role="toolbar" aria-label="Filter recognition stories">
+      ${recognitionFilterButtons}
+    </div>
+  `;
+  const latestRecognition = recognitionReceived[0] || null;
+  const latestSnippet = (() => {
+    if (!latestRecognition) {
+      return `<div class="recognition-summary__recent recognition-summary__recent--placeholder"><p>Encourage peers to celebrate your catches and they'll appear here.</p></div>`;
+    }
+    const iso =
+      typeof latestRecognition.createdAt === "string"
+        ? latestRecognition.createdAt
+        : "";
+    const parsed = iso ? new Date(iso) : null;
+    const hasValidDate = parsed && !Number.isNaN(parsed.getTime());
+    const relativeLabel = hasValidDate ? relativeTime(iso) : "Just now";
+    const message =
+      typeof latestRecognition.message === "string"
+        ? latestRecognition.message.trim()
+        : "";
+    const snippet =
+      message.length > 120 ? `${message.slice(0, 117)}...` : message;
+    const senderLabel =
+      latestRecognition.senderName ||
+      latestRecognition.senderEmail ||
+      "Teammate";
+    const focusLabel =
+      typeof latestRecognition.focus === "string" &&
+      latestRecognition.focus.trim().length > 0
+        ? latestRecognition.focus.trim()
+        : "";
+    const focusMarkup = focusLabel ? ` - ${escapeHtml(focusLabel)}` : "";
+    const snippetMarkup = snippet
+      ? `<blockquote class="recognition-summary__quote">"${escapeHtml(
+          snippet
+        )}"</blockquote>`
+      : "";
+    return `
+      <div class="recognition-summary__recent">
+        <span class="recognition-summary__recent-label">Latest recognition</span>
+        <p><strong>${escapeHtml(senderLabel)}</strong> ${escapeHtml(
+          relativeLabel
+        )}${focusMarkup}</p>
+        ${snippetMarkup}
+      </div>
+    `;
+  })();
+  const recognitionSummaryHelper =
+    recognitionGivenPoints > 0
+      ? `You have passed on ${formatNumber(
+          recognitionGivenPoints
+        )} pts to your teammates and lined up a x2 quest boost for both sides.`
+      : "Share recognition when someone stops a threat to award bonus points and unlock a x2 quest boost for you and them.";
+  const recognitionSummaryHtml = `
+    <article class="recognition-summary">
+      <span class="recognition-summary__eyebrow">Teammate recognition</span>
+      <h3 class="recognition-summary__title">Vigilance kudos</h3>
+      <div class="recognition-summary__metric">
+        <span class="recognition-summary__metric-value">+${formatNumber(
+          recognitionPointsTotal
+        )}</span>
+        <span class="recognition-summary__metric-label">pts awarded to you</span>
+      </div>
+      <ul class="recognition-summary__stats">
+        <li><strong>${formatNumber(
+          recognitionReceived.length
+        )}</strong><span>Got</span></li>
+        <li><strong>${formatNumber(
+          recognitionGiven.length
+        )}</strong><span>Gave</span></li>
+        <li><strong>${formatNumber(
+          recognitionPeerCount
+        )}</strong><span>Boost</span></li>
+      </ul>
+      <p class="recognition-summary__helper">${escapeHtml(
+        recognitionSummaryHelper
+      )}</p>
+      ${latestSnippet}
+    </article>
+  `;
+  const recognitionBoardMarkup = `
+    <section class="customer-section customer-section--recognition">
+      <div class="section-header">
+        <h2>Recognition highlights</h2>
+        <p>Celebrate vigilance stories so every teammate knows what suspicious activity looks like.</p>
+      </div>
+      <div class="recognition-board__note" role="note" aria-label="Recognition quest boost reminder">
+        <div class="recognition-board__note-header">
+          <span class="recognition-board__note-title">Share recognition</span>
+          <button type="button" class="button-pill button-pill--primary recognition-board__note-button" aria-haspopup="dialog">
+            Share now
+          </button>
+        </div>
+        <span class="recognition-board__note-badge"><span>x2 quest boost</span></span>
+        <p>Give or receive kudos and your next quest pays double points for both teammates.</p>
+      </div>
+      <div class="recognition-board">
+        <div class="recognition-board__insight">
+          ${recognitionSummaryHtml}
+        </div>
+        <div class="recognition-board__feed">
+          ${recognitionControlsMarkup}
+          <div class="recognition-feed">
+            ${recognitionFeedMarkup}
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
 
   const rewardsHtml = publishedRewards
     .map(reward => {
@@ -3279,6 +5069,7 @@ function renderCustomer() {
 
   const questsHtml = publishedQuests
     .map(quest => {
+      const questId = escapeHtml(String(quest.id));
       const focusTags = Array.isArray(quest.focus)
         ? quest.focus.slice(0, 2).map(item => `<span>${escapeHtml(item)}</span>`).join("")
         : "";
@@ -3288,13 +5079,17 @@ function renderCustomer() {
             quest.difficulty
           )}">${escapeHtml(quest.difficulty)}</span>`
         : "";
+      const difficultyRow = difficultyChip ? `<div class="quest-card__header-top">${difficultyChip}</div>` : "";
       const headerTags = [];
       if (quest.category) headerTags.push(`<span class="quest-card__chip">${escapeHtml(quest.category)}</span>`);
       const chipGroup = headerTags.length ? `<div class="quest-card__chip-group">${headerTags.join("")}</div>` : "";
+      const questLabel = quest.title ? escapeHtml(quest.title) : "quest";
+      const configButton = `<button type="button" class="quest-card__config" data-quest="${questId}" title="Configure ${questLabel}" aria-label="Configure ${questLabel}"><span class="quest-card__config-cog" aria-hidden="true">⚙</span></button>`;
       return `
-      <article class="quest-card quest-card--hub" data-quest="${escapeHtml(String(quest.id))}">
+      <article class="quest-card quest-card--hub" data-quest="${questId}">
+        ${configButton}
         <header class="quest-card__header quest-card__header--hub">
-          ${difficultyChip}
+          ${difficultyRow}
           ${chipGroup}
         </header>
         <h4 class="quest-card__title">${escapeHtml(quest.title)}</h4>
@@ -3310,9 +5105,7 @@ function renderCustomer() {
             <strong class="quest-card__points-value">${formatNumber(quest.points || 0)}</strong>
             <span class="quest-card__points-unit">pts</span>
           </span>
-          <button type="button" class="button-pill button-pill--primary quest-card__cta" data-quest="${escapeHtml(
-            String(quest.id)
-          )}">
+          <button type="button" class="button-pill button-pill--primary quest-card__cta" data-quest="${questId}">
             Take Quiz
           </button>
         </div>
@@ -3361,98 +5154,20 @@ function renderCustomer() {
       const timeB = new Date(b.achievedAt || 0).getTime();
       return timeB - timeA;
     })
-    .slice(0, 4);
+    .slice(0, 3);
   const fallbackTopBadges = recentBadge
     ? publishedBadges.filter(badge => badge.id !== recentBadge.id)
     : publishedBadges.slice();
-  const displayTopBadges = topRarityBadges.length > 0 ? topRarityBadges : fallbackTopBadges.slice(0, 4);
-  const renderBadgeCard = badge => {
-    const safeId = escapeHtml(String(badge.id));
-    const cardId = `${safeId}-card`;
-    const tone = BADGE_TONES[badge.tone] || BADGE_TONES.violet;
-    const iconBackdrop =
-      BADGE_ICON_BACKDROPS[badge.tone]?.background ||
-      BADGE_ICON_BACKDROPS.violet?.background ||
-      "linear-gradient(135deg, #c7d2fe, #818cf8)";
-    const iconShadow =
-      BADGE_ICON_BACKDROPS[badge.tone]?.shadow ||
-      BADGE_ICON_BACKDROPS.violet?.shadow ||
-      "rgba(79, 70, 229, 0.32)";
-    const normalizedCategory =
-      typeof badge.category === "string" && badge.category.trim().length > 0
-        ? badge.category.trim()
-        : "Badge";
-    const difficultyLabel =
-      typeof badge.difficulty === "string" && badge.difficulty.trim().length > 0
-        ? badge.difficulty.trim()
-        : null;
-    const tags = [];
-    if (normalizedCategory && normalizedCategory !== "Badge") {
-      tags.push(`<span class="catalogue-card__tag gem-badge-card__tag">${escapeHtml(normalizedCategory)}</span>`);
-    }
-    if (difficultyLabel) {
-      tags.push(`<span class="catalogue-card__tag gem-badge-card__tag">${escapeHtml(difficultyLabel)}</span>`);
-    }
-    const tagsMarkup = tags.length
-      ? `<div class="gem-badge-card__tags catalogue-card__tags">${tags.join("")}</div>`
-      : "";
-    const pointsValue = Number(badge.points) || 0;
-    const toggleTitle = difficultyLabel
-      ? `${escapeHtml(difficultyLabel)} • ${formatNumber(pointsValue)} pts`
-      : `${formatNumber(pointsValue)} pts`;
-    const ariaLabel = `${badge.title} badge, worth ${formatNumber(pointsValue)} points in the collection.`;
-    return `
-      <article
-        class="gem-badge gem-badge--hub"
-        data-badge="${safeId}"
-        style="--badge-tone:${escapeHtml(tone)};--badge-icon-tone:${escapeHtml(iconBackdrop)};--badge-icon-shadow:${escapeHtml(iconShadow)};">
-        <button
-          type="button"
-          class="gem-badge__trigger"
-          aria-haspopup="true"
-          aria-label="${escapeHtml(badge.title)} badge details"
-          aria-controls="${escapeHtml(cardId)}"
-          title="${escapeHtml(toggleTitle)}">
-          <span class="gem-badge__icon" style="background:${iconBackdrop}; box-shadow:0 18px 32px ${iconShadow};">
-            ${renderIcon(badge.icon || "medal", "sm")}
-          </span>
-        </button>
-        <span class="gem-badge__label">${escapeHtml(badge.title)}</span>
-        <div id="${escapeHtml(cardId)}" class="gem-badge-card gem-badge-card--hub gem-badge-card--published" role="group" aria-label="${escapeHtml(ariaLabel)}">
-          <span class="gem-badge-card__halo"></span>
-          <span class="gem-badge-card__orb gem-badge-card__orb--one"></span>
-          <span class="gem-badge-card__orb gem-badge-card__orb--two"></span>
-          <header class="gem-badge-card__header">
-            <span>${escapeHtml(normalizedCategory)}</span>
-            <span class="gem-badge-card__status gem-badge-card__status--published">Published</span>
-          </header>
-          <div class="gem-badge-card__main">
-            <h3 class="gem-badge-card__title">${escapeHtml(badge.title)}</h3>
-            ${tagsMarkup}
-            <p class="gem-badge-card__description">${escapeHtml(badge.description)}</p>
-          </div>
-          <footer class="gem-badge-card__footer">
-            <span class="gem-badge-card__points">
-              <span class="gem-badge-card__points-value">+${formatNumber(pointsValue)}</span>
-              <span class="gem-badge-card__points-unit">pts</span>
-            </span>
-            <button type="button" class="button-pill button-pill--ghost gem-badge-card__action hub-badge__cta" data-route="client-badges" data-role="client">
-              View catalogue
-            </button>
-          </footer>
-        </div>
-      </article>
-    `;
-  };
-  const renderBadgeShowcaseItem = badge => {
+  const displayTopBadges = topRarityBadges.length > 0 ? topRarityBadges : fallbackTopBadges.slice(0, 3);
+  const renderBadgeShowcaseItem = (badge, extraClass = "") => {
     const achievedDate = badge?.achievedAt ? new Date(badge.achievedAt) : null;
     const metaMarkup =
       achievedDate && !Number.isNaN(achievedDate.getTime())
         ? `<span class="badge-showcase__meta">Unlocked ${escapeHtml(formatDateTime(badge.achievedAt))}</span>`
         : "";
     return `
-      <div class="badge-showcase__item" role="listitem">
-        ${renderBadgeCard(badge)}
+      <div class="badge-showcase__item${extraClass ? ` ${extraClass}` : ""}" role="listitem">
+        ${renderHubBadgeCard(badge)}
         ${metaMarkup}
       </div>
     `;
@@ -3460,29 +5175,30 @@ function renderCustomer() {
   const topBadgesMarkup = displayTopBadges.length
     ? `
       <div class="badge-showcase__list" role="list" aria-label="Top badges by rarity">
-        ${displayTopBadges.map(renderBadgeShowcaseItem).join("")}
+        ${displayTopBadges.map(badge => renderBadgeShowcaseItem(badge)).join("")}
       </div>
     `
     : "";
-  const recentBadgeSection = recentBadge
+  const recentBadgeMarkup = recentBadge
     ? `
-      <div class="badge-showcase__separator" role="separator">
-        <span>Most recent badge</span>
-      </div>
-      <div class="badge-showcase__recent" role="list" aria-label="Most recent badge">
-        ${renderBadgeShowcaseItem(recentBadge)}
+      <div class="badge-showcase__list badge-showcase__list--recent" role="list" aria-label="Most recent badge">
+        ${renderBadgeShowcaseItem(recentBadge, "badge-showcase__item--recent")}
       </div>
     `
     : "";
-  const badgesHtml =
-    displayTopBadges.length || recentBadge
-      ? `
-      <div class="badge-showcase">
+  const hasAnyBadges = displayTopBadges.length > 0 || Boolean(recentBadge);
+  const badgesHtml = hasAnyBadges
+    ? `
+      <div class="badge-showcase${recentBadge ? " badge-showcase--inline" : ""}">
         ${topBadgesMarkup}
-        ${recentBadgeSection}
+        ${
+          recentBadge
+            ? `<div class="badge-showcase__divider" role="separator" aria-hidden="true"></div>${recentBadgeMarkup}`
+            : ""
+        }
       </div>
     `
-      : `<div class="badge-empty"><p>No badges are currently published. Switch to the organisation catalogue to curate them.</p></div>`;
+    : `<div class="badge-empty"><p>No badges are currently published. Switch to the organisation catalogue to curate them.</p></div>`;
 
   return `
     <header class="customer-hero">
@@ -3536,6 +5252,7 @@ function renderCustomer() {
           </div>
         </div>
       </article>
+      ${bonusScaleHtml}
     </section>
     <section class="customer-section customer-section--badges">
       <div class="section-header">
@@ -3544,7 +5261,7 @@ function renderCustomer() {
       </div>
       ${badgesHtml}
       <div class="badge-showcase__cta">
-        <button type="button" class="button-pill button-pill--ghost badge-showcase__cta-button" data-route="client-badges" data-role="client">
+        <button type="button" class="button-pill button-pill--ghost badge-showcase__cta-button" data-route="customer-badges" data-role="customer">
           Show full badge catalogue
         </button>
       </div>
@@ -3570,6 +5287,46 @@ function renderCustomer() {
           ? `<div class="quest-grid quest-grid--hub">${questsHtml}</div>`
           : `<div class="reward-empty"><p>No quests are currently published. Check back soon!</p></div>`
       }
+    </section>
+    ${recognitionBoardMarkup}
+  `;
+}
+
+function renderCustomerBadgesPage() {
+  const publishedBadges = getBadges().filter(badge => badge.published);
+  const badgeCount = publishedBadges.length;
+  const badgeLabel = badgeCount === 1 ? "badge" : "badges";
+  const badgeGrid = badgeCount
+    ? `
+      <div class="gem-badge-grid gem-badge-grid--hub customer-badge-grid" role="list" aria-label="All published badges">
+        ${publishedBadges
+          .map(
+            badge => `
+          <div class="customer-badge-grid__item" role="listitem">
+            ${renderHubBadgeCard(badge)}
+          </div>
+        `
+          )
+          .join("")}
+      </div>
+    `
+    : `<div class="customer-detail__empty">No badges are currently published. Return to the hub to curate or publish them.</div>`;
+
+  const descriptionTail = badgeCount
+    ? ` Currently showing ${escapeHtml(formatNumber(badgeCount))} ${badgeLabel}.`
+    : "";
+
+  return `
+    <header class="customer-detail-header">
+      <button type="button" class="button-pill button-pill--ghost customer-detail__back" data-action="back-to-hub">
+        Back to hub
+      </button>
+      <span class="customer-detail__eyebrow">Badges</span>
+      <h1>All available badges</h1>
+      <p>Every badge your organisation has published to the reporter hub.${descriptionTail}</p>
+    </header>
+    <section class="customer-section customer-section--badges customer-section--badges-all">
+      ${badgeGrid}
     </section>
   `;
 }
@@ -4269,8 +6026,11 @@ function renderClientRewards() {
           const pointsCost = Number(reward.pointsCost) || 0;
           const categoryLabel = formatCatalogueLabel(reward.category || "Reward");
           const providerLabel = reward.provider ? reward.provider : "WeldSecure";
+          const rewardLabel = reward.name ? escapeHtml(reward.name) : "Reward";
+          const configButton = `<button type="button" class="reward-card__config" data-reward="${id}" title="Configure ${rewardLabel}" aria-label="Configure ${rewardLabel}"><span class="reward-card__config-cog" aria-hidden="true">⚙</span></button>`;
           return `
             <article class="reward-card reward-card--catalogue ${isPublished ? "reward-card--published" : "reward-card--draft"}" data-reward="${id}">
+              ${configButton}
               <div class="reward-card__artwork" style="background:${reward.image};">
                 ${renderIcon(reward.icon || "gift", "lg")}
               </div>
@@ -4527,23 +6287,22 @@ function renderClientQuests() {
           const action = isPublished ? "unpublish" : "publish";
           const actionLabel = isPublished ? "Unpublish" : "Publish";
           const actionTone = isPublished ? "button-pill--danger-light" : "button-pill--primary";
-          const tagItems = [];
-          if (quest.difficulty) {
-            tagItems.push(
-              `<span class="catalogue-card__tag quest-card__chip quest-card__chip--difficulty" data-difficulty="${escapeHtml(
+          const difficultyChip = quest.difficulty
+            ? `<span class="catalogue-card__tag quest-card__chip quest-card__chip--difficulty" data-difficulty="${escapeHtml(
                 quest.difficulty
               )}">${escapeHtml(quest.difficulty)}</span>`
-            );
-          }
+            : "";
+          const difficultyRow = difficultyChip ? `<div class="quest-card__header-top">${difficultyChip}</div>` : "";
+          const otherTags = [];
           if (quest.category) {
-            tagItems.push(
+            otherTags.push(
               `<span class="catalogue-card__tag quest-card__chip">${escapeHtml(
                 formatCatalogueLabel(quest.category)
               )}</span>`
             );
           }
-          const tagMarkup = tagItems.length
-            ? `<div class="quest-card__chip-group catalogue-card__tags">${tagItems.join("")}</div>`
+          const tagMarkup = otherTags.length
+            ? `<div class="quest-card__chip-group catalogue-card__tags">${otherTags.join("")}</div>`
             : "";
           const focusMarkup = Array.isArray(quest.focus) && quest.focus.length
             ? `<div class="quest-card__focus">${quest.focus
@@ -4551,9 +6310,13 @@ function renderClientQuests() {
                 .map(item => `<span>${escapeHtml(item)}</span>`)
                 .join("")}</div>`
             : "";
+          const questLabel = quest.title ? escapeHtml(quest.title) : "Quest";
+          const configButton = `<button type="button" class="quest-card__config" data-quest="${id}" title="Configure ${questLabel}" aria-label="Configure ${questLabel}"><span class="quest-card__config-cog" aria-hidden="true">⚙</span></button>`;
           return `
             <article class="quest-card ${isPublished ? "quest-card--published" : "quest-card--draft"}" data-quest="${id}">
+              ${configButton}
               <header class="quest-card__header">
+                ${difficultyRow}
                 ${tagMarkup}
               </header>
               <h3 class="quest-card__title">${escapeHtml(quest.title || "Quest")}</h3>
@@ -6410,6 +8173,8 @@ function renderContent() {
   switch (state.meta.route) {
     case "customer":
       return renderCustomer();
+    case "customer-badges":
+      return renderCustomerBadgesPage();
     case "customer-reports":
       return renderCustomerReportsPage();
     case "customer-redemptions":
@@ -6962,13 +8727,48 @@ function attachCustomerEvents(container) {
       setRole("client", "client-quests");
     });
   });
-  container.querySelectorAll(".hub-badge__cta").forEach(button => {
-    button.addEventListener("click", () => {
-      const targetRoute = button.getAttribute("data-route") || "client-badges";
-      const targetRole = button.getAttribute("data-role") || "client";
-      setRole(targetRole, targetRoute);
+  container.querySelectorAll(".quest-card__config").forEach(button => {
+    button.addEventListener("click", event => {
+      event.preventDefault();
+      const questId = button.getAttribute("data-quest");
+      if (questId) {
+        openQuestConfig(questId);
+      }
     });
   });
+  const badgeCatalogueBtn = container.querySelector(".badge-showcase__cta-button");
+  if (badgeCatalogueBtn) {
+    badgeCatalogueBtn.addEventListener("click", () => {
+      setRole("customer", "customer-badges");
+    });
+  }
+  container.querySelectorAll("[data-recognition-filter]").forEach(button => {
+    button.addEventListener("click", () => {
+      const value = (button.getAttribute("data-recognition-filter") || "").trim().toLowerCase();
+      const valid = ["received", "given", "all"];
+      const nextFilter = valid.includes(value) ? value : "received";
+      if (state.meta.recognitionFilter !== nextFilter) {
+        state.meta.recognitionFilter = nextFilter;
+        persist();
+        renderApp();
+      }
+    });
+  });
+  const recognitionButton = container.querySelector(".recognition-board__note-button");
+  if (recognitionButton) {
+    recognitionButton.addEventListener("click", () => {
+      openRecognitionFormDialog();
+    });
+  }
+}
+
+function attachCustomerBadgesEvents(container) {
+  const back = container.querySelector("[data-action='back-to-hub']");
+  if (back) {
+    back.addEventListener("click", () => {
+      setRole("customer", "customer");
+    });
+  }
 }
 
 function attachCustomerReportsEvents(container) {
@@ -7084,6 +8884,20 @@ function attachClientRewardsEvents(container) {
       return;
     }
 
+    const configButton = event.target.closest(".reward-card__config");
+    if (configButton) {
+      event.preventDefault();
+      const idAttr = configButton.getAttribute("data-reward");
+      if (!idAttr) return;
+      const numericId = Number(idAttr);
+      if (Number.isFinite(numericId)) {
+        openRewardConfig(numericId);
+      } else {
+        openRewardConfig(idAttr);
+      }
+      return;
+    }
+
     const button = event.target.closest(".reward-publish-toggle");
     if (!button) return;
     const rewardId = Number(button.getAttribute("data-reward"));
@@ -7128,6 +8942,16 @@ function attachClientQuestsEvents(container) {
         setAllQuestsPublication(true);
       } else if (action === "unpublish") {
         setAllQuestsPublication(false);
+      }
+      return;
+    }
+
+    const configButton = event.target.closest(".quest-card__config");
+    if (configButton) {
+      const questId = configButton.getAttribute("data-quest");
+      if (questId) {
+        event.preventDefault();
+        openQuestConfig(questId);
       }
       return;
     }
@@ -7393,6 +9217,7 @@ function renderApp() {
   const mainContent = app.querySelector("#main-content");
   if (!mainContent) return;
   if (route === "customer") attachCustomerEvents(mainContent);
+  if (route === "customer-badges") attachCustomerBadgesEvents(mainContent);
   if (route === "customer-reports") attachCustomerReportsEvents(mainContent);
   if (route === "customer-redemptions") attachCustomerRedemptionsEvents(mainContent);
   if (route === "client-dashboard") attachClientDashboardEvents(mainContent);
