@@ -5174,15 +5174,21 @@ function renderCustomer() {
   };
   const topBadgesMarkup = displayTopBadges.length
     ? `
-      <div class="badge-showcase__list" role="list" aria-label="Top badges by rarity">
-        ${displayTopBadges.map(badge => renderBadgeShowcaseItem(badge)).join("")}
+      <div class="badge-showcase__group" role="group" aria-label="Badge showcase">
+        <p class="badge-showcase__label">Badge showcase</p>
+        <div class="badge-showcase__list" role="list" aria-label="Top badges by rarity">
+          ${displayTopBadges.map(badge => renderBadgeShowcaseItem(badge)).join("")}
+        </div>
       </div>
     `
     : "";
   const recentBadgeMarkup = recentBadge
     ? `
-      <div class="badge-showcase__list badge-showcase__list--recent" role="list" aria-label="Most recent badge">
-        ${renderBadgeShowcaseItem(recentBadge, "badge-showcase__item--recent")}
+      <div class="badge-showcase__group badge-showcase__group--recent" role="group" aria-label="Most recent badge">
+        <p class="badge-showcase__label">Most recent</p>
+        <div class="badge-showcase__list badge-showcase__list--recent" role="list" aria-label="Most recent badge">
+          ${renderBadgeShowcaseItem(recentBadge, "badge-showcase__item--recent")}
+        </div>
       </div>
     `
     : "";
@@ -5255,16 +5261,16 @@ function renderCustomer() {
       ${bonusScaleHtml}
     </section>
     <section class="customer-section customer-section--badges">
-      <div class="section-header">
-        <h2>Your badges</h2>
-        <p>Preview the badges your organisation curates. Published badges appear here and inside the add-in spotlight.</p>
-      </div>
-      ${badgesHtml}
-      <div class="badge-showcase__cta">
-        <button type="button" class="button-pill button-pill--ghost badge-showcase__cta-button" data-route="customer-badges" data-role="customer">
-          Show full badge catalogue
+      <div class="section-header section-header--with-action">
+        <div class="section-header__copy">
+          <h2>Your badges</h2>
+          <p>Preview the badges your organisation curates. Published badges appear here and inside the add-in spotlight.</p>
+        </div>
+        <button type="button" class="button-pill button-pill--primary section-header__action" data-route="customer-badges" data-role="customer">
+          All badges
         </button>
       </div>
+      ${badgesHtml}
     </section>
     <section id="customer-rewards" class="customer-section customer-section--rewards">
       <div class="section-header">
@@ -8736,12 +8742,15 @@ function attachCustomerEvents(container) {
       }
     });
   });
-  const badgeCatalogueBtn = container.querySelector(".badge-showcase__cta-button");
-  if (badgeCatalogueBtn) {
-    badgeCatalogueBtn.addEventListener("click", () => {
-      setRole("customer", "customer-badges");
+  container.querySelectorAll(".section-header__action[data-route]").forEach(button => {
+    button.addEventListener("click", () => {
+      const targetRoute = button.getAttribute("data-route");
+      const targetRole = button.getAttribute("data-role") || state.meta.role || "customer";
+      if (targetRoute) {
+        setRole(targetRole, targetRoute);
+      }
     });
-  }
+  });
   container.querySelectorAll("[data-recognition-filter]").forEach(button => {
     button.addEventListener("click", () => {
       const value = (button.getAttribute("data-recognition-filter") || "").trim().toLowerCase();
