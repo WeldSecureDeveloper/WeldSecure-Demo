@@ -37,7 +37,7 @@ const NAV_GROUPS = [
   {
     label: "Organisation",
     items: [
-      { label: "Organisation Dashboard", route: "client-dashboard", role: "client" },
+      { label: "Organisation Hub", route: "client-dashboard", role: "client" },
       { label: "Security Team Dashboard", route: "client-reporting", role: "client" },
       { label: "Badge Catalogue", route: "client-badges", role: "client" },
       { label: "Quest Catalogue", route: "client-quests", role: "client" },
@@ -3329,65 +3329,6 @@ function renderClientDashboard() {
     .map(metric => renderMetricCard(metric.label, metric.value, metric.trend, metric.tone, metric.icon))
     .join("");
 
-  const clientCards = clients.length
-    ? clients
-        .map(client => {
-          const healthScore = Number.isFinite(client.healthScore)
-            ? `${formatNumber(client.healthScore)}%`
-            : "--";
-          const activeUsers = Number.isFinite(client.activeUsers)
-            ? formatNumber(client.activeUsers)
-            : "--";
-          const openCasesValue = Number.isFinite(client.openCases)
-            ? formatNumber(client.openCases)
-            : "0";
-          const lastReportedAt = client.lastReportAt
-            ? formatDateTime(client.lastReportAt)
-            : "No recent reports";
-          const lastReportedRelative = client.lastReportAt
-            ? relativeTime(client.lastReportAt)
-            : "Awaiting first signal";
-          const organisationId = client.organizationId
-            ? `Org ID: ${escapeHtml(client.organizationId)}`
-            : "Org ID pending";
-          return `
-            <article class="client-card">
-              <div>
-                <span class="landing__addin-eyebrow">Organisation</span>
-                <h2>${escapeHtml(client.name)}</h2>
-                <p>${organisationId}</p>
-              </div>
-              <div class="client-card__stats">
-                <div>
-                  <label>Health score</label>
-                  <span>${healthScore}</span>
-                </div>
-                <div>
-                  <label>Active reporters</label>
-                  <span>${activeUsers}</span>
-                </div>
-                <div>
-                  <label>Open cases</label>
-                  <span>${openCasesValue}</span>
-                </div>
-              </div>
-              <footer>
-                <div>
-                  <label>Last reporter signal</label>
-                  <strong>${lastReportedAt}</strong>
-                  <span class="landing__addin-eyebrow">${escapeHtml(lastReportedRelative)}</span>
-                </div>
-                <div class="table-actions">
-                  <button type="button" data-route="client-reporting" data-role="client">Security dashboard</button>
-                  <button type="button" data-route="client-rewards" data-role="client">Rewards catalogue</button>
-                </div>
-              </footer>
-            </article>
-          `;
-        })
-        .join("")
-    : `<div class="customer-detail__empty">Add a client profile to unlock the storytelling metrics.</div>`;
-
   const leaderboardEntries = Array.isArray(state.departmentLeaderboard)
     ? state.departmentLeaderboard
         .slice()
@@ -3684,7 +3625,7 @@ function renderClientDashboard() {
 
   return `
     <section class="client-catalogue__intro">
-      <span class="client-catalogue__eyebrow">Organisation dashboard</span>
+      <span class="client-catalogue__eyebrow">Organisation Hub</span>
       <h1>Track health and momentum in one glance.</h1>
       <p>Use this view to connect reporter energy, security follow-up, and the rewards in flight. Everything aligns to the questions prospects ask.</p>
     </section>
@@ -3693,9 +3634,6 @@ function renderClientDashboard() {
     </section>
     ${leaderboardMarkup}
     ${programsMarkup}
-    <section class="clients-grid">
-      ${clientCards}
-    </section>
   `;
 }
 function renderClientReporting() {
@@ -4261,10 +4199,6 @@ function renderClientBadges() {
       })
     : badges;
 
-  const averagePublishedPoints = publishedBadges.length ? Math.round(publishedPointsTotal / publishedBadges.length) : 0;
-  const averageLabel = publishedBadges.length ? formatNumber(averagePublishedPoints) : "--";
-  const totalPointsCopy = `${formatNumber(totalPoints)} total points minted | Avg ${averageLabel} pts per published badge`;
-
   const filterButtons = categories
     .map(category => {
       const isActive = activeFilter === category.value;
@@ -4435,7 +4369,6 @@ function renderClientBadges() {
       <span class="client-catalogue__eyebrow">Badge catalogue</span>
       <h1>Badge collection</h1>
       <p>Curate the badge tiers you want squads to chase. Publish just the stories you need and bring the sparkle into every hub and add-in moment.</p>
-      <p class="detail-table__meta">${escapeHtml(totalPointsCopy)}</p>
     </section>
     <section class="client-badges__metrics">
       ${metricsMarkup}
@@ -4831,26 +4764,51 @@ function setupCelebrationSup(celebrationRoot, onBurstsComplete) {
   playBurst(0);
 }
 
-function renderBadgeSpotlight(badge) {
-  if (!badge) return "";
-  const background = BADGE_TONES[badge.tone] || BADGE_TONES.violet;
-  const iconBackdrop = BADGE_ICON_BACKDROPS[badge.tone]?.background || "linear-gradient(135deg, #e0e7ff, #a855f7)";
-  const iconShadow = BADGE_ICON_BACKDROPS[badge.tone]?.shadow || "rgba(79, 70, 229, 0.32)";
+function renderBadgeSpotlight(badgeInput) {
+  const badges = Array.isArray(badgeInput)
+    ? badgeInput.filter(Boolean)
+    : badgeInput
+    ? [badgeInput]
+    : [];
+  if (badges.length === 0) return "";
+  const tilesMarkup = badges
+    .map(badge => {
+      const safeId = escapeHtml(String(badge.id ?? ""));
+      const iconBackdrop =
+        BADGE_ICON_BACKDROPS[badge.tone]?.background ||
+        BADGE_ICON_BACKDROPS.violet?.background ||
+        "linear-gradient(135deg, #c7d2fe, #818cf8)";
+      const iconShadow =
+        BADGE_ICON_BACKDROPS[badge.tone]?.shadow ||
+        BADGE_ICON_BACKDROPS.violet?.shadow ||
+        "rgba(79, 70, 229, 0.32)";
+      const normalizedTitle =
+        typeof badge.title === "string" && badge.title.trim().length > 0
+          ? badge.title.trim()
+          : "Badge unlocked";
+      const rawPoints = Number(badge.points);
+      const pointsValue = Number.isFinite(rawPoints) ? rawPoints : 0;
+      const ariaLabel = `${normalizedTitle} badge, worth ${formatNumber(pointsValue)} points`;
+      return `
+        <div
+          class="badge-spotlight-tile"
+          role="listitem"
+          tabindex="0"
+          data-badge="${safeId}"
+          aria-label="${escapeHtml(ariaLabel)}">
+          <span class="badge-spotlight-tile__icon" style="background:${iconBackdrop}; box-shadow:0 22px 44px ${iconShadow};">
+            ${renderIcon(badge.icon || "medal", "sm")}
+          </span>
+          <span class="badge-spotlight-tile__label">${escapeHtml(normalizedTitle)}</span>
+          <span class="badge-spotlight-tile__points">+${formatNumber(pointsValue)} pts</span>
+        </div>
+      `;
+    })
+    .join("");
   return `
-    <article class="badge-spotlight" data-badge="${badge.id}" style="--badge-tone:${background};--badge-icon-tone:${iconBackdrop};--badge-icon-shadow:${iconShadow};">
-      <div class="badge-spotlight__icon">
-        ${renderIcon(badge.icon, "sm")}
-      </div>
-      <div class="badge-spotlight__content">
-        <span class="badge-spotlight__eyebrow">Badge unlocked</span>
-        <strong class="badge-spotlight__title">${badge.title}</strong>
-        <p class="badge-spotlight__description">${badge.description}</p>
-        <span class="badge-spotlight__points">
-          <span class="badge-spotlight__points-value">+${formatNumber(badge.points)}</span>
-          <span class="badge-spotlight__points-unit">pts</span>
-        </span>
-      </div>
-    </article>
+    <div class="badge-spotlight-row" role="list" aria-label="Recently highlighted badges">
+      ${tilesMarkup}
+    </div>
   `;
 }
 
@@ -4889,75 +4847,35 @@ function setupBadgeShowcase(container) {
     return;
   }
 
-  badgeContainer.setAttribute("role", "status");
-  badgeContainer.setAttribute("aria-live", "polite");
-  badgeContainer.setAttribute("tabindex", "0");
-  badgeContainer.setAttribute("aria-label", "Badge spotlight. Activate to view another badge.");
-
-  const showBadge = badgeInput => {
-    let badge = badgeInput;
-    let shouldPersist = false;
-    if (badge && badge.published === false) {
-      const fallback = selectRandomBadge(badge.id);
-      badge = fallback || null;
-      shouldPersist = Boolean(fallback);
-    }
-
-    if (!badge) {
-      badgeContainer.innerHTML = "";
-      badgeContainer.removeAttribute("data-current-badge");
-      if (state.meta.lastBadgeId !== null) {
-        state.meta.lastBadgeId = null;
-        persist();
-      } else if (shouldPersist) {
-        persist();
-      }
-      return;
-    }
-
-    if (state.meta.lastBadgeId !== badge.id) {
-      state.meta.lastBadgeId = badge.id;
-      shouldPersist = true;
-    }
-
-    badgeContainer.innerHTML = renderBadgeSpotlight(badge);
-    badgeContainer.setAttribute("data-current-badge", badge.id);
-
-    if (shouldPersist) {
-      persist();
-    }
-  };
-
-  let initialBadge = badgeById(state.meta.lastBadgeId);
-  if (initialBadge && initialBadge.published === false) {
-    initialBadge = null;
-  }
-  if (!initialBadge) {
-    const fallback = selectRandomBadge(null);
-    if (fallback) {
-      initialBadge = fallback;
-      state.meta.lastBadgeId = fallback.id;
-      persist();
-    }
+  const eligible = badges.filter(badge => badge && badge.icon);
+  if (eligible.length === 0) {
+    badgeContainer.innerHTML = "";
+    return;
   }
 
-  showBadge(initialBadge);
+  const published = eligible.filter(badge => badge.published !== false);
+  const pool = published.length > 0 ? published : eligible;
+  const awardedBadge =
+    state.meta.lastBadgeId !== null ? pool.find(badge => badge.id === state.meta.lastBadgeId) || null : null;
 
-  const rotateBadge = () => {
-    const currentId = badgeContainer.getAttribute("data-current-badge") || null;
-    const nextBadge = selectRandomBadge(currentId);
-    if (!nextBadge) return;
-    showBadge(nextBadge);
-  };
+  let desiredCount = pool.length >= 3 ? (Math.random() < 0.5 ? 2 : 3) : Math.min(pool.length, 3);
+  if (desiredCount <= 0) desiredCount = 1;
 
-  const handleKeydown = event => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    event.preventDefault();
-    rotateBadge();
-  };
+  const selections = [];
+  if (awardedBadge) {
+    selections.push(awardedBadge);
+  }
 
-  badgeContainer.addEventListener("click", rotateBadge);
-  badgeContainer.addEventListener("keydown", handleKeydown);
+  const remainingPool = pool.filter(badge => !selections.some(selected => selected.id === badge.id));
+  for (let i = remainingPool.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [remainingPool[i], remainingPool[j]] = [remainingPool[j], remainingPool[i]];
+  }
+  while (selections.length < desiredCount && remainingPool.length > 0) {
+    selections.push(remainingPool.shift());
+  }
+
+  badgeContainer.innerHTML = renderBadgeSpotlight(selections);
   badgeContainer.dataset.badgeBound = "true";
 }
 
@@ -5311,6 +5229,9 @@ function renderReporterSettingsContent() {
           </button>
         </div>
         <footer class="settings-panel__footer">
+          <button type="button" class="button-pill button-pill--danger-light" data-action="reset-reporter-defaults">
+            Reset to default
+          </button>
           <button type="submit" class="button-pill button-pill--primary">Save changes</button>
         </footer>
       </form>
@@ -5321,7 +5242,6 @@ function renderReporterSettingsContent() {
 function renderSettingsPanel() {
   const categories = SETTINGS_CATEGORIES || [];
   if (categories.length === 0) return "";
-  const open = state?.meta?.settingsOpen === true;
   const activeCategory = resolveActiveSettingsCategory();
   const categoryMarkup = categories
     .map(category => {
@@ -5357,13 +5277,10 @@ function renderSettingsPanel() {
     activeCategory && activeCategory.id === "reporter"
       ? renderReporterSettingsContent()
       : renderSettingsPlaceholder(activeCategory);
-  const hiddenAttr = open ? "" : " hidden";
-  const ariaModal = open ? "true" : "false";
-  const ariaHidden = open ? "false" : "true";
   return `
-    <div class="settings-shell${open ? " settings-shell--open" : ""}"${hiddenAttr} aria-hidden="${ariaHidden}">
+    <div class="settings-shell settings-shell--open" role="presentation">
       <div class="settings-shell__backdrop" data-settings-dismiss></div>
-      <section class="settings-panel" role="dialog" aria-modal="${ariaModal}" aria-labelledby="settings-title" tabindex="-1">
+      <section class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title" tabindex="-1">
         <header class="settings-panel__header">
           <div>
             <p class="settings-panel__eyebrow">Configuration</p>
@@ -5389,7 +5306,6 @@ function renderSettingsPanel() {
 function renderHeader() {
   const role = state.meta.role;
   const navMarkup = renderGlobalNav(state.meta.route);
-  const settingsMarkup = renderSettingsPanel();
   return `
     ${navMarkup}
     <header class="header">
@@ -5405,7 +5321,6 @@ function renderHeader() {
         }
       </div>
     </header>
-    ${settingsMarkup}
   `;
 }
 
@@ -5561,81 +5476,93 @@ function attachGlobalNav(container) {
   }
 }
 
-function attachSettingsEvents(container) {
-  if (!container) return;
+function openSettings(category) {
+  if (typeof category === "string" && category.trim().length > 0) {
+    state.meta.settingsCategory = category.trim();
+  }
+  if (state.meta.settingsOpen) return;
+  state.meta.settingsOpen = true;
+  renderApp();
+}
 
+function closeSettings() {
+  if (!state.meta.settingsOpen) return;
+  state.meta.settingsOpen = false;
+  renderApp();
+}
+
+function bindSettingsToggle(container) {
+  if (!container) return;
   const settingsButton = container.querySelector("#global-settings");
-  const openSettings = () => {
-    if (state.meta.settingsOpen) return;
-    state.meta.settingsOpen = true;
-    renderApp();
-  };
-  if (settingsButton) {
+  if (settingsButton && settingsButton.dataset.settingsToggleBound !== "true") {
+    settingsButton.dataset.settingsToggleBound = "true";
     settingsButton.addEventListener("click", event => {
       event.preventDefault();
       openSettings();
     });
   }
+}
 
-  const closeSettings = () => {
+function ensureSettingsRoot() {
+  let root = document.getElementById("settings-root");
+  if (!root) {
+    root = document.createElement("div");
+    root.id = "settings-root";
+    document.body.appendChild(root);
+  }
+  return root;
+}
+
+function ensureSettingsShortcuts() {
+  if (window.__weldSettingsEscape__) return;
+  document.addEventListener("keydown", event => {
+    if (event.key !== "Escape") return;
     if (!state.meta.settingsOpen) return;
-    state.meta.settingsOpen = false;
-    renderApp();
-  };
+    closeSettings();
+  });
+  window.__weldSettingsEscape__ = true;
+}
 
-  const closeButton = container.querySelector("#settings-close");
+function escapeSettingsSelector(value) {
+  if (!value) return "";
+  if (typeof CSS !== "undefined" && CSS && typeof CSS.escape === "function") {
+    return CSS.escape(value);
+  }
+  return String(value).replace(/([ #;?%&,.+*~':"!^$[\]()=>|/@])/g, "\\$1");
+}
+
+function bindSettingsShellEvents(root) {
+  if (!root) return;
+  const closeButton = root.querySelector("#settings-close");
   if (closeButton) {
     closeButton.addEventListener("click", event => {
       event.preventDefault();
       closeSettings();
     });
   }
-
-  container.querySelectorAll("[data-action='close-settings']").forEach(button => {
-    button.addEventListener("click", event => {
-      event.preventDefault();
-      closeSettings();
-    });
+  root.querySelectorAll("[data-settings-dismiss]").forEach(element => {
+    element.addEventListener("click", () => closeSettings());
   });
-
-  const backdrop = container.querySelector(".settings-shell__backdrop");
-  if (backdrop) {
-    backdrop.addEventListener("click", closeSettings);
-  }
 
   const activeCategory = resolveActiveSettingsCategory();
   if (activeCategory && state.meta.settingsCategory !== activeCategory.id) {
     state.meta.settingsCategory = activeCategory.id;
-    if (state.meta.settingsOpen) {
-      renderApp();
-      return;
-    }
+    renderApp();
+    return;
   }
 
-  container.querySelectorAll("[data-settings-category]").forEach(button => {
+  root.querySelectorAll("[data-settings-category]").forEach(button => {
     if (button.disabled) return;
     button.addEventListener("click", event => {
       event.preventDefault();
       const category = button.getAttribute("data-settings-category");
       if (!category || state.meta.settingsCategory === category) return;
       state.meta.settingsCategory = category;
-      if (state.meta.settingsOpen) {
-        renderApp();
-      } else {
-        persist();
-      }
+      renderApp();
     });
   });
 
-  const escapeSelector = value => {
-    if (!value) return "";
-    if (typeof CSS !== "undefined" && CSS && typeof CSS.escape === "function") {
-      return CSS.escape(value);
-    }
-    return String(value).replace(/([ #;?%&,.+*~':"!^$[\]()=>|/@])/g, "\\$1");
-  };
-
-  const reporterForm = container.querySelector("#reporter-settings-form");
+  const reporterForm = root.querySelector("#reporter-settings-form");
   if (reporterForm) {
     const reasonsContainer = reporterForm.querySelector("[data-reasons-container]");
     const promptField = reporterForm.querySelector("#reporter-reason-prompt");
@@ -5657,7 +5584,7 @@ function attachSettingsEvents(container) {
         const rowMarkup = reporterReasonRowTemplate({ id: newId, label: "" }, reasonsContainer.children.length);
         reasonsContainer.insertAdjacentHTML("beforeend", rowMarkup);
         updateReasonIndices();
-        const selector = `[data-reason-id="${escapeSelector(newId)}"]`;
+        const selector = `[data-reason-id="${escapeSettingsSelector(newId)}"]`;
         const newInput = reasonsContainer.querySelector(selector);
         if (newInput) newInput.focus();
         return;
@@ -5668,11 +5595,43 @@ function attachSettingsEvents(container) {
         if (!reasonsContainer) return;
         const reasonId = removeButton.getAttribute("data-reason-id");
         if (!reasonId) return;
-        const row = reasonsContainer.querySelector(`[data-reason-row="${escapeSelector(reasonId)}"]`);
+        const row = reasonsContainer.querySelector(
+          `[data-reason-row="${escapeSettingsSelector(reasonId)}"]`
+        );
         if (row) {
           row.remove();
           updateReasonIndices();
         }
+      }
+      const resetButton = event.target.closest("[data-action='reset-reporter-defaults']");
+      if (resetButton) {
+        event.preventDefault();
+        openDialog({
+          title: "Reset reporter settings?",
+          description: "This restores the default prompt, urgent label, and standard reasons for reporters.",
+          confirmLabel: "Reset settings",
+          cancelLabel: "Cancel",
+          tone: "danger",
+          onConfirm: close => {
+            close();
+            state.settings = state.settings || {};
+            state.settings.reporter = {
+              reasonPrompt: DEFAULT_REPORTER_PROMPT,
+              emergencyLabel: DEFAULT_EMERGENCY_LABEL,
+              reasons: DEFAULT_REPORTER_REASONS.map(reason => ({ ...reason }))
+            };
+            if (Array.isArray(state.messages)) {
+              const validIds = new Set(state.settings.reporter.reasons.map(reason => reason.id));
+              state.messages.forEach(message => {
+                if (!Array.isArray(message.reasons)) return;
+                message.reasons = message.reasons.filter(id => validIds.has(id));
+              });
+            }
+            persist();
+            renderApp();
+          }
+        });
+        return;
       }
     });
 
@@ -5683,7 +5642,7 @@ function attachSettingsEvents(container) {
         : [];
       const reasons = [];
       const seenIds = new Set();
-      reasonInputs.forEach((input, index) => {
+      reasonInputs.forEach(input => {
         const text = (input.value || "").trim();
         if (!text) return;
         const currentId = input.getAttribute("data-reason-id");
@@ -5738,31 +5697,33 @@ function attachSettingsEvents(container) {
       renderApp();
     });
   }
+}
 
-  if (!window.__weldSettingsEscape__) {
-    document.addEventListener("keydown", event => {
-      if (event.key !== "Escape") return;
-      if (!state.meta.settingsOpen) return;
-      state.meta.settingsOpen = false;
-      renderApp();
-    });
-    window.__weldSettingsEscape__ = true;
+function syncSettingsShell() {
+  const root = ensureSettingsRoot();
+  if (!state.meta.settingsOpen) {
+    root.innerHTML = "";
+    return;
   }
+  root.innerHTML = renderSettingsPanel();
+  bindSettingsShellEvents(root);
+  requestAnimationFrame(() => {
+    const panel = root.querySelector(".settings-panel");
+    if (!panel) return;
+    const focusTarget =
+      panel.querySelector("[data-autofocus]") || panel.querySelector("input, textarea, button, select");
+    if (focusTarget) {
+      focusTarget.focus();
+    } else {
+      panel.focus();
+    }
+  });
+}
 
-  if (state.meta.settingsOpen) {
-    requestAnimationFrame(() => {
-      const panel = container.querySelector(".settings-panel");
-      if (!panel) return;
-      const focusTarget =
-        panel.querySelector("[data-autofocus]") ||
-        panel.querySelector("input, textarea, button, select");
-      if (focusTarget) {
-        focusTarget.focus();
-      } else {
-        panel.focus();
-      }
-    });
-  }
+function initializeSettingsUI(container) {
+  bindSettingsToggle(container);
+  ensureSettingsShortcuts();
+  syncSettingsShell();
 }
 
 function attachLandingEvents(container) {
@@ -6229,7 +6190,7 @@ function renderApp() {
     `;
     attachHeaderEvents(app);
     attachGlobalNav(app);
-    attachSettingsEvents(app);
+    initializeSettingsUI(app);
     attachLandingEvents(app);
     return;
   }
@@ -6245,7 +6206,7 @@ function renderApp() {
     `;
     attachHeaderEvents(app);
     attachGlobalNav(app);
-    attachSettingsEvents(app);
+    initializeSettingsUI(app);
     const mainContent = app.querySelector("#main-content");
     if (mainContent) attachBadgeEvents(mainContent);
     return;
@@ -6263,8 +6224,7 @@ function renderApp() {
 
   attachHeaderEvents(app);
   attachGlobalNav(app);
-  attachSettingsEvents(app);
-  attachSettingsEvents(app);
+  initializeSettingsUI(app);
   const mainContent = app.querySelector("#main-content");
   if (mainContent) attachAddInEvents(mainContent);
   return;
@@ -6281,6 +6241,7 @@ function renderApp() {
 
   attachHeaderEvents(app);
   attachGlobalNav(app);
+  initializeSettingsUI(app);
 
   const mainContent = app.querySelector("#main-content");
   if (!mainContent) return;
