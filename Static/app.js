@@ -1064,6 +1064,22 @@ const BADGES = [
   }
 ];
 
+const BADGE_CATEGORY_ORDER = [
+  "onboarding",
+  "activation",
+  "speed",
+  "impact",
+  "precision",
+  "mastery",
+  "collaboration",
+  "culture",
+  "consistency",
+  "mobility",
+  "rewards",
+  "recognition",
+  "meta"
+];
+
 const BADGE_DRAFTS = new Set([
   "culture-spark",
   "buddy-system",
@@ -3319,34 +3335,37 @@ function renderCustomer() {
           : null;
       const tags = [];
       if (normalizedCategory && normalizedCategory !== "Badge") {
-        tags.push(`<span>${escapeHtml(normalizedCategory)}</span>`);
+        tags.push(`<span class="catalogue-card__tag gem-badge-card__tag">${escapeHtml(normalizedCategory)}</span>`);
       }
       if (difficultyLabel) {
-        tags.push(`<span>${escapeHtml(difficultyLabel)}</span>`);
+        tags.push(`<span class="catalogue-card__tag gem-badge-card__tag">${escapeHtml(difficultyLabel)}</span>`);
       }
-      const tagsMarkup = tags.length ? `<div class="gem-badge-card__tags">${tags.join("")}</div>` : "";
+      const tagsMarkup = tags.length
+        ? `<div class="gem-badge-card__tags catalogue-card__tags">${tags.join("")}</div>`
+        : "";
       const pointsValue = Number(badge.points) || 0;
-      const auraTone = escapeHtml(tone);
-      const auraIconTone = escapeHtml(iconBackdrop);
-      const auraIconShadow = escapeHtml(iconShadow);
+      const toggleTitle = difficultyLabel
+        ? `${escapeHtml(difficultyLabel)} • ${formatNumber(pointsValue)} pts`
+        : `${formatNumber(pointsValue)} pts`;
       const ariaLabel = `${badge.title} badge, worth ${formatNumber(pointsValue)} points in the collection.`;
       return `
       <article
         class="gem-badge gem-badge--hub"
         data-badge="${safeId}"
-        style="--badge-tone:${auraTone};--badge-icon-tone:${auraIconTone};--badge-icon-shadow:${auraIconShadow};">
+        style="--badge-tone:${escapeHtml(tone)};--badge-icon-tone:${escapeHtml(iconBackdrop)};--badge-icon-shadow:${escapeHtml(iconShadow)};">
         <button
           type="button"
           class="gem-badge__trigger"
           aria-haspopup="true"
           aria-label="${escapeHtml(badge.title)} badge details"
-          aria-controls="${cardId}">
+          aria-controls="${escapeHtml(cardId)}"
+          title="${escapeHtml(toggleTitle)}">
           <span class="gem-badge__icon" style="background:${iconBackdrop}; box-shadow:0 18px 32px ${iconShadow};">
             ${renderIcon(badge.icon || "medal", "sm")}
           </span>
         </button>
         <span class="gem-badge__label">${escapeHtml(badge.title)}</span>
-        <div id="${cardId}" class="gem-badge-card gem-badge-card--hub gem-badge-card--published" role="group" aria-label="${escapeHtml(ariaLabel)}">
+        <div id="${escapeHtml(cardId)}" class="gem-badge-card gem-badge-card--hub gem-badge-card--published" role="group" aria-label="${escapeHtml(ariaLabel)}">
           <span class="gem-badge-card__halo"></span>
           <span class="gem-badge-card__orb gem-badge-card__orb--one"></span>
           <span class="gem-badge-card__orb gem-badge-card__orb--two"></span>
@@ -3355,9 +3374,6 @@ function renderCustomer() {
             <span class="gem-badge-card__status gem-badge-card__status--published">Published</span>
           </header>
           <div class="gem-badge-card__main">
-            <div class="gem-badge-card__icon">
-              ${renderIcon(badge.icon || "medal", "md")}
-            </div>
             <h3 class="gem-badge-card__title">${escapeHtml(badge.title)}</h3>
             ${tagsMarkup}
             <p class="gem-badge-card__description">${escapeHtml(badge.description)}</p>
@@ -4736,100 +4752,201 @@ function renderClientBadges() {
     `
     : "";
 
-  const gridMarkup = filteredBadges.length
-    ? filteredBadges
-        .map((badge, index) => {
-          const rawId = String(badge.id ?? generateId("badge"));
-          const sanitizedId = rawId.replace(/[^a-zA-Z0-9:_-]/g, "-");
-          const id = escapeHtml(rawId);
-          const cardId = escapeHtml(`badge-card-${index}-${sanitizedId || "detail"}`);
-          const action = badge.published ? "unpublish" : "publish";
-          const actionLabel = badge.published ? "Unpublish from hubs" : "Publish to hubs";
-          const actionTone = badge.published ? "button-pill--danger-light" : "button-pill--primary";
-          const toneKey = BADGE_TONES[badge.tone] ? badge.tone : "violet";
-          const tone = BADGE_TONES[toneKey] || BADGE_TONES.violet;
-          const iconBackdrop =
-            BADGE_ICON_BACKDROPS[toneKey]?.background ||
-            BADGE_ICON_BACKDROPS.violet?.background ||
-            "linear-gradient(135deg, #c7d2fe, #818cf8)";
-          const iconShadow =
-            BADGE_ICON_BACKDROPS[toneKey]?.shadow || BADGE_ICON_BACKDROPS.violet?.shadow || "rgba(79, 70, 229, 0.32)";
-          const difficultyLabel =
-            typeof badge.difficulty === "string" && badge.difficulty.trim().length > 0
-              ? badge.difficulty.trim()
-              : "Skilled";
-          const rawCategory =
-            typeof badge.category === "string" && badge.category.trim().length > 0
-              ? badge.category.trim()
-              : "Badge";
-          const categoryLabel = formatCatalogueLabel(rawCategory);
-          const pointsValue = Number(badge.points) || 0;
-          const tags = [];
-          if (rawCategory && rawCategory.toLowerCase() !== "badge") {
-            tags.push(`<span class="catalogue-card__tag gem-badge-card__tag">${escapeHtml(categoryLabel)}</span>`);
-          }
-          if (difficultyLabel) {
-            tags.push(`<span class="catalogue-card__tag gem-badge-card__tag">${escapeHtml(difficultyLabel)}</span>`);
-          }
-          const tagsMarkup = tags.length ? `<div class="gem-badge-card__tags catalogue-card__tags">${tags.join("")}</div>` : "";
-          const statusLabel = badge.published ? "Published" : "Draft";
-          const statusClass = badge.published ? "gem-badge-card__status--published" : "gem-badge-card__status--draft";
-          const ariaLabel = `${badge.title} badge, ${difficultyLabel} difficulty, worth ${formatNumber(pointsValue)} points.`;
+  const renderBadgeCard = (badge, index) => {
+    const rawId = String(badge.id ?? generateId("badge"));
+    const sanitizedId = rawId.replace(/[^a-zA-Z0-9:_-]/g, "-");
+    const id = escapeHtml(rawId);
+    const cardId = escapeHtml(`badge-card-${index}-${sanitizedId || "detail"}`);
+    const action = badge.published ? "unpublish" : "publish";
+    const actionLabel = badge.published ? "Unpublish from hubs" : "Publish to hubs";
+    const actionTone = badge.published ? "button-pill--danger-light" : "button-pill--primary";
+    const toneKey = BADGE_TONES[badge.tone] ? badge.tone : "violet";
+    const tone = BADGE_TONES[toneKey] || BADGE_TONES.violet;
+    const iconBackdrop =
+      BADGE_ICON_BACKDROPS[toneKey]?.background ||
+      BADGE_ICON_BACKDROPS.violet?.background ||
+      "linear-gradient(135deg, #c7d2fe, #818cf8)";
+    const iconShadow =
+      BADGE_ICON_BACKDROPS[toneKey]?.shadow || BADGE_ICON_BACKDROPS.violet?.shadow || "rgba(79, 70, 229, 0.32)";
+    const difficultyLabel =
+      typeof badge.difficulty === "string" && badge.difficulty.trim().length > 0
+        ? badge.difficulty.trim()
+        : "Skilled";
+    const rawCategory =
+      typeof badge.category === "string" && badge.category.trim().length > 0
+        ? badge.category.trim()
+        : "Badge";
+    const categoryLabel = formatCatalogueLabel(rawCategory);
+    const pointsValue = Number(badge.points) || 0;
+    const statusLabel = badge.published ? "Published" : "Draft";
+    const statusClass = badge.published ? "gem-badge-card__status--published" : "gem-badge-card__status--draft";
+    const ariaLabel = `${badge.title} badge, ${difficultyLabel} difficulty, worth ${formatNumber(pointsValue)} points.`;
+    const tags = [];
+    if (rawCategory && rawCategory.toLowerCase() !== "badge") {
+      tags.push(
+        `<span class="catalogue-card__tag gem-badge-card__tag">${escapeHtml(categoryLabel)}</span>`
+      );
+    }
+    if (difficultyLabel) {
+      tags.push(
+        `<span class="catalogue-card__tag gem-badge-card__tag">${escapeHtml(difficultyLabel)}</span>`
+      );
+    }
+    const tagsMarkup = tags.length
+      ? `<div class="gem-badge-card__tags catalogue-card__tags">${tags.join("")}</div>`
+      : "";
+    const bonusMarkup =
+      badge.bonus && badge.bonusDetail
+        ? `<p class="gem-badge-card__bonus"><strong>${escapeHtml(badge.bonus)}</strong> ${escapeHtml(
+            badge.bonusDetail
+          )}</p>`
+        : "";
+    const toggleTitleParts = [];
+    if (badge.published) toggleTitleParts.push("Published");
+    if (difficultyLabel) toggleTitleParts.push(difficultyLabel);
+    if (rawCategory && rawCategory.toLowerCase() !== "badge") toggleTitleParts.push(categoryLabel);
+    if (badge.points) toggleTitleParts.push(`${formatNumber(pointsValue)} pts`);
+    const toggleTitle = toggleTitleParts.join(" • ");
 
-          return `
-            <article
-              class="gem-badge ${badge.published ? "gem-badge--published" : "gem-badge--draft"}"
-              data-badge="${id}"
-              style="--badge-tone:${tone};--badge-icon-tone:${iconBackdrop};--badge-icon-shadow:${iconShadow};">
-              <button
-                type="button"
-                class="gem-badge__trigger"
-                aria-haspopup="true"
-                aria-label="${escapeHtml(badge.title)} badge details"
-                aria-controls="${cardId}">
-                <span class="gem-badge__icon" style="background:${iconBackdrop}; box-shadow:0 18px 32px ${iconShadow};">
-                  ${renderIcon(badge.icon || "medal", "sm")}
-                </span>
-              </button>
-              <span class="gem-badge__label">${escapeHtml(badge.title)}</span>
-              <div
-                id="${cardId}"
-                class="gem-badge-card ${badge.published ? "gem-badge-card--published" : "gem-badge-card--draft"}"
-                role="group"
-                aria-label="${escapeHtml(ariaLabel)}">
-                <span class="gem-badge-card__halo"></span>
-                <span class="gem-badge-card__orb gem-badge-card__orb--one"></span>
-                <span class="gem-badge-card__orb gem-badge-card__orb--two"></span>
-                <header class="gem-badge-card__header">
-                  <span>${escapeHtml(categoryLabel)}</span>
-                  <span class="gem-badge-card__status ${statusClass}">${statusLabel}</span>
+    return `
+      <article
+        class="gem-badge ${badge.published ? "gem-badge--published" : "gem-badge--draft"}"
+        data-badge="${id}"
+        style="--badge-tone:${tone};--badge-icon-tone:${iconBackdrop};--badge-icon-shadow:${iconShadow};">
+        <button
+          type="button"
+          class="gem-badge__trigger"
+          aria-haspopup="true"
+          aria-label="${escapeHtml(badge.title)} badge details"
+          aria-controls="${cardId}"
+          title="${escapeHtml(toggleTitle)}">
+          <span class="gem-badge__icon" style="background:${iconBackdrop}; box-shadow:0 18px 32px ${iconShadow};">
+            ${renderIcon(badge.icon || "medal", "sm")}
+          </span>
+        </button>
+        <span class="gem-badge__label">${escapeHtml(badge.title)}</span>
+        <div
+          id="${cardId}"
+          class="gem-badge-card ${badge.published ? "gem-badge-card--published" : "gem-badge-card--draft"}"
+          role="group"
+          aria-label="${escapeHtml(ariaLabel)}">
+          <span class="gem-badge-card__halo"></span>
+          <span class="gem-badge-card__orb gem-badge-card__orb--one"></span>
+          <span class="gem-badge-card__orb gem-badge-card__orb--two"></span>
+          <header class="gem-badge-card__header">
+            <span>${escapeHtml(categoryLabel)}</span>
+            <span class="gem-badge-card__status ${statusClass}">${statusLabel}</span>
+          </header>
+          <div class="gem-badge-card__main">
+            <h3 class="gem-badge-card__title">${escapeHtml(badge.title)}</h3>
+            ${tagsMarkup}
+            <p class="gem-badge-card__description">${escapeHtml(badge.description)}</p>
+            ${bonusMarkup}
+          </div>
+        <footer class="gem-badge-card__footer">
+          <span class="gem-badge-card__points">
+            <span class="gem-badge-card__points-value">+${formatNumber(pointsValue)}</span>
+            <span class="gem-badge-card__points-unit">pts</span>
+          </span>
+          <button
+            type="button"
+            class="button-pill ${actionTone} badge-publish-toggle gem-badge-card__action"
+            data-action="${action}"
+            data-badge="${id}">
+              ${actionLabel}
+            </button>
+          </footer>
+        </div>
+      </article>
+    `;
+  };
+
+  const difficultyRank = value => {
+    const normalized = typeof value === "string" ? value.trim() : "";
+    const rank = difficultyOrder.indexOf(normalized);
+    return rank === -1 ? difficultyOrder.length : rank;
+  };
+
+  const getCategoryRank = label => {
+    const normalized = typeof label === "string" ? label.trim().toLowerCase() : "";
+    const index = BADGE_CATEGORY_ORDER.indexOf(normalized);
+    return index === -1 ? BADGE_CATEGORY_ORDER.length : index;
+  };
+
+  const groupedBadges = (() => {
+    if (!filteredBadges.length) return [];
+    const map = new Map();
+    filteredBadges.forEach(badge => {
+      const rawCategory =
+        typeof badge.category === "string" && badge.category.trim().length > 0
+          ? badge.category.trim()
+          : "Badge";
+      const key = rawCategory.toLowerCase();
+      if (!map.has(key)) {
+        map.set(key, {
+          key,
+          rawLabel: rawCategory,
+          badges: []
+        });
+      }
+      map.get(key).badges.push(badge);
+    });
+    return Array.from(map.values())
+      .sort((a, b) => {
+        const rankA = getCategoryRank(a.rawLabel);
+        const rankB = getCategoryRank(b.rawLabel);
+        if (rankA !== rankB) return rankA - rankB;
+        return a.rawLabel.localeCompare(b.rawLabel, undefined, { sensitivity: "base" });
+      })
+      .map(group => ({
+        key: group.key,
+        label: formatCatalogueLabel(group.rawLabel),
+        badges: group.badges
+          .slice()
+          .sort((a, b) => {
+            const rankA = difficultyRank(a.difficulty);
+            const rankB = difficultyRank(b.difficulty);
+            if (rankA !== rankB) return rankA - rankB;
+            const pointsA = Number(a.points) || 0;
+            const pointsB = Number(b.points) || 0;
+            if (pointsA !== pointsB) return pointsB - pointsA;
+            const titleA = typeof a.title === "string" ? a.title : "";
+            const titleB = typeof b.title === "string" ? b.title : "";
+            return titleA.localeCompare(titleB, undefined, { sensitivity: "base" });
+          })
+      }));
+  })();
+
+  let badgeIndex = 0;
+
+  const gridMarkup = filteredBadges.length
+    ? `
+      <div class="client-badges__groups">
+        ${groupedBadges
+          .map(group => {
+            const count = group.badges.length;
+            const countLabel = `${formatNumber(count)} badge${count === 1 ? "" : "s"}`;
+            return `
+              <section class="gem-badge-group" data-badge-category="${escapeHtml(group.key)}">
+                <header class="gem-badge-group__header">
+                  <h3>${escapeHtml(group.label)}</h3>
+                  <span class="detail-table__meta">${escapeHtml(countLabel)}</span>
                 </header>
-                <div class="gem-badge-card__main">
-                  <div class="gem-badge-card__icon">
-                    ${renderIcon(badge.icon || "medal", "md")}
-                  </div>
-                  <h3 class="gem-badge-card__title">${escapeHtml(badge.title)}</h3>
-                  ${tagsMarkup}
-                  <p class="gem-badge-card__description">${escapeHtml(badge.description)}</p>
+                <div class="gem-badge-grid gem-badge-group__grid client-badges__grid">
+                  ${group.badges
+                    .map(badge => {
+                      const markup = renderBadgeCard(badge, badgeIndex);
+                      badgeIndex += 1;
+                      return markup;
+                    })
+                    .join("")}
                 </div>
-                <footer class="gem-badge-card__footer">
-                  <span class="gem-badge-card__points">
-                    <span class="gem-badge-card__points-value">+${formatNumber(pointsValue)}</span>
-                    <span class="gem-badge-card__points-unit">pts</span>
-                  </span>
-                  <button
-                    type="button"
-                    class="button-pill ${actionTone} badge-publish-toggle gem-badge-card__action"
-                    data-action="${action}"
-                    data-badge="${id}">
-                    ${actionLabel}
-                  </button>
-                </footer>
-              </div>
-            </article>
-          `;
-        })
-        .join("")
+              </section>
+            `;
+          })
+          .join("")}
+      </div>
+    `
     : `<div class="badge-empty"><p>${
         activeFilter ? "No badges match the selected filter." : "No badges are configured yet."
       }</p></div>`;
@@ -5820,9 +5937,11 @@ function renderAddIn() {
     totalAwarded = Math.max(fallbackTotal, 0);
   }
   const tickerMarkup = renderPointsTicker(previousBalance, afterBalance, totalAwarded, 'data-points-ticker="total"');
+  const badgeBurstLabel =
+    Array.isArray(state.meta.lastBadgeIds) && state.meta.lastBadgeIds.length > 1 ? "Badges" : "Badge";
   const burstsMarkup = renderPointsBursts([
     { value: reportAward, variant: "report", label: "Report" },
-    { value: badgeAward, variant: "badge", label: "Badge" }
+    { value: badgeAward, variant: "badge", label: badgeBurstLabel }
   ]);
   const auroraLayers = [
     { angle: 12, hue: 258, delay: "0s", offsetX: -28, offsetY: -52, shape: "wave1" },
