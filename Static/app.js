@@ -1,4 +1,4 @@
-const STORAGE_KEY = "weldStaticDemoStateV1";
+﻿const STORAGE_KEY = "weldStaticDemoStateV1";
 
 const ROLE_LABELS = {
   customer: { label: "Reporter", chip: "chip--customer" },
@@ -16,6 +16,7 @@ const ROUTES = {
   "client-rewards": { requiresRole: "client" },
   "client-quests": { requiresRole: "client" },
   "weld-admin": { requiresRole: "admin" },
+  "weld-labs": { requiresRole: "admin" },
   "client-badges": { requiresRole: "client" },
   addin: { requiresRole: false }
 };
@@ -46,7 +47,10 @@ const NAV_GROUPS = [
   },
   {
     label: "WeldSecure",
-    items: [{ label: "Weld Admin", route: "weld-admin", role: "admin" }]
+    items: [
+      { label: "Weld Admin", route: "weld-admin", role: "admin" },
+      { label: "Weld Labs", route: "weld-labs", role: "admin" }
+    ]
   }
 ];
 
@@ -1324,8 +1328,11 @@ function initialState() {
       lastMessageId: null,
       lastClientSnapshot: null,
       rewardFilter: null,
+      rewardStatusFilter: null,
       questFilter: null,
+      questStatusFilter: null,
       badgeFilter: null,
+      badgeStatusFilter: null,
       settingsOpen: false,
       settingsCategory: "reporter"
     },
@@ -1469,6 +1476,41 @@ function initialState() {
     engagementPrograms: ENGAGEMENT_PROGRAMS.map(program => ({
       ...program
     })),
+    labs: {
+      lastReviewAt: "2025-10-18T08:30:00Z",
+      features: [
+        {
+          id: "adaptive-detections",
+          name: "Adaptive detection tuning",
+          status: "Private beta",
+          summary: "Automatically recalibrates phishing heuristics per tenant using cross-network telemetry.",
+          benefit: "Cuts analyst investigation time by serving enriched verdicts back into the queue.",
+          tags: ["Detection", "Automation"],
+          owner: "Product incubation",
+          enabledClientIds: [101, 103]
+        },
+        {
+          id: "just-in-time-nudges",
+          name: "Just-in-time nudges",
+          status: "Design partner",
+          summary: "Pushes contextual prompts to employees immediately after a risky action is detected.",
+          benefit: "Reduces repeat risky behaviour through targeted reinforcement moments.",
+          tags: ["Behaviour change", "Reporter experience"],
+          owner: "Behaviour Lab",
+          enabledClientIds: [102]
+        },
+        {
+          id: "tenant-signal-exchange",
+          name: "Tenant signal exchange",
+          status: "Private preview",
+          summary: "Shares anonymised threat fingerprints between tenants to accelerate pattern blocking.",
+          benefit: "Creates early warning signals ahead of spikes hitting the broader customer base.",
+          tags: ["Threat intel", "Network effects"],
+          owner: "WeldSecure Labs",
+          enabledClientIds: []
+        }
+      ]
+    },
     rewardRedemptions: [
       { id: 1, rewardId: 3, redeemedAt: "2025-09-12T09:30:00Z", status: "fulfilled" }
     ],
@@ -1753,6 +1795,84 @@ function loadState() {
           return [...merged, ...additions];
         })()
       : (baseState.engagementPrograms || []).map(item => ({ ...item }));
+    const normalizedLabs = (() => {
+      const baseLabs = baseState.labs && typeof baseState.labs === "object" ? baseState.labs : {};
+      const parsedLabs = parsed.labs && typeof parsed.labs === "object" ? parsed.labs : {};
+      const baseFeatures = Array.isArray(baseLabs.features) ? baseLabs.features : [];
+      const parsedFeatures = Array.isArray(parsedLabs.features) ? parsedLabs.features : [];
+      const overrides = new Map();
+      parsedFeatures.forEach(item => {
+        if (!item) return;
+        const key =
+          typeof item.id === "string" && item.id.trim().length > 0
+            ? item.id.trim()
+            : typeof item.id === "number" && Number.isFinite(item.id)
+            ? String(item.id)
+            : null;
+        if (!key) return;
+        overrides.set(key, { ...item, id: key });
+      });
+      const normalizeClientIds = source => {
+        if (!Array.isArray(source)) return [];
+        const seen = new Set();
+        const normalized = [];
+        source.forEach(value => {
+          let candidate = null;
+          if (Number.isFinite(value)) {
+            candidate = Number(value);
+          } else if (typeof value === "string") {
+            const trimmed = value.trim();
+            if (!trimmed) return;
+            const numeric = Number(trimmed);
+            candidate = Number.isFinite(numeric) ? numeric : trimmed;
+          }
+          if (candidate === null) return;
+          const key = typeof candidate === "number" ? candidate : String(candidate);
+          if (seen.has(key)) return;
+          seen.add(key);
+          normalized.push(candidate);
+        });
+        return normalized;
+      };
+      const mergedFeatures = baseFeatures.map(feature => {
+        const id =
+          typeof feature.id === "string" && feature.id.trim().length > 0
+            ? feature.id.trim()
+            : typeof feature.id === "number" && Number.isFinite(feature.id)
+            ? String(feature.id)
+            : generateId("lab");
+        const override = overrides.get(id);
+        if (override) {
+          overrides.delete(id);
+        }
+        const enabledSource = override?.enabledClientIds ?? feature.enabledClientIds ?? [];
+        return {
+          ...feature,
+          ...(override ? { ...override } : {}),
+          id,
+          enabledClientIds: normalizeClientIds(enabledSource)
+        };
+      });
+      overrides.forEach((override, id) => {
+        mergedFeatures.push({
+          ...override,
+          id,
+          enabledClientIds: normalizeClientIds(override.enabledClientIds)
+        });
+      });
+      const lastReviewAt =
+        typeof parsedLabs.lastReviewAt === "string" && parsedLabs.lastReviewAt.trim().length > 0
+          ? parsedLabs.lastReviewAt.trim()
+          : typeof baseLabs.lastReviewAt === "string" && baseLabs.lastReviewAt.trim().length > 0
+          ? baseLabs.lastReviewAt.trim()
+          : null;
+      return {
+        ...baseLabs,
+        ...parsedLabs,
+        lastReviewAt,
+        features: mergedFeatures
+      };
+    })();
     const baseReporterSettings = baseState.settings?.reporter || {
       reasonPrompt: DEFAULT_REPORTER_PROMPT,
       emergencyLabel: DEFAULT_EMERGENCY_LABEL,
@@ -1910,9 +2030,16 @@ function loadState() {
     }
     const normalizeFilter = value =>
       typeof value === "string" && value.trim().length > 0 ? value.trim().toLowerCase() : null;
+    const normalizeStatusFilter = value => {
+      const normalized = normalizeFilter(value);
+      return normalized === "published" || normalized === "unpublished" ? normalized : null;
+    };
     mergedMeta.rewardFilter = normalizeFilter(mergedMeta.rewardFilter);
+    mergedMeta.rewardStatusFilter = normalizeStatusFilter(mergedMeta.rewardStatusFilter);
     mergedMeta.questFilter = normalizeFilter(mergedMeta.questFilter);
+    mergedMeta.questStatusFilter = normalizeStatusFilter(mergedMeta.questStatusFilter);
     mergedMeta.badgeFilter = normalizeFilter(mergedMeta.badgeFilter);
+    mergedMeta.badgeStatusFilter = normalizeStatusFilter(mergedMeta.badgeStatusFilter);
     if (Array.isArray(mergedMeta.lastBadgeIds)) {
       mergedMeta.lastBadgeIds = mergedMeta.lastBadgeIds
         .map(id => {
@@ -1952,6 +2079,7 @@ function loadState() {
       rewardRedemptions: normalizedRewardRedemptions,
       departmentLeaderboard: normalizedLeaderboard,
       engagementPrograms: normalizedPrograms,
+      labs: normalizedLabs,
       settings: normalizedSettings
     };
   } catch {
@@ -2014,6 +2142,7 @@ function resetDemo() {
   state.clients = clone(defaultState.clients);
   state.departmentLeaderboard = clone(defaultState.departmentLeaderboard);
   state.engagementPrograms = clone(defaultState.engagementPrograms);
+  state.labs = clone(defaultState.labs);
   if (storageAvailable()) {
     localStorage.removeItem(STORAGE_KEY);
   }
@@ -2247,6 +2376,119 @@ function setAllEngagementProgramsPublication(published) {
     }
   });
   if (!changed) return;
+  persist();
+  renderApp();
+}
+
+function normalizeLabFeatureId(value) {
+  if (Number.isFinite(value)) {
+    return String(value);
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+  return null;
+}
+
+function normalizeLabClientId(value) {
+  if (Number.isFinite(value)) {
+    return Number(value);
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const numeric = Number(trimmed);
+    return Number.isFinite(numeric) ? numeric : trimmed;
+  }
+  return null;
+}
+
+function labClientKey(value) {
+  if (Number.isFinite(value)) {
+    return String(Number(value));
+  }
+  if (typeof value === "string") {
+    return value.trim();
+  }
+  return "";
+}
+
+function setLabFeatureAccess(featureId, clientIdValue, enabled) {
+  if (!state.labs || !Array.isArray(state.labs.features)) return;
+  const normalizedFeatureId = normalizeLabFeatureId(featureId);
+  if (!normalizedFeatureId) return;
+  const feature = state.labs.features.find(
+    item => normalizeLabFeatureId(item?.id) === normalizedFeatureId
+  );
+  if (!feature) return;
+  const normalizedClientId = normalizeLabClientId(clientIdValue);
+  if (normalizedClientId === null || normalizedClientId === undefined) return;
+  if (!Array.isArray(feature.enabledClientIds)) {
+    feature.enabledClientIds = [];
+  }
+  const targetKey = labClientKey(normalizedClientId);
+  if (!targetKey) return;
+  const existingIndex = feature.enabledClientIds.findIndex(
+    id => labClientKey(id) === targetKey
+  );
+  const alreadyEnabled = existingIndex !== -1;
+  if (enabled && alreadyEnabled) return;
+  if (!enabled && !alreadyEnabled) return;
+  if (enabled) {
+    feature.enabledClientIds.push(normalizedClientId);
+  } else {
+    feature.enabledClientIds.splice(existingIndex, 1);
+  }
+  feature.enabledClientIds = feature.enabledClientIds
+    .map(id =>
+      Number.isFinite(id) ? Number(id) : typeof id === "string" ? id.trim() : id
+    )
+    .filter((value, index, array) => {
+      const key = labClientKey(value);
+      if (!key) return false;
+      return array.findIndex(candidate => labClientKey(candidate) === key) === index;
+    });
+  persist();
+  renderApp();
+}
+
+function setLabFeatureAccessForAll(featureId, enabled) {
+  if (!state.labs || !Array.isArray(state.labs.features)) return;
+  const normalizedFeatureId = normalizeLabFeatureId(featureId);
+  if (!normalizedFeatureId) return;
+  const feature = state.labs.features.find(
+    item => normalizeLabFeatureId(item?.id) === normalizedFeatureId
+  );
+  if (!feature) return;
+  if (!Array.isArray(feature.enabledClientIds)) {
+    feature.enabledClientIds = [];
+  }
+  if (!enabled) {
+    if (feature.enabledClientIds.length === 0) return;
+    feature.enabledClientIds = [];
+    persist();
+    renderApp();
+    return;
+  }
+  const clients = Array.isArray(state.clients) ? state.clients : [];
+  const targetIds = clients
+    .map(client => normalizeLabClientId(client?.id))
+    .filter(value => labClientKey(value));
+  const existingKeys = new Set(feature.enabledClientIds.map(labClientKey).filter(Boolean));
+  const targetKeys = new Set(targetIds.map(labClientKey).filter(Boolean));
+  let changed = false;
+  if (existingKeys.size !== targetKeys.size) {
+    changed = true;
+  } else {
+    existingKeys.forEach(key => {
+      if (!targetKeys.has(key)) {
+        changed = true;
+      }
+    });
+  }
+  if (!changed) return;
+  feature.enabledClientIds = targetIds;
   persist();
   renderApp();
 }
@@ -2827,6 +3069,13 @@ function renderLanding() {
       tone: "linear-gradient(135deg, #0ea5e9, #2563eb)",
       role: "admin",
       route: "weld-admin"
+    },
+    {
+      title: "Weld Labs",
+      description: "Explore experimental features and toggle preview access across organisations.",
+      tone: "linear-gradient(135deg, #38bdf8, #8b5cf6)",
+      role: "admin",
+      route: "weld-labs"
     }
   ]
     .map(card => {
@@ -3077,8 +3326,15 @@ function renderCustomer() {
       }
       const tagsMarkup = tags.length ? `<div class="gem-badge-card__tags">${tags.join("")}</div>` : "";
       const pointsValue = Number(badge.points) || 0;
+      const auraTone = escapeHtml(tone);
+      const auraIconTone = escapeHtml(iconBackdrop);
+      const auraIconShadow = escapeHtml(iconShadow);
       const ariaLabel = `${badge.title} badge, worth ${formatNumber(pointsValue)} points in the collection.`;
       return `
+      <article
+        class="gem-badge gem-badge--hub"
+        data-badge="${safeId}"
+        style="--badge-tone:${auraTone};--badge-icon-tone:${auraIconTone};--badge-icon-shadow:${auraIconShadow};">
         <button
           type="button"
           class="gem-badge__trigger"
@@ -3835,13 +4091,24 @@ function renderClientRewards() {
     typeof state.meta.rewardFilter === "string" && state.meta.rewardFilter.length > 0
       ? state.meta.rewardFilter
       : null;
+  const statusFilter =
+    typeof state.meta.rewardStatusFilter === "string" && state.meta.rewardStatusFilter.length > 0
+      ? state.meta.rewardStatusFilter
+      : null;
 
-  const filteredRewards = activeFilter
+  const categoryFilteredRewards = activeFilter
     ? rewards.filter(reward => {
         const category = typeof reward.category === "string" ? reward.category.trim().toLowerCase() : "";
         return category === activeFilter;
       })
     : rewards;
+
+  const filteredRewards =
+    statusFilter === "published"
+      ? categoryFilteredRewards.filter(reward => reward.published)
+      : statusFilter === "unpublished"
+      ? categoryFilteredRewards.filter(reward => !reward.published)
+      : categoryFilteredRewards;
 
   const metricsConfig = [
     {
@@ -3943,11 +4210,29 @@ function renderClientRewards() {
       ? "Inventory updates live as redemptions happen"
       : "Add rewards to build your catalogue narrative.";
 
-  const filterSummary = activeFilter
-    ? `${formatNumber(filteredRewards.length)} of ${formatNumber(rewards.length)} rewards shown`
-    : "";
+  const selectedCategoryLabel =
+    activeFilter && categoryMap.has(activeFilter)
+      ? formatCatalogueLabel(categoryMap.get(activeFilter))
+      : null;
 
-  const actionsMeta = [filterSummary, baseInventoryCopy].filter(Boolean).join(" | ") || baseInventoryCopy;
+  const filterSummaryParts = [];
+  if (statusFilter === "published") {
+    filterSummaryParts.push("Published only");
+  } else if (statusFilter === "unpublished") {
+    filterSummaryParts.push("Unpublished only");
+  }
+  if (selectedCategoryLabel) {
+    filterSummaryParts.push(`Category: ${selectedCategoryLabel}`);
+  }
+
+  const filterSummaryText = filterSummaryParts.length ? filterSummaryParts.join(" - ") : "";
+  const resultsSummary =
+    activeFilter || statusFilter
+      ? `${formatNumber(filteredRewards.length)} of ${formatNumber(rewards.length)} rewards shown`
+      : "";
+
+  const actionsMeta =
+    [resultsSummary, filterSummaryText, baseInventoryCopy].filter(Boolean).join(" | ") || baseInventoryCopy;
 
   const filterButtons = rewardCategories
     .map(category => {
@@ -3966,6 +4251,32 @@ function renderClientRewards() {
     })
     .join("");
 
+  const statusFilterMarkup = `
+        <div class="badge-filter client-catalogue__status" role="toolbar" aria-label="Reward publication status">
+          <button
+            type="button"
+            class="badge-filter__item${statusFilter ? "" : " badge-filter__item--active"}"
+            data-reward-status=""
+            aria-pressed="${statusFilter ? "false" : "true"}">
+            All statuses
+          </button>
+          <button
+            type="button"
+            class="badge-filter__item${statusFilter === "published" ? " badge-filter__item--active" : ""}"
+            data-reward-status="published"
+            aria-pressed="${statusFilter === "published" ? "true" : "false"}">
+            Published
+          </button>
+          <button
+            type="button"
+            class="badge-filter__item${statusFilter === "unpublished" ? " badge-filter__item--active" : ""}"
+            data-reward-status="unpublished"
+            aria-pressed="${statusFilter === "unpublished" ? "true" : "false"}">
+            Unpublished
+          </button>
+        </div>
+      `;
+
   const filterMarkup =
     rewardCategories.length > 1
       ? `
@@ -3982,6 +4293,10 @@ function renderClientRewards() {
       `
       : "";
 
+  const summaryMarkup = actionsMeta
+    ? `<p class="detail-table__meta">${escapeHtml(actionsMeta)}</p>`
+    : "";
+
   return `
     <section class="client-catalogue__intro">
       <span class="client-catalogue__eyebrow">Rewards catalogue</span>
@@ -3992,12 +4307,15 @@ function renderClientRewards() {
       ${metricsMarkup}
     </section>
     <div class="client-rewards__actions">
-      <div class="client-rewards__bulk">
-        <button type="button" class="button-pill button-pill--primary" data-bulk-reward-action="publish">Publish all rewards</button>
-        <button type="button" class="button-pill button-pill--danger-light" data-bulk-reward-action="unpublish">Unpublish all rewards</button>
+      <div class="client-catalogue__actions-row">
+        <div class="client-rewards__bulk">
+          <button type="button" class="button-pill button-pill--primary" data-bulk-reward-action="publish">Publish all rewards</button>
+          <button type="button" class="button-pill button-pill--danger-light" data-bulk-reward-action="unpublish">Unpublish all rewards</button>
+        </div>
+        ${statusFilterMarkup}
       </div>
       ${filterMarkup}
-      <p class="detail-table__meta">${escapeHtml(actionsMeta)}</p>
+      ${summaryMarkup}
     </div>
     ${catalogueMarkup}
   `;
@@ -4036,13 +4354,24 @@ function renderClientQuests() {
     typeof state.meta.questFilter === "string" && state.meta.questFilter.length > 0
       ? state.meta.questFilter
       : null;
+  const statusFilter =
+    typeof state.meta.questStatusFilter === "string" && state.meta.questStatusFilter.length > 0
+      ? state.meta.questStatusFilter
+      : null;
 
-  const filteredQuests = activeFilter
+  const categoryFilteredQuests = activeFilter
     ? quests.filter(quest => {
         const category = typeof quest.category === "string" ? quest.category.trim().toLowerCase() : "";
         return category === activeFilter;
       })
     : quests;
+
+  const filteredQuests =
+    statusFilter === "published"
+      ? categoryFilteredQuests.filter(quest => quest.published)
+      : statusFilter === "unpublished"
+      ? categoryFilteredQuests.filter(quest => !quest.published)
+      : categoryFilteredQuests;
 
   const metricsConfig = [
     {
@@ -4172,6 +4501,32 @@ function renderClientQuests() {
     })
     .join("");
 
+  const statusFilterMarkup = `
+        <div class="badge-filter client-catalogue__status" role="toolbar" aria-label="Quest publication status">
+          <button
+            type="button"
+            class="badge-filter__item${statusFilter ? "" : " badge-filter__item--active"}"
+            data-quest-status=""
+            aria-pressed="${statusFilter ? "false" : "true"}">
+            All statuses
+          </button>
+          <button
+            type="button"
+            class="badge-filter__item${statusFilter === "published" ? " badge-filter__item--active" : ""}"
+            data-quest-status="published"
+            aria-pressed="${statusFilter === "published" ? "true" : "false"}">
+            Published
+          </button>
+          <button
+            type="button"
+            class="badge-filter__item${statusFilter === "unpublished" ? " badge-filter__item--active" : ""}"
+            data-quest-status="unpublished"
+            aria-pressed="${statusFilter === "unpublished" ? "true" : "false"}">
+            Unpublished
+          </button>
+        </div>
+      `;
+
   const filterMarkup =
     questCategories.length > 1
       ? `
@@ -4188,12 +4543,32 @@ function renderClientQuests() {
       `
       : "";
 
-  const filterSummary = activeFilter
-    ? `${formatNumber(filteredQuests.length)} of ${formatNumber(quests.length)} quests shown`
-    : "";
+  const selectedCategoryLabel =
+    activeFilter && categoryMap.has(activeFilter)
+      ? formatCatalogueLabel(categoryMap.get(activeFilter))
+      : null;
 
-  const guidanceCopy = "Use the publish toggles to talk through seasonal programming or targeted enablement waves.";
-  const actionsMeta = [filterSummary, guidanceCopy].filter(Boolean).join(" | ");
+  const filterSummaryParts = [];
+  if (statusFilter === "published") {
+    filterSummaryParts.push("Published only");
+  } else if (statusFilter === "unpublished") {
+    filterSummaryParts.push("Unpublished only");
+  }
+  if (selectedCategoryLabel) {
+    filterSummaryParts.push(`Category: ${selectedCategoryLabel}`);
+  }
+
+  const filterSummaryText = filterSummaryParts.length ? filterSummaryParts.join(" - ") : "";
+  const resultsSummary =
+    activeFilter || statusFilter
+      ? `${formatNumber(filteredQuests.length)} of ${formatNumber(quests.length)} quests shown`
+      : "";
+
+  const actionsMeta = [resultsSummary, filterSummaryText].filter(Boolean).join(" | ");
+
+  const summaryMarkup = actionsMeta
+    ? `<p class="detail-table__meta">${escapeHtml(actionsMeta)}</p>`
+    : "";
 
   return `
     <section class="client-catalogue__intro">
@@ -4205,12 +4580,15 @@ function renderClientQuests() {
       ${metricsMarkup}
     </section>
     <div class="client-quests__actions">
-      <div class="client-quests__bulk">
-        <button type="button" class="button-pill button-pill--primary" data-bulk-quest-action="publish">Publish all quests</button>
-        <button type="button" class="button-pill button-pill--danger-light" data-bulk-quest-action="unpublish">Unpublish all quests</button>
+      <div class="client-catalogue__actions-row">
+        <div class="client-quests__bulk">
+          <button type="button" class="button-pill button-pill--primary" data-bulk-quest-action="publish">Publish all quests</button>
+          <button type="button" class="button-pill button-pill--danger-light" data-bulk-quest-action="unpublish">Unpublish all quests</button>
+        </div>
+        ${statusFilterMarkup}
       </div>
       ${filterMarkup}
-      <p class="detail-table__meta">${escapeHtml(actionsMeta)}</p>
+      ${summaryMarkup}
     </div>
     ${catalogueMarkup}
   `;
@@ -4259,13 +4637,46 @@ function renderClientBadges() {
     typeof state.meta.badgeFilter === "string" && state.meta.badgeFilter.length > 0
       ? state.meta.badgeFilter
       : null;
+  const statusFilter =
+    typeof state.meta.badgeStatusFilter === "string" && state.meta.badgeStatusFilter.length > 0
+      ? state.meta.badgeStatusFilter
+      : null;
 
-  const filteredBadges = activeFilter
+  const categoryFilteredBadges = activeFilter
     ? badges.filter(badge => {
         const category = typeof badge.category === "string" ? badge.category.trim().toLowerCase() : "";
         return category === activeFilter;
       })
     : badges;
+
+  const filteredBadges =
+    statusFilter === "published"
+      ? categoryFilteredBadges.filter(badge => badge.published)
+      : statusFilter === "unpublished"
+      ? categoryFilteredBadges.filter(badge => !badge.published)
+      : categoryFilteredBadges;
+
+  const selectedCategoryLabel =
+    activeFilter && categoryMap.has(activeFilter)
+      ? formatCatalogueLabel(categoryMap.get(activeFilter))
+      : null;
+
+  const summaryParts = [];
+  if (activeFilter || statusFilter) {
+    summaryParts.push(`${formatNumber(filteredBadges.length)} of ${formatNumber(badges.length)} badges shown`);
+  }
+  if (statusFilter === "published") {
+    summaryParts.push("Published only");
+  } else if (statusFilter === "unpublished") {
+    summaryParts.push("Unpublished only");
+  }
+  if (selectedCategoryLabel) {
+    summaryParts.push(`Category: ${selectedCategoryLabel}`);
+  }
+
+  const summaryMarkup = summaryParts.length
+    ? `<p class="detail-table__meta">${escapeHtml(summaryParts.join(" | "))}</p>`
+    : "";
 
   const filterButtons = categories
     .map(category => {
@@ -4283,6 +4694,32 @@ function renderClientBadges() {
       `;
     })
     .join("");
+
+  const statusFilterMarkup = `
+      <div class="badge-filter client-catalogue__status" role="toolbar" aria-label="Badge publication status">
+        <button
+          type="button"
+          class="badge-filter__item${statusFilter ? "" : " badge-filter__item--active"}"
+          data-badge-status=""
+          aria-pressed="${statusFilter ? "false" : "true"}">
+          All statuses
+        </button>
+        <button
+          type="button"
+          class="badge-filter__item${statusFilter === "published" ? " badge-filter__item--active" : ""}"
+          data-badge-status="published"
+          aria-pressed="${statusFilter === "published" ? "true" : "false"}">
+          Published
+        </button>
+        <button
+          type="button"
+          class="badge-filter__item${statusFilter === "unpublished" ? " badge-filter__item--active" : ""}"
+          data-badge-status="unpublished"
+          aria-pressed="${statusFilter === "unpublished" ? "true" : "false"}">
+          Unpublished
+        </button>
+      </div>
+      `;
 
   const filterMarkup = categories.length
     ? `
@@ -4435,34 +4872,268 @@ function renderClientBadges() {
   return `
     <section class="client-catalogue__intro">
       <span class="client-catalogue__eyebrow">Badge catalogue</span>
-      <h1>Badge collection</h1>
+      <h1>Celebrate progress with curated badges.</h1>
       <p>Curate the badge tiers you want squads to chase. Publish just the stories you need and bring the sparkle into every hub and add-in moment.</p>
     </section>
     <section class="client-badges__metrics">
       ${metricsMarkup}
     </section>
     <div class="client-badges__actions">
-      <div class="client-badges__bulk">
-        <button
-          type="button"
-          class="button-pill button-pill--primary"
-          data-bulk-badge-action="publish">
-          Publish all badges
-        </button>
-        <button
-          type="button"
-          class="button-pill button-pill--danger-light"
-          data-bulk-badge-action="unpublish">
-          Unpublish all badges
-        </button>
+      <div class="client-catalogue__actions-row">
+        <div class="client-badges__bulk">
+          <button
+            type="button"
+            class="button-pill button-pill--primary"
+            data-bulk-badge-action="publish">
+            Publish all badges
+          </button>
+          <button
+            type="button"
+            class="button-pill button-pill--danger-light"
+            data-bulk-badge-action="unpublish">
+            Unpublish all badges
+          </button>
+        </div>
+        ${statusFilterMarkup}
       </div>
       ${filterMarkup}
+      ${summaryMarkup}
     </div>
     <section class="gem-badge-grid client-badges__grid">
       ${gridMarkup}
     </section>
   `;
 }
+function renderWeldLabs() {
+  const labs = state.labs && typeof state.labs === "object" ? state.labs : {};
+  const features = Array.isArray(labs.features) ? labs.features : [];
+  const clients = Array.isArray(state.clients) ? state.clients : [];
+  const totalFeatures = features.length;
+  const activeFeatures = features.filter(
+    feature => Array.isArray(feature?.enabledClientIds) && feature.enabledClientIds.length > 0
+  ).length;
+  const enabledSet = new Set();
+  let totalAssignments = 0;
+  features.forEach(feature => {
+    if (!Array.isArray(feature?.enabledClientIds)) return;
+    feature.enabledClientIds.forEach(id => {
+      const key = labClientKey(id);
+      if (!key) return;
+      enabledSet.add(key);
+      totalAssignments += 1;
+    });
+  });
+  const coverage =
+    clients.length > 0 ? Math.round((enabledSet.size / clients.length) * 100) : 0;
+
+  const metricsConfig = [
+    {
+      label: "Experiments in labs",
+      value: formatNumber(totalFeatures),
+      caption: "Ready to showcase"
+    },
+    {
+      label: "Active pilots",
+      value: formatNumber(activeFeatures),
+      caption: "Enabled for tenants"
+    },
+    {
+      label: "Coverage",
+      value: clients.length ? `${coverage}%` : "--",
+      caption: `${formatNumber(enabledSet.size)} of ${formatNumber(clients.length)} organisations`
+    }
+  ];
+
+  const metricsMarkup = metricsConfig
+    .map(
+      metric => `
+        <article class="weld-labs__metric">
+          <h3>${escapeHtml(metric.label)}</h3>
+          <strong>${escapeHtml(metric.value)}</strong>
+          <span>${escapeHtml(metric.caption)}</span>
+        </article>
+      `
+    )
+    .join("");
+
+  const reviewMarkup = labs.lastReviewAt
+    ? `
+        <div class="weld-labs__review">
+          <span>Last review</span>
+          <strong>${escapeHtml(formatDateTime(labs.lastReviewAt))}</strong>
+          <small>${escapeHtml(relativeTime(labs.lastReviewAt))}</small>
+        </div>
+      `
+    : `
+        <div class="weld-labs__review">
+          <span>Last review</span>
+          <strong>Not yet scheduled</strong>
+        </div>
+      `;
+
+  const featureCards = features.length
+    ? features
+        .map((feature, index) => {
+          const featureId = normalizeLabFeatureId(feature?.id) || `lab-${index + 1}`;
+          const name = typeof feature?.name === "string" && feature.name.trim().length > 0 ? feature.name : "Experiment";
+          const status =
+            typeof feature?.status === "string" && feature.status.trim().length > 0
+              ? feature.status
+              : "Preview";
+          const summary =
+            typeof feature?.summary === "string" ? feature.summary : "";
+          const benefit =
+            typeof feature?.benefit === "string" ? feature.benefit : "";
+          const owner =
+            typeof feature?.owner === "string" && feature.owner.trim().length > 0
+              ? feature.owner
+              : "";
+          const tags = Array.isArray(feature?.tags)
+            ? feature.tags
+                .map(tag => (typeof tag === "string" ? tag.trim() : ""))
+                .filter(Boolean)
+            : [];
+          const enabledIds = Array.isArray(feature?.enabledClientIds)
+            ? feature.enabledClientIds
+            : [];
+          const enabledKeys = new Set(enabledIds.map(labClientKey).filter(Boolean));
+          const enabledCount = enabledKeys.size;
+          const clientToggleMarkup = clients.length
+            ? clients
+                .map(client => {
+                  const clientKey = labClientKey(client?.id);
+                  const orgKey = labClientKey(client?.organizationId);
+                  const isEnabled =
+                    (clientKey && enabledKeys.has(clientKey)) ||
+                    (orgKey && enabledKeys.has(orgKey));
+                  const toneClass = isEnabled ? "button-pill--primary" : "button-pill--ghost";
+                  const enabledAttr = isEnabled ? "true" : "false";
+                  const clientName =
+                    typeof client?.name === "string" ? client.name : `Org ${client?.id ?? ""}`;
+                  const titleParts = [];
+                  if (clientName) titleParts.push(clientName);
+                  if (client?.organizationId) {
+                    titleParts.push(`Org ID ${client.organizationId}`);
+                  }
+                  const toggleTitle = titleParts.join(" â€¢ ");
+                  const actionLabel = isEnabled ? "Disable" : "Enable";
+                  return `
+                    <button
+                      type="button"
+                      class="button-pill ${toneClass} weld-labs__toggle"
+                      data-lab-toggle
+                      data-lab-feature="${escapeHtml(featureId)}"
+                      data-client="${escapeHtml(String(client.id))}"
+                      data-enabled="${enabledAttr}"
+                      aria-pressed="${enabledAttr}"
+                      aria-label="${escapeHtml(
+                        `${actionLabel} ${clientName} for ${name}`
+                      )}"
+                      ${toggleTitle ? `title="${escapeHtml(toggleTitle)}"` : ""}
+                    >
+                      ${escapeHtml(clientName)}
+                    </button>
+                  `;
+                })
+                .join("")
+            : "";
+          const tagsMarkup = tags.length
+            ? `<div class="weld-labs__tags">${tags
+                .map(tag => `<span class="weld-labs__tag">${escapeHtml(tag)}</span>`)
+                .join("")}</div>`
+            : "";
+          const toggleSection = clients.length
+            ? `
+              <div class="weld-labs__toggle-header">
+                <h4>Organisations</h4>
+                <span>${escapeHtml(
+                  `${formatNumber(enabledCount)} of ${formatNumber(clients.length)} active`
+                )}</span>
+              </div>
+              <div class="weld-labs__toggle-grid">
+                ${clientToggleMarkup}
+              </div>
+              <div class="weld-labs__bulk">
+                <button
+                  type="button"
+                  class="button-pill button-pill--ghost weld-labs__bulk-action"
+                  data-lab-feature="${escapeHtml(featureId)}"
+                  data-lab-bulk="enable"
+                  aria-label="${escapeHtml(`Enable ${name} for all organisations`)}"
+                >
+                  Enable all
+                </button>
+                <button
+                  type="button"
+                  class="button-pill button-pill--ghost weld-labs__bulk-action"
+                  data-lab-feature="${escapeHtml(featureId)}"
+                  data-lab-bulk="disable"
+                  aria-label="${escapeHtml(`Disable ${name} for all organisations`)}"
+                >
+                  Disable all
+                </button>
+              </div>
+            `
+            : `<p class="weld-labs__no-clients">Add organisation accounts to pilot this experiment.</p>`;
+          return `
+            <article class="weld-labs__feature" data-feature="${escapeHtml(featureId)}">
+              <header class="weld-labs__feature-header">
+                <span class="weld-labs__status">${escapeHtml(status)}</span>
+                <h3>${escapeHtml(name)}</h3>
+                ${tagsMarkup}
+              </header>
+              <p class="weld-labs__summary">${escapeHtml(summary)}</p>
+              ${benefit ? `<p class="weld-labs__benefit">${escapeHtml(benefit)}</p>` : ""}
+              <div class="weld-labs__meta">
+                ${
+                  owner
+                    ? `<span class="weld-labs__owner">Owner: ${escapeHtml(owner)}</span>`
+                    : ""
+                }
+                <span class="weld-labs__assignments">${escapeHtml(
+                  `${formatNumber(enabledCount)} organisations enabled`
+                )}</span>
+              </div>
+              <section class="weld-labs__toggle-panel" aria-label="Manage access for ${escapeHtml(
+                name
+              )}">
+                ${toggleSection}
+              </section>
+            </article>
+          `;
+        })
+        .join("")
+    : `
+        <div class="weld-labs__empty">
+          <h3>Nothing in Labs yet</h3>
+          <p>Use this workspace to curate early feature previews. Add experiments in the data model to toggle availability per organisation.</p>
+        </div>
+      `;
+
+  return `
+    <section class="weld-labs">
+      <header class="weld-labs__hero">
+        <div>
+          <span class="weld-labs__eyebrow">Labs workspace</span>
+          <h1>Weld Labs</h1>
+          <p>Walk organisations through experimental capabilities, shape the story, and toggle access in real time.</p>
+        </div>
+        ${reviewMarkup}
+      </header>
+      <section class="weld-labs__metrics">
+        ${metricsMarkup}
+      </section>
+      <section class="weld-labs__assignments-summary">
+        <strong>${escapeHtml(formatNumber(totalAssignments))}</strong>
+        <span>Total tenant toggles active</span>
+      </section>
+      <section class="weld-labs__list">
+        ${featureCards}
+      </section>
+    </section>
+  `;
+}
+
 function renderWeldAdmin() {
   const clientCards = state.clients
     .map(
@@ -5540,6 +6211,8 @@ function renderContent() {
       return renderClientQuests();
     case "weld-admin":
       return renderWeldAdmin();
+    case "weld-labs":
+      return renderWeldLabs();
     default:
       return "";
   }
@@ -5549,6 +6222,18 @@ function attachBadgeEvents(container) {
   if (!container) return;
 
   container.addEventListener("click", event => {
+    const statusButton = event.target.closest("[data-badge-status]");
+    if (statusButton) {
+      const rawValue = (statusButton.getAttribute("data-badge-status") || "").trim().toLowerCase();
+      const nextStatus = rawValue === "published" || rawValue === "unpublished" ? rawValue : null;
+      if (state.meta.badgeStatusFilter !== nextStatus) {
+        state.meta.badgeStatusFilter = nextStatus;
+        persist();
+        renderApp();
+      }
+      return;
+    }
+
     const filterButton = event.target.closest("[data-badge-filter]");
     if (filterButton) {
       const value = (filterButton.getAttribute("data-badge-filter") || "").trim().toLowerCase();
@@ -6155,6 +6840,18 @@ function attachClientDashboardEvents(container) {
 
 function attachClientRewardsEvents(container) {
   container.addEventListener("click", event => {
+    const statusButton = event.target.closest("[data-reward-status]");
+    if (statusButton) {
+      const rawValue = (statusButton.getAttribute("data-reward-status") || "").trim().toLowerCase();
+      const nextStatus = rawValue === "published" || rawValue === "unpublished" ? rawValue : null;
+      if (state.meta.rewardStatusFilter !== nextStatus) {
+        state.meta.rewardStatusFilter = nextStatus;
+        persist();
+        renderApp();
+      }
+      return;
+    }
+
     const filterButton = event.target.closest("[data-reward-filter]");
     if (filterButton) {
       const value = (filterButton.getAttribute("data-reward-filter") || "").trim().toLowerCase();
@@ -6191,6 +6888,18 @@ function attachClientRewardsEvents(container) {
 
 function attachClientQuestsEvents(container) {
   container.addEventListener("click", event => {
+    const statusButton = event.target.closest("[data-quest-status]");
+    if (statusButton) {
+      const rawValue = (statusButton.getAttribute("data-quest-status") || "").trim().toLowerCase();
+      const nextStatus = rawValue === "published" || rawValue === "unpublished" ? rawValue : null;
+      if (state.meta.questStatusFilter !== nextStatus) {
+        state.meta.questStatusFilter = nextStatus;
+        persist();
+        renderApp();
+      }
+      return;
+    }
+
     const filterButton = event.target.closest("[data-quest-filter]");
     if (filterButton) {
       const value = (filterButton.getAttribute("data-quest-filter") || "").trim().toLowerCase();
@@ -6220,6 +6929,37 @@ function attachClientQuestsEvents(container) {
     const action = button.getAttribute("data-action");
     if (!questId || !action) return;
     setQuestPublication(questId, action === "publish");
+  });
+}
+
+function attachWeldLabsEvents(container) {
+  if (!container) return;
+  container.addEventListener("click", event => {
+    const toggle = event.target.closest("[data-lab-toggle]");
+    if (toggle) {
+      const featureId = (toggle.getAttribute("data-lab-feature") || "").trim();
+      const clientIdRaw = (toggle.getAttribute("data-client") || "").trim();
+      if (!featureId || !clientIdRaw) {
+        return;
+      }
+      const numericClientId = Number(clientIdRaw);
+      const clientIdValue =
+        Number.isFinite(numericClientId) && clientIdRaw !== "" ? numericClientId : clientIdRaw;
+      const currentEnabled = toggle.getAttribute("data-enabled") === "true";
+      setLabFeatureAccess(featureId, clientIdValue, !currentEnabled);
+      return;
+    }
+    const bulk = event.target.closest("[data-lab-bulk]");
+    if (bulk) {
+      const featureId = (bulk.getAttribute("data-lab-feature") || "").trim();
+      const mode = (bulk.getAttribute("data-lab-bulk") || "").trim().toLowerCase();
+      if (!featureId || !mode) return;
+      if (mode === "enable") {
+        setLabFeatureAccessForAll(featureId, true);
+      } else if (mode === "disable") {
+        setLabFeatureAccessForAll(featureId, false);
+      }
+    }
   });
 }
 
@@ -6450,6 +7190,7 @@ function renderApp() {
   if (route === "client-reporting") attachReportingEvents(mainContent);
   if (route === "client-rewards") attachClientRewardsEvents(mainContent);
   if (route === "client-quests") attachClientQuestsEvents(mainContent);
+  if (route === "weld-labs") attachWeldLabsEvents(mainContent);
   if (route === "weld-admin") attachAdminEvents(mainContent);
 }
 
@@ -6468,6 +7209,7 @@ window.addEventListener("hashchange", () => {
     renderApp();
   }
 });
+
 
 
 

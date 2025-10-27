@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
+﻿@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
 
 :root {
   font-family:
@@ -1186,9 +1186,9 @@ button {
 .client-quests__actions,
 .client-badges__actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin: 1.25rem 0;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin: 1.5rem 0 2rem;
 }
 
 .client-rewards__metric,
@@ -1228,11 +1228,22 @@ button {
   color: #64748b;
 }
 
-.client-badges__actions {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 1rem;
-  margin: 1.5rem 0 2rem;
+.client-catalogue__actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.client-catalogue__actions-row > .client-catalogue__status {
+  margin-left: auto;
+}
+
+.client-catalogue__status {
+  margin-top: 0;
+  margin-left: auto;
+  justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 .client-rewards__bulk,
@@ -1263,23 +1274,16 @@ button {
   line-height: 1;
 }
 
-.client-rewards__actions .badge-filter,
-.client-quests__actions .badge-filter,
-.client-badges__actions .badge-filter {
-  margin-top: 0;
-  justify-content: flex-start;
-}
-
 .client-rewards__filters,
 .client-quests__filters,
 .client-badges__filters {
-  flex: 1 1 100%;
+  width: 100%;
 }
 
-.client-rewards__actions > .detail-table__meta,
-.client-quests__actions > .detail-table__meta {
+.client-rewards__actions .detail-table__meta,
+.client-quests__actions .detail-table__meta,
+.client-badges__actions .detail-table__meta {
   margin: 0;
-  flex: 1 1 100%;
 }
 
 .client-badges__grid {
@@ -1294,32 +1298,6 @@ button {
   width: 100%;
   max-width: 280px;
   justify-self: start;
-}
-
-@media (min-width: 768px) {
-  .client-badges__actions {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .client-rewards__filters,
-  .client-quests__filters,
-  .client-badges__filters {
-    flex: 0 0 auto;
-  }
-
-  .client-rewards__actions > .detail-table__meta,
-  .client-quests__actions > .detail-table__meta {
-    flex: 0 0 auto;
-    margin-left: auto;
-  }
-
-  .client-rewards__actions .badge-filter,
-  .client-quests__actions .badge-filter,
-  .client-badges__actions .badge-filter {
-    justify-content: flex-end;
-  }
 }
 
 .client-catalogue__intro {
@@ -1804,9 +1782,15 @@ button {
 }
 
 .gem-badge-grid--hub {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 280px));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 260px));
   justify-content: flex-start;
+  justify-items: center;
+  align-items: start;
   gap: 1.5rem;
+}
+
+.gem-badge-grid--hub .gem-badge {
+  width: min(100%, 260px);
 }
 
 .gem-badge {
@@ -4509,6 +4493,303 @@ button {
     padding: 1.25rem;
   }
 }
+
+.weld-labs {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+.weld-labs__hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+  padding: 2.25rem;
+  border-radius: 28px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(139, 92, 246, 0.1));
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  box-shadow: 0 18px 40px -28px rgba(30, 64, 175, 0.35);
+}
+.weld-labs__hero h1 {
+  margin: 0.35rem 0 0.75rem;
+  font-size: 2rem;
+  color: #0f172a;
+}
+.weld-labs__hero p {
+  margin: 0;
+  font-size: 1.02rem;
+  color: rgba(15, 23, 42, 0.78);
+  max-width: 540px;
+}
+.weld-labs__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  background: rgba(79, 70, 229, 0.12);
+  color: #4338ca;
+}
+.weld-labs__review {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem 1.25rem;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.06);
+  color: #0f172a;
+  min-width: 220px;
+}
+.weld-labs__review span {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(15, 23, 42, 0.6);
+}
+.weld-labs__review strong {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+.weld-labs__review small {
+  font-size: 0.82rem;
+  color: rgba(15, 23, 42, 0.55);
+}
+.weld-labs__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 1.15rem;
+}
+.weld-labs__metric {
+  border-radius: 22px;
+  padding: 1.5rem;
+  background: rgba(248, 250, 252, 0.96);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  box-shadow: 0 10px 30px -22px rgba(30, 64, 175, 0.25);
+}
+.weld-labs__metric h3 {
+  margin: 0;
+  font-size: 0.92rem;
+  color: rgba(15, 23, 42, 0.7);
+  font-weight: 600;
+}
+.weld-labs__metric strong {
+  font-size: 1.65rem;
+  color: #1e3a8a;
+  letter-spacing: -0.01em;
+}
+.weld-labs__metric span {
+  font-size: 0.82rem;
+  color: rgba(71, 85, 105, 0.75);
+}
+.weld-labs__assignments-summary {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.85rem 1.25rem;
+  border-radius: 16px;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.28);
+  color: #1d4ed8;
+  font-weight: 600;
+  width: fit-content;
+}
+.weld-labs__assignments-summary strong {
+  font-size: 1.35rem;
+  letter-spacing: -0.01em;
+}
+.weld-labs__list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+.weld-labs__feature {
+  padding: 1.75rem 2rem;
+  border-radius: 26px;
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  box-shadow: 0 16px 42px -24px rgba(15, 23, 42, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.weld-labs__feature-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.weld-labs__feature-header h3 {
+  margin: 0;
+  font-size: 1.45rem;
+  color: #0f172a;
+}
+.weld-labs__status {
+  align-self: flex-start;
+  padding: 0.35rem 0.85rem;
+  border-radius: 12px;
+  background: rgba(236, 72, 153, 0.14);
+  color: #be185d;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.weld-labs__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.weld-labs__tag {
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(94, 234, 212, 0.18);
+  color: #0f766e;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.weld-labs__summary {
+  margin: 0;
+  font-size: 1rem;
+  color: rgba(15, 23, 42, 0.8);
+}
+.weld-labs__benefit {
+  margin: 0;
+  font-size: 0.95rem;
+  color: rgba(15, 23, 42, 0.63);
+}
+.weld-labs__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  font-size: 0.86rem;
+  color: rgba(15, 23, 42, 0.7);
+}
+.weld-labs__owner {
+  font-weight: 600;
+  color: #1e3a8a;
+}
+.weld-labs__assignments {
+  font-weight: 600;
+  color: rgba(15, 23, 42, 0.65);
+}
+.weld-labs__toggle-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 18px;
+  background: rgba(248, 250, 252, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+}
+.weld-labs__toggle-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+.weld-labs__toggle-header h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+.weld-labs__toggle-header span {
+  font-size: 0.82rem;
+  color: rgba(71, 85, 105, 0.8);
+  font-weight: 600;
+}
+.weld-labs__toggle-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+.weld-labs__toggle {
+  min-width: 150px;
+  justify-content: center;
+}
+.weld-labs__toggle.button-pill--ghost {
+  background: rgba(148, 163, 184, 0.18);
+  color: #1e293b;
+}
+.weld-labs__toggle.button-pill--ghost:hover,
+.weld-labs__toggle.button-pill--ghost:focus-visible {
+  background: rgba(96, 165, 250, 0.2);
+  color: #1d4ed8;
+}
+.weld-labs__toggle.button-pill--primary {
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  color: #fff;
+  box-shadow: 0 10px 20px -12px rgba(79, 70, 229, 0.45);
+}
+.weld-labs__bulk {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: flex-end;
+}
+.weld-labs__bulk-action {
+  background: rgba(37, 99, 235, 0.12);
+  color: #2563eb;
+}
+.weld-labs__bulk-action:hover,
+.weld-labs__bulk-action:focus-visible {
+  background: rgba(37, 99, 235, 0.24);
+}
+.weld-labs__no-clients {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(71, 85, 105, 0.75);
+}
+.weld-labs__empty {
+  padding: 2rem;
+  border-radius: 20px;
+  border: 1px dashed rgba(148, 163, 184, 0.4);
+  background: rgba(248, 250, 252, 0.8);
+  text-align: center;
+}
+.weld-labs__empty h3 {
+  margin: 0 0 0.75rem;
+  color: #1e3a8a;
+}
+.weld-labs__empty p {
+  margin: 0;
+  color: rgba(71, 85, 105, 0.75);
+  font-size: 0.95rem;
+}
+
+@media (max-width: 920px) {
+  .weld-labs__hero {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .weld-labs__review {
+    align-self: flex-start;
+  }
+  .weld-labs__toggle {
+    min-width: 130px;
+  }
+}
+
+@media (max-width: 640px) {
+  .weld-labs__hero {
+    padding: 1.75rem;
+  }
+  .weld-labs__feature {
+    padding: 1.5rem;
+  }
+  .weld-labs__toggle-panel {
+    padding: 1rem;
+  }
+  .weld-labs__toggle {
+    min-width: 110px;
+  }
+}
+
 
 
 
