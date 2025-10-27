@@ -4771,43 +4771,97 @@ function renderBadgeSpotlight(badgeInput) {
     ? [badgeInput]
     : [];
   if (badges.length === 0) return "";
-  const tilesMarkup = badges
-    .map(badge => {
-      const safeId = escapeHtml(String(badge.id ?? ""));
-      const iconBackdrop =
-        BADGE_ICON_BACKDROPS[badge.tone]?.background ||
-        BADGE_ICON_BACKDROPS.violet?.background ||
-        "linear-gradient(135deg, #c7d2fe, #818cf8)";
-      const iconShadow =
-        BADGE_ICON_BACKDROPS[badge.tone]?.shadow ||
-        BADGE_ICON_BACKDROPS.violet?.shadow ||
-        "rgba(79, 70, 229, 0.32)";
-      const normalizedTitle =
-        typeof badge.title === "string" && badge.title.trim().length > 0
-          ? badge.title.trim()
-          : "Badge unlocked";
-      const rawPoints = Number(badge.points);
-      const pointsValue = Number.isFinite(rawPoints) ? rawPoints : 0;
-      const ariaLabel = `${normalizedTitle} badge, worth ${formatNumber(pointsValue)} points`;
-      return `
-        <div
-          class="badge-spotlight-tile"
-          role="listitem"
-          tabindex="0"
-          data-badge="${safeId}"
-          aria-label="${escapeHtml(ariaLabel)}">
-          <span class="badge-spotlight-tile__icon" style="background:${iconBackdrop}; box-shadow:0 22px 44px ${iconShadow};">
-            ${renderIcon(badge.icon || "medal", "sm")}
-          </span>
-          <span class="badge-spotlight-tile__label">${escapeHtml(normalizedTitle)}</span>
-          <span class="badge-spotlight-tile__points">+${formatNumber(pointsValue)} pts</span>
+  const EXTRA_DISPLAY_LIMIT = 3;
+  const [primaryBadge, ...extraBadges] = badges;
+  const displayedExtras = extraBadges.slice(0, EXTRA_DISPLAY_LIMIT);
+  const hasMoreExtras = extraBadges.length > EXTRA_DISPLAY_LIMIT;
+
+  const renderTile = badge => {
+    if (!badge) return "";
+    const safeId = escapeHtml(String(badge.id ?? ""));
+    const iconBackdrop =
+      BADGE_ICON_BACKDROPS[badge.tone]?.background ||
+      BADGE_ICON_BACKDROPS.violet?.background ||
+      "linear-gradient(135deg, #c7d2fe, #818cf8)";
+    const iconShadow =
+      BADGE_ICON_BACKDROPS[badge.tone]?.shadow ||
+      BADGE_ICON_BACKDROPS.violet?.shadow ||
+      "rgba(79, 70, 229, 0.32)";
+    const normalizedTitle =
+      typeof badge.title === "string" && badge.title.trim().length > 0
+        ? badge.title.trim()
+        : "Badge unlocked";
+    const rawPoints = Number(badge.points);
+    const pointsValue = Number.isFinite(rawPoints) ? rawPoints : 0;
+    const ariaLabel = `${normalizedTitle} badge, worth ${formatNumber(pointsValue)} points`;
+    return `
+      <div
+        class="badge-spotlight-tile"
+        role="listitem"
+        tabindex="0"
+        data-badge="${safeId}"
+        aria-label="${escapeHtml(ariaLabel)}">
+        <span class="badge-spotlight-tile__icon" style="background:${iconBackdrop}; box-shadow:0 22px 44px ${iconShadow};">
+          ${renderIcon(badge.icon || "medal", "sm")}
+        </span>
+        <span class="badge-spotlight-tile__label">${escapeHtml(normalizedTitle)}</span>
+        <span class="badge-spotlight-tile__points" aria-label="${escapeHtml(
+          `${formatNumber(pointsValue)} points`
+        )}">+${formatNumber(pointsValue)}</span>
+      </div>
+    `;
+  };
+
+  const extraCount = extraBadges.length;
+  const extraPanelId = generateId("extra-badges");
+  const extrasMarkup =
+    extraCount > 0
+      ? `
+      <div class="badge-spotlight-extra" role="listitem">
+        <button
+          type="button"
+          class="badge-spotlight-extra__trigger"
+          aria-expanded="false"
+          aria-controls="${extraPanelId}">
+          +${formatNumber(extraCount)}
+        </button>
+        <div class="badge-spotlight-extra__panel" id="${extraPanelId}" role="group" aria-label="Additional badges earned">
+          <ul class="badge-spotlight-extra__list">
+            ${displayedExtras
+              .map(badge => {
+                const safeId = escapeHtml(String(badge.id ?? ""));
+                const normalizedTitle =
+                  typeof badge.title === "string" && badge.title.trim().length > 0
+                    ? badge.title.trim()
+                    : "Bonus badge";
+                const rawPoints = Number(badge.points);
+                const pointsValue = Number.isFinite(rawPoints) ? rawPoints : 0;
+                return `
+                  <li class="badge-spotlight-extra__item" data-badge="${safeId}">
+                    <span class="badge-spotlight-extra__icon">${renderIcon(badge.icon || "medal", "xs")}</span>
+                    <span class="badge-spotlight-extra__name">${escapeHtml(normalizedTitle)}</span>
+                    <span class="badge-spotlight-extra__points" aria-label="${escapeHtml(
+                      `${formatNumber(pointsValue)} points`
+                    )}">+${formatNumber(pointsValue)}</span>
+                  </li>
+                `;
+              })
+              .join("")}
+          </ul>
+          ${
+            hasMoreExtras
+              ? `<button type="button" class="badge-spotlight-extra__more" data-route="client-badges">…more badges</button>`
+              : ""
+          }
         </div>
-      `;
-    })
-    .join("");
+      </div>
+    `
+      : "";
+
   return `
     <div class="badge-spotlight-row" role="list" aria-label="Recently highlighted badges">
-      ${tilesMarkup}
+      ${renderTile(primaryBadge)}
+      ${extrasMarkup}
     </div>
   `;
 }
@@ -4877,6 +4931,83 @@ function setupBadgeShowcase(container) {
 
   badgeContainer.innerHTML = renderBadgeSpotlight(selections);
   badgeContainer.dataset.badgeBound = "true";
+
+  const extraWrapper = badgeContainer.querySelector(".badge-spotlight-extra");
+  const extraToggle = extraWrapper?.querySelector(".badge-spotlight-extra__trigger");
+  const panelId = extraToggle?.getAttribute("aria-controls") || "";
+  const escapeCssValue = value => {
+    if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
+      return CSS.escape(value);
+    }
+    return String(value).replace(/([#;.?%&,+*~[\]:'"!^$()=>|\/@])/g, "\\$1");
+  };
+  const panel = panelId ? badgeContainer.querySelector(`#${escapeCssValue(panelId)}`) : null;
+
+  if (extraWrapper && extraToggle && panel) {
+    panel.setAttribute("aria-hidden", "true");
+    let hoverIntent = null;
+    const moreButton = extraWrapper.querySelector(".badge-spotlight-extra__more");
+    const openPanel = () => {
+      if (hoverIntent) {
+        window.clearTimeout(hoverIntent);
+        hoverIntent = null;
+      }
+      extraWrapper.classList.add("badge-spotlight-extra--open");
+      extraToggle.setAttribute("aria-expanded", "true");
+      panel.setAttribute("aria-hidden", "false");
+    };
+    const closePanel = () => {
+      if (hoverIntent) {
+        window.clearTimeout(hoverIntent);
+        hoverIntent = null;
+      }
+      extraWrapper.classList.remove("badge-spotlight-extra--open");
+      extraToggle.setAttribute("aria-expanded", "false");
+      panel.setAttribute("aria-hidden", "true");
+    };
+
+    extraToggle.addEventListener("click", event => {
+      event.preventDefault();
+      if (extraWrapper.classList.contains("badge-spotlight-extra--open")) {
+        closePanel();
+      } else {
+        openPanel();
+      }
+    });
+
+    extraWrapper.addEventListener("mouseenter", () => {
+      if (hoverIntent) window.clearTimeout(hoverIntent);
+      openPanel();
+    });
+
+    extraWrapper.addEventListener("mouseleave", () => {
+      hoverIntent = window.setTimeout(() => {
+        closePanel();
+      }, 120);
+    });
+
+    extraToggle.addEventListener("focus", openPanel);
+
+    extraWrapper.addEventListener("keydown", event => {
+      if (event.key === "Escape") {
+        closePanel();
+        extraToggle.focus();
+      }
+    });
+
+    extraWrapper.addEventListener("focusout", event => {
+      if (!event.relatedTarget || !extraWrapper.contains(event.relatedTarget)) {
+        closePanel();
+      }
+    });
+
+    if (moreButton) {
+      moreButton.addEventListener("click", () => {
+        closePanel();
+        setRole("client", "client-badges");
+      });
+    }
+  }
 }
 
 function renderAddIn() {
