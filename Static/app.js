@@ -5017,10 +5017,10 @@ function renderCustomer() {
         <div class="recognition-board__note-header">
           <span class="recognition-board__note-title">Share recognition</span>
           <button type="button" class="button-pill button-pill--primary recognition-board__note-button" aria-haspopup="dialog">
-            Share now
+            <span class="recognition-board__note-button-label">Give kudos</span>
+            <span class="recognition-board__note-button-subtext">x2 quest boost</span>
           </button>
         </div>
-        <span class="recognition-board__note-badge"><span>x2 quest boost</span></span>
         <p>Give or receive kudos and your next quest pays double points for both teammates.</p>
       </div>
       <div class="recognition-board">
@@ -5324,7 +5324,7 @@ function renderCustomerBadgesPage() {
 
   return `
     <header class="customer-detail-header">
-      <button type="button" class="button-pill button-pill--ghost customer-detail__back" data-action="back-to-hub">
+      <button type="button" class="customer-detail__back" data-action="back-to-hub">
         Back to hub
       </button>
       <span class="customer-detail__eyebrow">Badges</span>
@@ -5395,7 +5395,7 @@ function renderCustomerReportsPage() {
 
   return `
     <header class="customer-detail-header">
-      <button type="button" class="button-pill button-pill--ghost customer-detail__back" data-action="back-to-hub">
+      <button type="button" class="customer-detail__back" data-action="back-to-hub">
         Back to hub
       </button>
       <span class="customer-detail__eyebrow">Reports</span>
@@ -5454,7 +5454,7 @@ function renderCustomerRedemptionsPage() {
 
   return `
     <header class="customer-detail-header">
-      <button type="button" class="button-pill button-pill--ghost customer-detail__back" data-action="back-to-hub">
+      <button type="button" class="customer-detail__back" data-action="back-to-hub">
         Back to hub
       </button>
       <span class="customer-detail__eyebrow">Rewards</span>

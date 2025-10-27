@@ -1102,6 +1102,34 @@ button {
 }
 .customer-detail__back {
   align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  background: transparent;
+  color: #4338ca;
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.customer-detail__back:hover {
+  background: rgba(99, 102, 241, 0.08);
+  box-shadow: 0 12px 24px rgba(99, 102, 241, 0.12);
+}
+
+.customer-detail__back:focus-visible {
+  outline: 3px solid rgba(59, 130, 246, 0.4);
+  outline-offset: 3px;
+}
+
+.customer-detail__back:active {
+  background: rgba(99, 102, 241, 0.14);
+  box-shadow: 0 8px 18px rgba(99, 102, 241, 0.16);
 }
 .customer-detail__eyebrow {
   text-transform: uppercase;
@@ -3029,6 +3057,10 @@ button {
 .customer-badge-grid {
   padding-bottom: 0;
   width: 100%;
+}
+
+.customer-section--badges-all {
+  overflow: visible;
 }
 
 .customer-badge-grid__item {
