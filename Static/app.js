@@ -88,7 +88,10 @@ const DEFAULT_REPORTER_REASONS = [
   { id: "reason-unexpected-attachment", label: "Unexpected attachment or link" },
   { id: "reason-urgent-tone", label: "Urgent language / suspicious tone" },
   { id: "reason-spoofing-senior", label: "Sender spoofing a senior colleague" },
-  { id: "reason-personal-data", label: "Personal data request" }
+  { id: "reason-personal-data", label: "Personal data request" },
+  { id: "reason-suspicious-call", label: "Suspicious phone call or vishing attempt" },
+  { id: "reason-suspicious-text", label: "Suspicious SMS or messaging (smishing)" },
+  { id: "reason-suspicious-qr", label: "Suspicious QR code or physical prompt" }
 ];
 
 function generateId(prefix = "id") {
@@ -1404,6 +1407,7 @@ function initialState() {
       lastTotalAwarded: null,
       lastMessageId: null,
       lastClientSnapshot: null,
+      reportFilter: null,
       rewardFilter: null,
       rewardStatusFilter: null,
       questFilter: null,
@@ -1730,43 +1734,47 @@ function initialState() {
       {
         id: 9001,
         messageId: "AAMkAGU0Zjk5ZGMyLTQ4M2UtND",
-        subject: "Updated supplier bank details",
+        subject: "Caller posing as IT support about device settings",
         reporterName: "Rachel Summers",
         reporterEmail: "rachel.summers@example.com",
         clientId: 101,
         reportedAt: "2025-10-07T08:45:00Z",
         status: MessageStatus.APPROVED,
-        reasons: ["reason-looks-like-phishing", "reason-urgent-tone"],
+        reasons: ["reason-suspicious-call", "reason-urgent-tone"],
         pointsOnMessage: 20,
         pointsOnApproval: 80,
-        additionalNotes: "Sender domain looked suspicious and the tone was urgent."
+        additionalNotes:
+          "They phoned saying they were from IT and pushed me to disable MFA and read out a reset PIN."
       },
       {
         id: 9002,
         messageId: "AAMkAGRjYTgzZjAtOGQ0Mi00",
-        subject: "Benefits enrolment confirmation",
+        subject: "WhatsApp message pretending to be our CFO",
         reporterName: "Rachel Summers",
         reporterEmail: "rachel.summers@example.com",
         clientId: 101,
         reportedAt: "2025-10-02T17:12:00Z",
         status: MessageStatus.PENDING,
-        reasons: ["reason-unexpected-attachment"],
+        reasons: ["reason-suspicious-text", "reason-spoofing-senior"],
         pointsOnMessage: 20,
-        pointsOnApproval: 80
+        pointsOnApproval: 80,
+        additionalNotes:
+          "Request came from an unknown number asking for an urgent gift card purchase and to keep it secret."
       },
       {
         id: 9003,
         messageId: "AAMkAGQxZTZlNDAtZWMxOS00",
-        subject: "CEO request for quick payment",
-        reporterName: "Will Adams",
-        reporterEmail: "will.adams@example.com",
+        subject: "Unfamiliar QR code posted at the car park entrance",
+        reporterName: "Rachel Summers",
+        reporterEmail: "rachel.summers@example.com",
         clientId: 101,
         reportedAt: "2025-09-26T11:06:00Z",
         status: MessageStatus.APPROVED,
-        reasons: ["reason-spoofing-senior", "reason-personal-data"],
+        reasons: ["reason-suspicious-qr", "reason-unexpected-attachment"],
         pointsOnMessage: 20,
         pointsOnApproval: 80,
-        additionalNotes: "Attempted to impersonate our CEO - flagged for urgency."
+        additionalNotes:
+          "Sticker looked unofficial and led to a fake login page when scanned — removed it and reported facilities."
       }
     ],
     clients: [
@@ -2351,6 +2359,11 @@ function loadState() {
       const normalized = normalizeFilter(value);
       return normalized === "published" || normalized === "unpublished" ? normalized : null;
     };
+    const normalizeReportFilter = value => {
+      const normalized = normalizeFilter(value);
+      return normalized === "other" ? "other" : null;
+    };
+    mergedMeta.reportFilter = normalizeReportFilter(mergedMeta.reportFilter);
     mergedMeta.rewardFilter = normalizeFilter(mergedMeta.rewardFilter);
     mergedMeta.rewardStatusFilter = normalizeStatusFilter(mergedMeta.rewardStatusFilter);
     mergedMeta.questFilter = normalizeFilter(mergedMeta.questFilter);
@@ -2610,6 +2623,9 @@ function navigate(route) {
   if (nextRoute === "landing") {
     state.meta.role = null;
   }
+  if (nextRoute !== "customer-reports") {
+    state.meta.reportFilter = null;
+  }
   persist();
   renderApp();
 }
@@ -2617,6 +2633,9 @@ function navigate(route) {
 function setRole(role, route) {
   state.meta.role = role;
   if (route) {
+    if (route !== "customer-reports") {
+      state.meta.reportFilter = null;
+    }
     state.meta.route = route;
   }
   persist();
@@ -2775,6 +2794,436 @@ function reasonById(id) {
 
 function messageBelongsToCustomer(message) {
   return message?.reporterEmail === state.customer.email;
+}
+
+function buildOtherActivityForm() {
+  const form = document.createElement("form");
+  form.className = "other-activity-form";
+  form.setAttribute("novalidate", "true");
+
+  const fieldset = document.createElement("div");
+  fieldset.className = "other-activity-form__fields";
+
+  const typeWrapper = document.createElement("label");
+  typeWrapper.className = "other-activity-form__field";
+  typeWrapper.setAttribute("for", "other-activity-type");
+  typeWrapper.innerHTML = `<span class="other-activity-form__label">What kind of activity?</span>`;
+  const typeSelect = document.createElement("select");
+  typeSelect.id = "other-activity-type";
+  typeSelect.className = "other-activity-form__select";
+  typeSelect.innerHTML = `
+    <option value="">Select a category</option>
+    <option value="vishing">Phone call or voicemail (vishing)</option>
+    <option value="smishing">Text or messaging app (smishing)</option>
+    <option value="quishing">QR code or signage (quishing)</option>
+    <option value="other">Something else suspicious</option>
+  `;
+  typeWrapper.appendChild(typeSelect);
+  fieldset.appendChild(typeWrapper);
+
+  const summaryWrapper = document.createElement("label");
+  summaryWrapper.className = "other-activity-form__field";
+  summaryWrapper.setAttribute("for", "other-activity-summary");
+  summaryWrapper.innerHTML =
+    `<span class="other-activity-form__label">Give it a short title</span>`;
+  const summaryInput = document.createElement("input");
+  summaryInput.type = "text";
+  summaryInput.id = "other-activity-summary";
+  summaryInput.className = "other-activity-form__input";
+  summaryInput.placeholder = "e.g. Caller impersonating IT support";
+  summaryWrapper.appendChild(summaryInput);
+  fieldset.appendChild(summaryWrapper);
+
+  const detailsWrapper = document.createElement("label");
+  detailsWrapper.className = "other-activity-form__field";
+  detailsWrapper.setAttribute("for", "other-activity-details");
+  detailsWrapper.innerHTML =
+    `<span class="other-activity-form__label">What happened?</span>`;
+  const detailsTextarea = document.createElement("textarea");
+  detailsTextarea.id = "other-activity-details";
+  detailsTextarea.className = "other-activity-form__textarea";
+  detailsTextarea.rows = 4;
+  detailsTextarea.placeholder =
+    "Share what made it suspicious and any actions taken so far.";
+  detailsWrapper.appendChild(detailsTextarea);
+  fieldset.appendChild(detailsWrapper);
+
+  const locationWrapper = document.createElement("label");
+  locationWrapper.className = "other-activity-form__field";
+  locationWrapper.setAttribute("for", "other-activity-location");
+  locationWrapper.innerHTML =
+    `<span class="other-activity-form__label">Where did this occur? <span class="other-activity-form__optional">(optional)</span></span>`;
+  const locationInput = document.createElement("input");
+  locationInput.type = "text";
+  locationInput.id = "other-activity-location";
+  locationInput.className = "other-activity-form__input";
+  locationInput.placeholder = "e.g. Reception desk, employee parking, Teams call";
+  locationWrapper.appendChild(locationInput);
+  fieldset.appendChild(locationWrapper);
+
+  form.appendChild(fieldset);
+
+  const helper = document.createElement("p");
+  helper.className = "other-activity-form__helper";
+  helper.textContent = "Security will review straight away and follow up if more detail is needed.";
+  form.appendChild(helper);
+
+  const errorEl = document.createElement("p");
+  errorEl.className = "other-activity-form__error";
+  errorEl.setAttribute("role", "alert");
+  errorEl.hidden = true;
+  form.appendChild(errorEl);
+
+  const setError = message => {
+    if (message) {
+      errorEl.textContent = message;
+      errorEl.hidden = false;
+    } else {
+      errorEl.textContent = "";
+      errorEl.hidden = true;
+    }
+  };
+
+  const getValues = () => {
+    const type = typeSelect.value;
+    const summary = summaryInput.value.trim();
+    const details = detailsTextarea.value.trim();
+    const location = locationInput.value.trim();
+    if (!type) {
+      setError("Choose the channel so security knows how to respond.");
+      typeSelect.focus();
+      return null;
+    }
+    if (!summary) {
+      setError("Add a short title to help the SOC triage quickly.");
+      summaryInput.focus();
+      return null;
+    }
+    if (!details) {
+      setError("Add a few details so the SOC understands what happened.");
+      detailsTextarea.focus();
+      return null;
+    }
+    setError(null);
+
+    let reasons = [];
+    switch (type) {
+      case "vishing":
+        reasons = ["reason-suspicious-call"];
+        break;
+      case "smishing":
+        reasons = ["reason-suspicious-text"];
+        break;
+      case "quishing":
+        reasons = ["reason-suspicious-qr"];
+        break;
+      default:
+        reasons = ["reason-looks-like-phishing"];
+    }
+
+    return {
+      type,
+      summary,
+      details,
+      location: location || null,
+      reasons
+    };
+  };
+
+  return {
+    element: form,
+    getValues,
+    setError
+  };
+}
+
+function openSuspiciousActivityForm() {
+  const form = buildOtherActivityForm();
+  openDialog({
+    title: "Report other suspicious activity",
+    description: "Flag suspicious calls, texts, QR codes, or anything else your security team should investigate.",
+    content: form.element,
+    confirmLabel: "Submit report",
+    cancelLabel: "Cancel",
+    onConfirm: close => {
+      const values = form.getValues();
+      if (!values) return;
+
+      reportMessage({
+        subject: values.summary,
+        reporterName: state.customer.name,
+        reporterEmail: state.customer.email,
+        reasons: values.reasons,
+        notes: values.details,
+        origin: "hub",
+        activityType: values.type,
+        incidentLocation: values.location
+      });
+
+      close();
+      openDialog({
+        title: "Report submitted",
+        description:
+          "Thanks for logging it. Security will review and award bonus points once the incident is actioned.",
+        confirmLabel: "Close"
+      });
+    }
+  });
+}
+
+function buildCustomerReportHistoryContent(messages) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "report-history-dialog";
+
+  if (!Array.isArray(messages) || messages.length === 0) {
+    const demo = getDemoOtherActivityReports();
+    if (demo.length === 0) {
+      const emptyState = document.createElement("p");
+      emptyState.textContent =
+        "No reports submitted yet. Flag anything suspicious to start building your history.";
+      wrapper.appendChild(emptyState);
+      return wrapper;
+    }
+    messages = demo;
+  }
+
+  const sorted = messages
+    .slice()
+    .sort((a, b) => new Date(b.reportedAt || 0).getTime() - new Date(a.reportedAt || 0).getTime());
+  const actionedCount = sorted.filter(message => message?.status === MessageStatus.APPROVED).length;
+  const pendingCount = sorted.filter(message => message?.status === MessageStatus.PENDING).length;
+  const summary = document.createElement("p");
+  summary.className = "report-history-dialog__summary";
+  const summaryParts = [`You've submitted ${sorted.length} report${sorted.length === 1 ? "" : "s"}.`];
+  if (actionedCount > 0) {
+    summaryParts.push(
+      `${actionedCount} ${actionedCount === 1 ? "was" : "were"} actioned by the security team.`
+    );
+  }
+  if (pendingCount > 0) {
+    summaryParts.push(
+      `${pendingCount} ${pendingCount === 1 ? "is" : "are"} awaiting review for extra points.`
+    );
+  }
+  summary.textContent = summaryParts.join(" ");
+  wrapper.appendChild(summary);
+
+  const list = document.createElement("ul");
+  list.className = "report-history-dialog__list";
+
+  sorted.forEach(message => {
+    const item = document.createElement("li");
+    item.className = "report-history-dialog__item";
+
+    const titleRow = document.createElement("div");
+    titleRow.className = "report-history-dialog__title-row";
+
+    const subjectEl = document.createElement("span");
+    subjectEl.className = "report-history-dialog__subject";
+    subjectEl.textContent = message?.subject || "Suspicious message";
+    titleRow.appendChild(subjectEl);
+
+    const statusBadge = document.createElement("span");
+    statusBadge.className = "badge";
+    const statusValue =
+      typeof message?.status === "string" ? message.status : MessageStatus.PENDING;
+    statusBadge.dataset.state = statusValue;
+    const statusLabel = `${statusValue.charAt(0).toUpperCase()}${statusValue.slice(1)}`;
+    statusBadge.textContent = statusLabel;
+    titleRow.appendChild(statusBadge);
+
+    item.appendChild(titleRow);
+
+    const meta = document.createElement("div");
+    meta.className = "report-history-dialog__meta";
+    const reportedAt = message?.reportedAt;
+    meta.textContent = reportedAt ? formatDateTime(reportedAt) : "Date not recorded";
+    item.appendChild(meta);
+
+    const activityLabel = describeActivityType(message?.activityType);
+    if (activityLabel) {
+      const activityChip = document.createElement("span");
+      activityChip.className = "report-history-dialog__activity";
+      activityChip.textContent = activityLabel;
+      item.appendChild(activityChip);
+    }
+
+    if (message?.incidentLocation) {
+      const locationLine = document.createElement("p");
+      locationLine.className = "report-history-dialog__location";
+      locationLine.textContent = `Location: ${message.incidentLocation}`;
+      item.appendChild(locationLine);
+    }
+
+    const reasons = Array.isArray(message?.reasons)
+      ? message.reasons.map(reasonById).filter(Boolean)
+      : [];
+    if (reasons.length > 0) {
+      const reasonsWrap = document.createElement("div");
+      reasonsWrap.className = "report-history-dialog__reasons";
+      reasons.forEach(reason => {
+        const chip = document.createElement("span");
+        chip.className = "detail-chip";
+        chip.textContent = reason.label || "";
+        reasonsWrap.appendChild(chip);
+      });
+      item.appendChild(reasonsWrap);
+    }
+
+    const response = document.createElement("p");
+    response.className = "report-history-dialog__response";
+    response.textContent = getReportResponseCopy({ ...message, status: statusValue });
+    item.appendChild(response);
+
+    if (message?.additionalNotes) {
+      const note = document.createElement("p");
+      note.className = "report-history-dialog__note";
+      note.textContent = `Your note: ${message.additionalNotes}`;
+      item.appendChild(note);
+    }
+
+    const pointsRow = document.createElement("div");
+    pointsRow.className = "report-history-dialog__points";
+
+    const clientForMessage =
+      Array.isArray(state.clients) && message?.clientId
+        ? state.clients.find(client => client?.id === message.clientId) || null
+        : null;
+
+    let basePoints = 20;
+    if (typeof message?.pointsOnMessage === "number" && Number.isFinite(message.pointsOnMessage)) {
+      basePoints = message.pointsOnMessage;
+    } else if (clientForMessage && typeof clientForMessage.pointsPerMessage === "number") {
+      basePoints = clientForMessage.pointsPerMessage;
+    }
+
+    const captureChip = document.createElement("span");
+    captureChip.className = "report-history-dialog__points-chip report-history-dialog__points-chip--base";
+    captureChip.textContent = `+${formatNumber(basePoints)} capture`;
+    pointsRow.appendChild(captureChip);
+
+    let bonusPoints = 0;
+    if (statusValue === MessageStatus.APPROVED) {
+      if (typeof message?.pointsOnApproval === "number" && Number.isFinite(message.pointsOnApproval)) {
+        bonusPoints = message.pointsOnApproval;
+      } else if (clientForMessage && typeof clientForMessage.pointsOnApproval === "number") {
+        bonusPoints = clientForMessage.pointsOnApproval;
+      }
+    }
+
+    if (bonusPoints > 0) {
+      const bonusChip = document.createElement("span");
+      bonusChip.className =
+        "report-history-dialog__points-chip report-history-dialog__points-chip--bonus";
+      bonusChip.textContent = `+${formatNumber(bonusPoints)} actioned`;
+      pointsRow.appendChild(bonusChip);
+    } else if (statusValue === MessageStatus.PENDING) {
+      const pendingChip = document.createElement("span");
+      pendingChip.className =
+        "report-history-dialog__points-chip report-history-dialog__points-chip--pending";
+      pendingChip.textContent = "Bonus pending review";
+      pointsRow.appendChild(pendingChip);
+    } else if (statusValue === MessageStatus.REJECTED) {
+      const rejectedChip = document.createElement("span");
+      rejectedChip.className =
+        "report-history-dialog__points-chip report-history-dialog__points-chip--pending";
+      rejectedChip.textContent = "Bonus not awarded";
+      pointsRow.appendChild(rejectedChip);
+    }
+
+    const totalPoints = basePoints + (bonusPoints > 0 ? bonusPoints : 0);
+    const totalEl = document.createElement("strong");
+    totalEl.className = "report-history-dialog__points-total";
+    totalEl.textContent = `= ${formatNumber(totalPoints)} pts`;
+    pointsRow.appendChild(totalEl);
+
+    item.appendChild(pointsRow);
+    list.appendChild(item);
+  });
+
+  wrapper.appendChild(list);
+  return wrapper;
+}
+
+function describeActivityType(value) {
+  const normalized = typeof value === "string" ? value.trim().toLowerCase() : "";
+  switch (normalized) {
+    case "vishing":
+      return "Phone / vishing";
+    case "smishing":
+      return "SMS / smishing";
+    case "quishing":
+      return "QR / quishing";
+    default:
+      return normalized ? "Suspicious activity" : "";
+  }
+}
+
+function getReportResponseCopy(message) {
+  const status =
+    typeof message?.status === "string" ? message.status : MessageStatus.PENDING;
+  if (status === MessageStatus.APPROVED) {
+    let bonusPoints = 0;
+    if (typeof message?.pointsOnApproval === "number" && Number.isFinite(message.pointsOnApproval)) {
+      bonusPoints = message.pointsOnApproval;
+    } else if (Array.isArray(state.clients) && message?.clientId) {
+      const client = state.clients.find(entry => entry?.id === message.clientId);
+      if (client && typeof client.pointsOnApproval === "number") {
+        bonusPoints = client.pointsOnApproval;
+      }
+    }
+    const bonusCopy =
+      bonusPoints > 0 ? ` and awarded +${formatNumber(bonusPoints)} bonus points` : "";
+    return `Security team actioned this report${bonusCopy}.`;
+  }
+  if (status === MessageStatus.REJECTED) {
+    return "Security reviewed this report and no further action was required.";
+  }
+  return "Security is reviewing this report. You'll see the outcome once it has been actioned.";
+}
+
+function getDemoOtherActivityReports() {
+  const now = Date.now();
+  const offsets = [2, 5, 12];
+  const toIso = days => new Date(now - days * 24 * 60 * 60 * 1000).toISOString();
+  return [
+    {
+      subject: "Caller posing as IT support about device settings",
+      reportedAt: toIso(offsets[0]),
+      status: MessageStatus.APPROVED,
+      reasons: ["reason-suspicious-call", "reason-urgent-tone"],
+      pointsOnMessage: 20,
+      pointsOnApproval: 80,
+      additionalNotes:
+        "They phoned claiming MFA was broken and pushed me to disable it. I hung up and called IT.",
+      activityType: "vishing",
+      incidentLocation: "Desk phone, HQ floor 5"
+    },
+    {
+      subject: "WhatsApp message pretending to be our CFO",
+      reportedAt: toIso(offsets[1]),
+      status: MessageStatus.PENDING,
+      reasons: ["reason-suspicious-text", "reason-spoofing-senior"],
+      pointsOnMessage: 20,
+      pointsOnApproval: 80,
+      additionalNotes:
+        "Unknown number asked me to buy gift cards urgently and keep quiet. Sent screenshots.",
+      activityType: "smishing",
+      incidentLocation: "Personal mobile"
+    },
+    {
+      subject: "Unfamiliar QR code posted at the car park entrance",
+      reportedAt: toIso(offsets[2]),
+      status: MessageStatus.APPROVED,
+      reasons: ["reason-suspicious-qr", "reason-unexpected-attachment"],
+      pointsOnMessage: 20,
+      pointsOnApproval: 80,
+      additionalNotes:
+        "Sticker linked to a fake Microsoft login. I removed it and alerted facilities.",
+      activityType: "quishing",
+      incidentLocation: "Employee parking entrance"
+    }
+  ];
 }
 
 function getTeamMembers() {
@@ -3327,6 +3776,7 @@ function setLabFeatureAccessForAll(featureId, enabled) {
 }
 
 function reportMessage(payload) {
+  const origin = payload?.origin || "addin";
   const client = state.clients.find(c => c.id === state.customer.clientId);
   const previousClientSnapshot = client
     ? {
@@ -3358,6 +3808,9 @@ function reportMessage(payload) {
     pointsOnApproval,
     additionalNotes: payload.notes || null
   };
+  if (payload.activityType) message.activityType = payload.activityType;
+  if (payload.channel) message.channel = payload.channel;
+  if (payload.incidentLocation) message.incidentLocation = payload.incidentLocation;
 
   state.messages.unshift(message);
   state.customer.currentPoints += pointsOnMessage;
@@ -3419,7 +3872,6 @@ function reportMessage(payload) {
   }
 
   state.meta.lastClientSnapshot = previousClientSnapshot;
-  state.meta.addinScreen = "success";
   state.meta.lastReportedSubject = payload.subject;
   state.meta.lastReportPoints = pointsOnMessage;
   state.meta.lastBalanceBefore = beforePoints;
@@ -3428,11 +3880,15 @@ function reportMessage(payload) {
   state.meta.lastBadgeId = badgeBundle.length > 0 ? badgeBundle[0].id : null;
   state.meta.lastBadgeIds = badgeBundle.map(badge => badge.id);
   state.meta.lastTotalAwarded = totalAwarded;
+  if (origin === "addin") {
+    state.meta.addinScreen = "success";
+  }
   if (Array.isArray(payload.emergencyFlags) && payload.emergencyFlags.length > 0) {
     message.emergencyFlags = payload.emergencyFlags;
   }
   persist();
   renderApp();
+  return message;
 }
 
 function setupCelebrationReplay(container) {
@@ -5210,8 +5666,27 @@ function renderCustomer() {
     <header class="customer-hero">
       <h1>Good day, ${escapeHtml(state.customer.name)}</h1>
       <p>Your vigilance is fuelling a safer inbox for everyone at Evergreen Capital.</p>
-      <button class="button-pill button-pill--primary" id="customer-report-button">Report other suspicious activity</button>
     </header>
+    <div class="customer-hero-actions">
+      <div class="customer-hero-actions__panel">
+        <div class="customer-hero-actions__main">
+          <button class="button-pill button-pill--primary customer-hero-actions__button" id="customer-report-button">Report other suspicious activity</button>
+          <p class="customer-hero-actions__description">Log smishing, quishing, or any other suspicious behaviour you come across so the security team can jump on it.</p>
+        </div>
+        <div class="customer-hero-actions__meta">
+          <button
+            type="button"
+            class="button-pill customer-hero-actions__history"
+            id="customer-report-history-button"
+            data-route="customer-reports"
+            data-report-filter="other"
+          >
+            Other report history
+          </button>
+          <p class="customer-hero-actions__history-note">Each submission grants +20 pts immediately. Use Other report history to track how non-email incidents progress and when bonus points land.</p>
+        </div>
+      </div>
+    </div>
     <section class="customer-section customer-section--points points-strip">
       <article class="points-card" style="background: linear-gradient(135deg, #6d28d9, #4338ca);">
         <div class="points-card__chip points-card__chip--interactive">
@@ -5231,7 +5706,7 @@ function renderCustomer() {
       <article class="points-card" style="background: linear-gradient(135deg, #f97316, #facc15);">
         <div class="points-card__chip points-card__chip--interactive">
           <span>Pending approval</span>
-          <button type="button" class="points-card__chip-action" data-route="customer-reports">Recent reports</button>
+          <button type="button" class="points-card__chip-action" data-route="customer-reports" data-report-filter="all">Recent reports</button>
         </div>
         <div class="points-card__content">
           <span class="points-icon" style="background: linear-gradient(135deg, #fff7ed, #ffedd5);">
@@ -5343,7 +5818,15 @@ function renderCustomerReportsPage() {
     .slice()
     .sort((a, b) => new Date(b.reportedAt).getTime() - new Date(a.reportedAt).getTime());
 
-  const rowsMarkup = customerMessages
+  const reportFilter = state.meta?.reportFilter === "other" ? "other" : "all";
+  const filteredMessages = customerMessages.filter(message => {
+    if (reportFilter === "other") {
+      return Boolean(message?.activityType);
+    }
+    return true;
+  });
+
+  const rowsMarkup = filteredMessages
     .map(message => {
       const reasons = Array.isArray(message.reasons) ? message.reasons.map(reasonById).filter(Boolean) : [];
       const reasonChips = reasons
@@ -5351,11 +5834,22 @@ function renderCustomerReportsPage() {
         .join("");
       const approvedPoints = message.status === MessageStatus.APPROVED ? message.pointsOnApproval || 0 : 0;
       const totalPoints = (message.pointsOnMessage || 0) + approvedPoints;
+      const activityLabel = describeActivityType(message?.activityType);
+      const hasLocation =
+        typeof message?.incidentLocation === "string" && message.incidentLocation.trim().length > 0;
+      const activityMeta = activityLabel
+        ? `<span class="detail-table__meta">${escapeHtml(activityLabel)}${
+            hasLocation ? ` • ${escapeHtml(message.incidentLocation.trim())}` : ""
+          }</span>`
+        : hasLocation
+        ? `<span class="detail-table__meta">Location: ${escapeHtml(message.incidentLocation.trim())}</span>`
+        : "";
       return `
         <tr>
           <td>${formatDateTime(message.reportedAt)}</td>
           <td>
             <strong>${escapeHtml(message.subject || "Suspicious message")}</strong>
+            ${activityMeta}
             ${reasonChips ? `<div class="detail-table__chips">${reasonChips}</div>` : ""}
           </td>
           <td><span class="badge" data-state="${escapeHtml(message.status)}">${escapeHtml(message.status)}</span></td>
@@ -5375,7 +5869,12 @@ function renderCustomerReportsPage() {
     })
     .join("");
 
-  const tableMarkup = customerMessages.length
+  const emptyCopy =
+    reportFilter === "other"
+      ? "No other suspicious activity reports yet. Log calls, texts, or QR finds to see them here."
+      : "No reports recorded yet. Use the hub to submit your first suspicious email.";
+
+  const tableMarkup = filteredMessages.length
     ? `
       <div class="detail-table-wrapper">
         <table class="detail-table detail-table--reports">
@@ -5391,7 +5890,12 @@ function renderCustomerReportsPage() {
         </table>
       </div>
     `
-    : `<div class="customer-detail__empty">No reports recorded yet. Use the hub to submit your first suspicious email.</div>`;
+    : `<div class="customer-detail__empty">${escapeHtml(emptyCopy)}</div>`;
+
+  const filterNote =
+    reportFilter === "other"
+      ? `<p class="customer-detail__filter-note">Showing other suspicious activity (calls, texts, QR codes, and similar).</p>`
+      : "";
 
   return `
     <header class="customer-detail-header">
@@ -5401,6 +5905,7 @@ function renderCustomerReportsPage() {
       <span class="customer-detail__eyebrow">Reports</span>
       <h1>Your reported messages</h1>
       <p>Review everything you've flagged and track approvals from the security team.</p>
+      ${filterNote}
     </header>
     ${tableMarkup}
   `;
@@ -8659,8 +9164,14 @@ function attachCustomerEvents(container) {
   const reportBtn = container.querySelector("#customer-report-button");
   if (reportBtn) {
     reportBtn.addEventListener("click", () => {
-      state.meta.addinScreen = "report";
-      navigate("addin");
+      openSuspiciousActivityForm();
+    });
+  }
+  const historyBtn = container.querySelector("#customer-report-history-button");
+  if (historyBtn) {
+    historyBtn.addEventListener("click", () => {
+      state.meta.reportFilter = "other";
+      setRole("customer", "customer-reports");
     });
   }
   container.querySelectorAll(".reward-card__cta").forEach(button => {
@@ -8724,6 +9235,12 @@ function attachCustomerEvents(container) {
       }
       const targetRoute = button.getAttribute("data-route");
       if (targetRoute) {
+        const filter = button.getAttribute("data-report-filter");
+        if (filter) {
+          state.meta.reportFilter = filter === "other" ? "other" : null;
+        } else if (targetRoute === "customer-reports") {
+          state.meta.reportFilter = null;
+        }
         setRole("customer", targetRoute);
       }
     });
@@ -9112,7 +9629,8 @@ function attachAddInEvents(container) {
           reporterName: state.customer.name,
           reporterEmail: state.customer.email,
           notes: notesValue,
-          emergencyFlags: emergencySelections
+          emergencyFlags: emergencySelections,
+          origin: "addin"
         });
       });
     }
