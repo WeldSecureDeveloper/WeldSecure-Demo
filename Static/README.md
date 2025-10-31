@@ -1,36 +1,48 @@
 # WeldSecure (Static Edition)
 
-This repository contains a dependency-free walkthrough of the WeldSecure SaaS experience. Everything runs on vanilla HTML, CSS, and JavaScript -- open `index.html` in a browser and you are ready to demo. No package installation, build tooling, or Node runtime is required.
+This repository ships the WeldSecure SaaS demo as a **fully static experience**. Everything runs on vanilla HTML, CSS, and JavaScript—double‑click `Static/index.html` in any modern browser and start telling the story. No build tooling, package installs, or servers are required.
 
-## Features
-- Journey picker & navigation for switching between the Reporter Journey, Hub, Organisation Hub, Security Team Dashboard, and Badges experiences.
-- Reporter rewards view showing live point balances, redemption flow, recent reports, and reward history with instant redemption feedback.
-- Organisation Hub highlighting weekly momentum, dominant threat signals, and top reporters, plus a CSV-export cue.
-- Security team dashboard workspace where approving or rejecting submissions immediately updates reporter points and open cases.
-- Weld admin workspace summarising multi-tenant health, open cases, active users, and recommended playbooks with contextual dialogs.
-- Reporter journey rendered inside a pixel-aligned task pane, demonstrating the report submission flow that feeds the reporter profile.
-- Badge gallery with category filters, contextual totals, and persistent theme selection.
-- Reset demo controls and modals on every route to return to the initial story.
+## Highlights
+- **Persona landing & navigation** – jump between Reporter, Customer Hub, Organisation Hub, Security Dashboard, Admin, Badges, and Add-in journeys from the hero cards or global nav.
+- **Reporter success loop** – demonstrate live point balances, Redemption flow, report history, badge showcase, and the Outlook-style add-in submission experience.
+- **Client storytelling** – show momentum, leaderboards, engagement programs, badge catalogue management, quest curation, and reporting approvals with real-time point adjustments.
+- **Admin & Labs views** – surface multi-tenant health, escalation queues, and experimental feature toggles to illustrate the breadth of the platform.
+- **Replay-friendly state** – demo data persists through `localStorage` during a session, with “Reset demo data” wiring everything back to the default narrative instantly.
 
-All state is stored in-memory (with a small `localStorage` bridge so a refresh keeps context). Refreshing with `Shift+Reload` or pressing "Reset demo data" returns everything to the starting position.
+## Getting started
+1. Clone or download the repository.
+2. Open `Static/index.html` in Microsoft Edge, Chrome, or another evergreen browser.
+3. Navigate the journeys using the landing page cards or the global navigation. Use “Reset demo data” whenever you want to rewind the story.
 
-## Usage
-1. Clone or download this directory.
-2. Open `index.html` in Microsoft Edge, Chrome, or any modern browser.
-3. Explore the journeys:
-   - Use the landing page cards or the top navigation to jump between personas.
-   - Switch tabs within the interface via the left-hand navigation where available.
-   - Click "Reset demo data" in the header whenever you want to rewind.
+That’s it—no additional tooling or setup needed.
 
-That's it -- no additional tooling required.
+## Architecture overview
+The original monolithic `app.js` has been decomposed into small, feature-scoped files to reduce token usage and make customisation simple. Script order is carefully curated so each module can attach its globals to `window` without a bundler.
 
-## Repository structure
 ```
 Static/
-|-- index.html   # Entry point and markup shell
-|-- styles.css   # On-brand styling (Rubik font, gradients, layout, responsiveness)
-|-- app.js       # Demo state, routing, rendering logic, dialogs, and interactions
-`-- README.md    # This guide
+├─ index.html        # Shell document; loads scripts in the required order
+├─ styles.css        # Styling, gradients, layout primitives, and type
+├─ data.js           # window.AppData – constants, enums, demo datasets
+├─ state.js          # window.WeldState – persistence helpers & initial state
+├─ util.js           # window.WeldUtil – DOM + formatting utilities
+├─ main.js           # window.Weld – global namespace & lightweight router bootstrap
+├─ features/
+│  ├─ badges.js      # Weld.features.badges   – badge catalogue experience
+│  ├─ reporter.js    # Weld.features.reporter – Outlook add-in success flow
+│  ├─ hub.js         # Weld.features.hub      – customer hub & quest catalogue
+│  ├─ orgHub.js      # Weld.features.orgHub   – organisation momentum dashboard
+│  └─ dashboard.js   # Weld.features.dashboard – security approvals workspace
+├─ app.js            # Legacy orchestration: state wiring, routing, UI glue
+└─ README.md         # This guide
 ```
 
-Feel free to customise branding, content, or data by editing `app.js`. Rendering helpers are organised by journey to make modifications straightforward.
+`app.js` still drives the full experience. Each feature module registers itself on `window.Weld.features`, and `renderApp()` delegates to those renderers based on the active route. This keeps behaviour identical while making future refactors easy.
+
+## Customising the demo
+- Update copy or data points inside `data.js` (for example, badge definitions or leaderboard entries).
+- Adjust default state or persistence behaviour in `state.js`.
+- Extend `WeldUtil` with additional helpers and use them across features.
+- Replace layouts or interactions inside `features/*.js`; because each module is sandboxed, changes stay scoped to that journey.
+
+When you’re done, reload `Static/index.html` to see the changes immediately. Press “Reset demo data” from the header if you need to snap back to the default story.

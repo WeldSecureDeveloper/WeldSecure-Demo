@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -12,6 +12,19 @@
   <body>
     <div id="app"></div>
     <div id="dialog-root"></div>
+    <!-- Split scaffolding (neutral; no behavior change yet) -->
+    <script src="./data.js"></script>
+    <script src="./state.js"></script>
+    <script src="./util.js"></script>
+    <script src="./main.js"></script>
+
+    <script src="./features/badges.js"></script>
+    <script src="./features/reporter.js"></script>
+    <script src="./features/hub.js"></script>
+    <script src="./features/orgHub.js"></script>
+    <script src="./features/dashboard.js"></script>
+
+    <!-- Keep monolith last so current behavior is unchanged -->
     <script src="./app.js"></script>
   </body>
 </html>

@@ -1,2601 +1,26 @@
-﻿const STORAGE_KEY = "weldStaticDemoStateV1";
-
-const ROLE_LABELS = {
-  customer: { label: "Reporter", chip: "chip--customer" },
-  client: { label: "Organisation", chip: "chip--client" },
-  admin: { label: "WeldSecure", chip: "chip--admin" }
-};
-
-const ROUTES = {
-  landing: { requiresRole: false },
-  customer: { requiresRole: "customer" },
-  "customer-reports": { requiresRole: "customer" },
-  "customer-badges": { requiresRole: "customer" },
-  "customer-redemptions": { requiresRole: "customer" },
-  "client-dashboard": { requiresRole: "client" },
-  "client-reporting": { requiresRole: "client" },
-  "client-rewards": { requiresRole: "client" },
-  "client-quests": { requiresRole: "client" },
-  "weld-admin": { requiresRole: "admin" },
-  "weld-labs": { requiresRole: "admin" },
-  "client-badges": { requiresRole: "client" },
-  addin: { requiresRole: false }
-};
-
-const MessageStatus = {
-  PENDING: "pending",
-  APPROVED: "approved",
-  REJECTED: "rejected"
-};
-
-const NAV_GROUPS = [
-  {
-    label: "Reporter",
-    items: [
-      { label: "Reporter", route: "addin", role: "customer" },
-      { label: "Hub", route: "customer", role: "customer" }
-    ]
-  },
-  {
-    label: "Organisation",
-    items: [
-      { label: "Organisation Hub", route: "client-dashboard", role: "client" },
-      { label: "Security Team Dashboard", route: "client-reporting", role: "client" },
-      { label: "Badge Catalogue", route: "client-badges", role: "client" },
-      { label: "Quest Catalogue", route: "client-quests", role: "client" },
-      { label: "Rewards Catalogue", route: "client-rewards", role: "client" }
-    ]
-  },
-  {
-    label: "WeldSecure",
-    items: [
-      { label: "Weld Admin", route: "weld-admin", role: "admin" },
-      { label: "Weld Labs", route: "weld-labs", role: "admin" }
-    ]
-  }
-];
-
-const QUEST_DIFFICULTY_ORDER = ["starter", "intermediate", "advanced"];
-
-const SETTINGS_CATEGORIES = [
-  {
-    id: "reporter",
-    label: "Reporter",
-    description: "Configure the reporter add-in experience"
-  },
-  {
-    id: "organisation",
-    label: "Organisation",
-    description: "Tailor organisation dashboards and engagement",
-    disabled: true
-  },
-  {
-    id: "weldsecure",
-    label: "WeldSecure",
-    description: "Shape WeldSecure playbooks and operations",
-    disabled: true
-  }
-];
-
-const DEFAULT_REPORTER_PROMPT = "Why are you reporting this?";
-const DEFAULT_EMERGENCY_LABEL =
-  "I clicked a link, opened an attachment, or entered credentials";
-const PREVIOUS_EMERGENCY_LABEL =
-  "Recipient clicked a link, opened an attachment, or entered credentials";
-
-const DEFAULT_REPORTER_REASONS = [
-  { id: "reason-looks-like-phishing", label: "Looks like a phishing attempt" },
-  { id: "reason-unexpected-attachment", label: "Unexpected attachment or link" },
-  { id: "reason-urgent-tone", label: "Urgent language / suspicious tone" },
-  { id: "reason-spoofing-senior", label: "Sender spoofing a senior colleague" },
-  { id: "reason-personal-data", label: "Personal data request" },
-  { id: "reason-suspicious-call", label: "Suspicious phone call or vishing attempt" },
-  { id: "reason-suspicious-text", label: "Suspicious SMS or messaging (smishing)" },
-  { id: "reason-suspicious-qr", label: "Suspicious QR code or physical prompt" }
-];
-
-function generateId(prefix = "id") {
-  const idPrefix = typeof prefix === "string" && prefix.length > 0 ? `${prefix}-` : "";
-  const cryptoSource = typeof globalThis !== "undefined" ? globalThis.crypto : null;
-  if (cryptoSource && typeof cryptoSource.randomUUID === "function") {
-    return `${idPrefix}${cryptoSource.randomUUID()}`;
-  }
-  const now = Date.now().toString(36);
-  const random = Math.floor(Math.random() * 1e9)
-    .toString(36)
-    .padStart(6, "0");
-  return `${idPrefix}${now}-${random}`;
-}
-
-function normalizeId(value, prefix) {
-  if (value === null || value === undefined) return null;
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    return trimmed.length > 0 ? trimmed : null;
-  }
-  if (Number.isFinite(value)) {
-    return String(value);
-  }
-  const stringValue = typeof value.toString === "function" ? value.toString() : "";
-  if (stringValue && stringValue !== "[object Object]") {
-    return stringValue;
-  }
-  return generateId(prefix);
-}
-
-function questDifficultyRank(value) {
-  if (typeof value !== "string") return QUEST_DIFFICULTY_ORDER.length;
-  const normalized = value.trim().toLowerCase();
-  const index = QUEST_DIFFICULTY_ORDER.indexOf(normalized);
-  return index === -1 ? QUEST_DIFFICULTY_ORDER.length : index;
-}
-
-function compareQuestsByDifficulty(a, b) {
-  const rankDiff = questDifficultyRank(a && a.difficulty) - questDifficultyRank(b && b.difficulty);
-  if (rankDiff !== 0) return rankDiff;
-  const aTitle = a && typeof a.title === "string" ? a.title : "";
-  const bTitle = b && typeof b.title === "string" ? b.title : "";
-  return aTitle.localeCompare(bTitle, undefined, { sensitivity: "base" });
-}
-
-const ICONS = {
-  medal: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <circle cx="32" cy="32" r="20" fill="#fbbf24" />
-      <circle cx="32" cy="32" r="14" fill="#fde68a" />
-      <polygon fill="#fef3c7" points="32 18 35.8 27.6 46 28.6 38.4 34.8 41 44 32 38.6 23 44 25.6 34.8 18 28.6 28.2 27.6" />
-      <path fill="#6366f1" opacity="0.65" d="M24 9h16l-2 8h-12z" />
-    </svg>
-  `,
-  outlook: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <defs>
-        <linearGradient id="outlookGradient" x1="12" y1="52" x2="52" y2="12" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stop-color="#0078d4" />
-          <stop offset="1" stop-color="#5a5df0" />
-        </linearGradient>
-      </defs>
-      <rect x="12" y="14" width="28" height="36" rx="6" fill="url(#outlookGradient)" />
-      <path d="M20 18h24l12 12-12 12H20z" fill="#0b1f4b" opacity="0.2" />
-      <rect x="24" y="24" width="16" height="16" rx="4" fill="#fff" />
-      <path fill="#0f4c81" d="M34 38h-4l-4-6 4-6h4l4 6z" />
-      <circle cx="32" cy="32" r="4" fill="#0f172a" opacity="0.1" />
-    </svg>
-  `,
-  hourglass: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <rect x="22" y="16" width="20" height="6" rx="3" fill="#38bdf8" />
-      <rect x="22" y="42" width="20" height="6" rx="3" fill="#0ea5e9" />
-      <path fill="#22d3ee" d="M24 22h16c0 4.6-3.4 8.2-8 11 4.6 2.8 8 6.4 8 11H24c0-4.6 3.4-8.2 8-11-4.6-2.8-8-6.4-8-11z" />
-      <path fill="#0ea5e9" d="M26 26h12c0 2.4-2.2 4.2-6 5.6-3.8-1.4-6-3.2-6-5.6z" />
-      <path fill="#14b8a6" d="M26 38c0-2.4 2.2-4.2 6-5.6 3.8 1.4 6 3.2 6 5.6H26z" />
-    </svg>
-  `,
-  gift: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <rect x="10" y="26" width="44" height="26" rx="8" fill="#f97316"/>
-      <rect x="10" y="18" width="44" height="12" rx="6" fill="#fb7185"/>
-      <rect x="28" y="18" width="8" height="34" fill="#fde047"/>
-      <rect x="10" y="32" width="44" height="6" fill="#fde047" opacity="0.85"/>
-      <path fill="#fbbf24" d="M24 18c-3 0-5.5-2.4-5.5-5.4 0-2.2 1.5-3.6 3.7-3.6 3 0 6.8 3 8.8 5.6L32 18h-8z"/>
-      <path fill="#fbbf24" d="M40 18c3 0 5.5-2.4 5.5-5.4 0-2.2-1.5-3.6-3.7-3.6-3 0-6.8 3-8.8 5.6L32 18h8z"/>
-    </svg>
-  `,
-  target: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <circle cx="32" cy="32" r="24" fill="#dbeafe"/>
-      <circle cx="32" cy="32" r="16" fill="#60a5fa"/>
-      <circle cx="32" cy="32" r="8" fill="#1e3a8a"/>
-      <circle cx="32" cy="32" r="4" fill="#f8fafc"/>
-      <path fill="#f97316" d="M32 8h4v10l6-6 2.8 2.8-6 6H48v4H32z"/>
-    </svg>
-  `,
-  trophy: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#fbbf24" d="M18 10h28v10c0 9.4-7.4 17-16 17s-16-7.6-16-17z"/>
-      <path fill="#f59e0b" d="M18 10h6v11c0 6.6 3.8 11 8 11s8-4.4 8-11V10h6v10c0 9.4-7.4 17-16 17s-16-7.6-16-17z"/>
-      <path fill="#f97316" d="M20 8h24v4H20z"/>
-      <path fill="#fde68a" d="M30 38h4v6h-4z"/>
-      <path fill="#f97316" d="M24 44h16v6H24z"/>
-      <path fill="#7c2d12" opacity="0.16" d="M22 50h20v4H22z"/>
-      <path fill="#fef3c7" d="M24 22l4 1 4-6 4 6 4-1-4 10h-8z"/>
-    </svg>
-  `,
-  diamond: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <polygon fill="#bfdbfe" points="12 22 24 10 40 10 52 22 32 54"/>
-      <polygon fill="#60a5fa" points="24 10 32 26 40 10"/>
-      <polygon fill="#1d4ed8" points="12 22 32 26 24 10"/>
-      <polygon fill="#2563eb" points="52 22 32 26 40 10"/>
-      <polygon fill="#93c5fd" points="18 22 32 46 12 22"/>
-      <polygon fill="#3b82f6" points="46 22 32 46 52 22"/>
-    </svg>
-  `,
-  heart: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#f472b6" d="M32 54s-18-11.4-24-21C3.6 26 6 16 14 13c4.6-1.6 9.8 0 12.8 3.8L32 22l5.2-5.2C40.2 13 45.4 11.4 50 13c8 3 10.4 13 6 20-6 9.6-24 21-24 21z"/>
-      <path fill="#fbcfe8" d="M32 47s-13.6-8.8-18.4-16.2C10.4 25.4 12.2 18.6 18 16.6c3.4-1.2 7.2 0 9.4 2.8L32 24l4.6-4.6c2.2-2.8 6-4 9.4-2.8 5.8 2 7.6 8.8 4.4 14.2C45.6 38.2 32 47 32 47z"/>
-    </svg>
-  `,
-  shield: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#4f46e5" d="M32 6l20 8v16c0 12.4-8.8 23.6-20 28-11.2-4.4-20-15.6-20-28V14z"/>
-      <path fill="#312e81" d="M32 12l14 5.6V30c0 8.8-5.8 17.2-14 21-8.2-3.8-14-12.2-14-21V17.6z"/>
-      <path fill="#60a5fa" d="M32 18l10 4v8c0 6-3.6 11.8-10 15-6.4-3.2-10-9-10-15v-8z"/>
-      <path fill="#bfdbfe" d="M30 32l2-10 2 10h10l-8 6 3 10-7-5.2-7 5.2 3-10-8-6z"/>
-    </svg>
-  `,
-  rocket: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#4c1d95" d="M32 6c10 6 16 18 16 28 0 5.6-1.6 10.8-4.4 15.6L32 54l-11.6-4.4C17.6 44.8 16 39.6 16 34 16 24 22 12 32 6z"/>
-      <circle cx="32" cy="26" r="8" fill="#f0f9ff"/>
-      <circle cx="32" cy="26" r="4" fill="#38bdf8"/>
-      <path fill="#fb923c" d="M20 48l4 12 8-6 8 6 4-12-12-4z"/>
-      <path fill="#f97316" d="M32 44l-12 4 4-8h16l4 8z"/>
-    </svg>
-  `,
-  crown: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#facc15" d="M12 44h40l-4 10H16z"/>
-      <path fill="#fde68a" d="M12 20l10 12 10-16 10 16 10-12 4 24H8z"/>
-      <circle cx="12" cy="18" r="4" fill="#f97316"/>
-      <circle cx="52" cy="18" r="4" fill="#f97316"/>
-      <circle cx="32" cy="14" r="4" fill="#f97316"/>
-    </svg>
-  `,
-  megaphone: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#7c3aed" d="M10 26h8l20-14v40L18 38h-8z"/>
-      <path fill="#a855f7" d="M38 12 54 8v48l-16-4V12z"/>
-      <path fill="#fef9c3" d="M18 38h6l4 10c1.2 3-0.6 6-3.6 6H20z"/>
-      <circle cx="50" cy="18" r="3" fill="#fde68a"/>
-      <circle cx="50" cy="46" r="3" fill="#fde68a"/>
-    </svg>
-  `,
-  globe: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <circle cx="32" cy="32" r="22" fill="#1e3a8a"/>
-      <path fill="#38bdf8" d="M18 20c6 0 8-6 14-6s10 4 10 8 4 6 8 6-2 16-10 16-12-4-18-4-8-4-8-8 0-12 4-12z"/>
-      <path fill="#0ea5e9" d="M24 44c4 0 6 4 10 4s8-2 8-6 4-4 6-4c0 6-6 14-14 16-10-2-16-10-16-10s2 0 6 0z"/>
-      <circle cx="32" cy="32" r="22" fill="none" stroke="#38bdf8" stroke-width="2"/>
-    </svg>
-  `,
-  spark: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <polygon fill="#fde047" points="32 6 36 24 54 28 38 36 44 54 32 44 20 54 26 36 10 28 28 24"/>
-      <polygon fill="#f97316" points="32 12 35 24 46 26 36 32 40 44 32 38 24 44 28 32 18 26 29 24"/>
-    </svg>
-  `,
-  book: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#0ea5e9" d="M12 12h20c4 0 8 4 8 8v32H20c-4 0-8-4-8-8V12z"/>
-      <path fill="#38bdf8" d="M32 12h20v32c0 4-4 8-8 8h-20V20c0-4 4-8 8-8z"/>
-      <path fill="#f8fafc" d="M18 18h12v4H18zm24 0h10v4H42z"/>
-      <path fill="#fef3c7" d="M18 28h12v4H18zm24 0h10v4H42z"/>
-    </svg>
-  `,
-  clipboard: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <rect x="14" y="12" width="36" height="44" rx="6" fill="#f1f5f9"/>
-      <rect x="22" y="8" width="20" height="8" rx="3" fill="#6366f1"/>
-      <rect x="18" y="20" width="28" height="4" rx="2" fill="#94a3b8"/>
-      <rect x="18" y="28" width="28" height="4" rx="2" fill="#94a3b8"/>
-      <rect x="18" y="36" width="20" height="4" rx="2" fill="#22c55e"/>
-      <path fill="#22c55e" d="M42 36h4v12h-4z"/>
-    </svg>
-  `,
-  mountain: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <rect width="64" height="20" y="44" fill="#0f172a"/>
-      <path fill="#1e3a8a" d="M6 44 26 16l10 12z"/>
-      <path fill="#3b82f6" d="M26 16 46 44H6z"/>
-      <path fill="#f8fafc" d="M32 18 58 44H22z"/>
-      <path fill="#22d3ee" d="M32 18 46 36h-8z"/>
-    </svg>
-  `,
-  lightbulb: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#fde047" d="M20 26c0-8.8 7.2-16 16-16s16 7.2 16 16c0 5.6-2.8 10.6-7.4 13.6-2.2 1.4-4.6 2.8-4.6 6.4v2H32v-2c0-3.6-2.4-5-4.6-6.4C22.8 36.6 20 31.6 20 26z"/>
-      <rect x="26" y="48" width="12" height="6" rx="2" fill="#f97316"/>
-      <rect x="24" y="54" width="16" height="4" rx="2" fill="#475569"/>
-      <path fill="#fde68a" d="M28 28h16c0 4-4 8-8 8s-8-4-8-8z"/>
-    </svg>
-  `,
-  ribbon: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <circle cx="32" cy="26" r="14" fill="#ec4899"/>
-      <circle cx="32" cy="26" r="8" fill="#fdf2f8"/>
-      <path fill="#db2777" d="M24 36 18 58l14-10 14 10-6-22z"/>
-      <path fill="#fdf2f8" d="M32 18a8 8 0 0 0-8 8h4a4 4 0 0 1 4-4z"/>
-    </svg>
-  `,
-  chart: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <rect x="12" y="8" width="40" height="48" rx="6" fill="#0f172a"/>
-      <rect x="18" y="38" width="8" height="10" fill="#38bdf8"/>
-      <rect x="28" y="30" width="8" height="18" fill="#f97316"/>
-      <rect x="38" y="22" width="8" height="26" fill="#22c55e"/>
-      <path fill="#94a3b8" d="M18 46h32v2H18z"/>
-    </svg>
-  `,
-  handshake: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#f97316" d="M10 24h14l10 12-8 10H12c-1.6 0-2.8-1.2-2.8-2.8z"/>
-      <path fill="#facc15" d="M54 24H40l-10 12 8 10h14c1.6 0 2.8-1.2 2.8-2.8z"/>
-      <path fill="#fef3c7" d="M28 36h8l6 8c1 1.2.2 3-1.4 3H23.4c-1.6 0-2.4-1.8-1.4-3z"/>
-      <path fill="#f59e0b" d="M36 24h-8l-6 6h8z"/>
-    </svg>
-  `,
-  star: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <circle cx="32" cy="32" r="22" fill="#0f172a"/>
-      <path fill="#facc15" d="M32 12 37.6 26H52l-11.2 8 4.2 14L32 38l-12.8 10 4.2-14L12 26h14.4z"/>
-      <circle cx="32" cy="32" r="6" fill="#fef9c3"/>
-    </svg>
-  `,
-  compass: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <circle cx="32" cy="32" r="24" fill="#0f172a"/>
-      <circle cx="32" cy="32" r="20" fill="#111827"/>
-      <polygon fill="#38bdf8" points="32 14 38 32 32 32 26 32"/>
-      <polygon fill="#f97316" points="32 50 26 32 32 32 38 32"/>
-      <circle cx="32" cy="32" r="4" fill="#fefefe"/>
-    </svg>
-  `,
-  laurel: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <circle cx="32" cy="30" r="14" fill="#22c55e"/>
-      <path fill="#14532d" d="M18 18c-4 4-6 10-6 14 4 0 10-2 14-6-4-4-6-10-8-8z"/>
-      <path fill="#14532d" d="M46 18c4 4 6 10 6 14-4 0-10-2-14-6 4-4 6-10 8-8z"/>
-      <path fill="#14532d" d="M22 46c-4-2-6-6-8-10 4 0 8 2 12 6-2 2-2 4-4 4z"/>
-      <path fill="#14532d" d="M42 46c4-2 6-6 8-10-4 0-8 2-12 6 2 2 2 4 4 4z"/>
-      <rect x="26" y="40" width="12" height="12" rx="3" fill="#0f172a"/>
-    </svg>
-  `,
-  puzzle: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#2563eb" d="M12 18h16v12h-2c-2.2 0-4 1.8-4 4s1.8 4 4 4h2v16H12z"/>
-      <path fill="#3b82f6" d="M36 18h16v16h-2c-2.2 0-4 1.8-4 4s1.8 4 4 4h2v16H36z"/>
-      <path fill="#60a5fa" d="M28 30h8v4h-8z"/>
-      <path fill="#93c5fd" d="M28 42h8v4h-8z"/>
-    </svg>
-  `,
-  badge: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#3730a3" d="M32 8 46 16l4 16-4 16-14 8-14-8-4-16 4-16z"/>
-      <path fill="#4f46e5" d="M32 14 42 20l3 12-3 12-10 6-10-6-3-12 3-12z"/>
-      <circle cx="32" cy="32" r="8" fill="#facc15"/>
-      <path fill="#fef9c3" d="M32 26 34.5 30.5 39 32l-4.5 1.5L32 38l-1.5-4.5L26 32l4.5-1.5z"/>
-    </svg>
-  `,
-  flame: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#f97316" d="M24 30c0-12 12-20 12-26 8 6 14 16 14 24 0 6.6-3.2 12.6-8.4 16.4C39.2 46.8 36 50 36 54H28c0-4-3.2-7.2-5.6-9.6C25.2 40.6 24 35.4 24 30z"/>
-      <path fill="#facc15" d="M28 34c0-6 6-10 6-14 4 4 8 8 8 12 0 4-2 7.6-5.2 9.8C36 44 34.4 46 34.4 48h-4.8c0-2-1.2-4-2.4-4.2C29.6 41.6 28 38 28 34z"/>
-    </svg>
-  `,
-  network: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <circle cx="18" cy="20" r="6" fill="#38bdf8"/>
-      <circle cx="46" cy="20" r="6" fill="#f97316"/>
-      <circle cx="32" cy="44" r="8" fill="#6366f1"/>
-      <path fill="none" stroke="#0f172a" stroke-width="3" d="M18 20 32 44 46 20"/>
-      <path fill="none" stroke="#0f172a" stroke-width="3" d="M18 20h28"/>
-    </svg>
-  `,
-  gear: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <circle cx="32" cy="32" r="10" fill="#fef3c7"/>
-      <circle cx="32" cy="32" r="6" fill="#f97316"/>
-      <path fill="#0ea5e9" d="M32 10 39 12l3 8-4 4 4 4-3 8-7 2-7-2-3-8 4-4-4-4 3-8z"/>
-      <path fill="#38bdf8" d="M32 16 36 18l2 4-3 2 3 2-2 4-4 2-4-2-2-4 3-2-3-2 2-4z"/>
-    </svg>
-  `,
-  whistle: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <rect x="12" y="24" width="30" height="16" rx="8" fill="#3b82f6"/>
-      <circle cx="40" cy="32" r="12" fill="#0f172a"/>
-      <circle cx="40" cy="32" r="6" fill="#60a5fa"/>
-      <path fill="#1d4ed8" d="M42 24h10l4 8-4 8H42z"/>
-      <path fill="#bfdbfe" d="M46 28h6l2 4-2 4h-6l2-4z"/>
-    </svg>
-  `,
-  plane: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#0ea5e9" d="M10 34 54 14l-12 24 12 4-12 10-8-8-4 8-6-6 4-12z"/>
-      <path fill="#38bdf8" d="M28 36 42 20l6 2-8 16 8 4-6 6z"/>
-      <path fill="#f8fafc" d="M24 38 30 40 26 50l-2-2z"/>
-    </svg>
-  `
-};
-
-function renderIcon(name, size = "md") {
-  const svg = ICONS[name];
-  if (!svg) return "";
-  const sizes = ["xs", "sm", "md", "lg"];
-  const sizeClass = sizes.includes(size) ? size : "md";
-  return `<span class="icon-token icon-token--${sizeClass}" data-icon="${name}" aria-hidden="true">${svg.trim()}</span>`;
-}
-
-const METRIC_TONES = {
-  indigo: { bg: "linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(129, 140, 248, 0.28))", color: "#312e81" },
-  emerald: { bg: "linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(52, 211, 153, 0.28))", color: "#065f46" },
-  amber: { bg: "linear-gradient(135deg, rgba(250, 204, 21, 0.22), rgba(253, 224, 71, 0.32))", color: "#92400e" },
-  fuchsia: { bg: "linear-gradient(135deg, rgba(236, 72, 153, 0.18), rgba(244, 114, 182, 0.28))", color: "#9d174d" },
-  slate: { bg: "linear-gradient(135deg, rgba(148, 163, 184, 0.18), rgba(226, 232, 240, 0.26))", color: "#1f2937" }
-};
-
-function renderMetricCard(label, value, trend, toneKey = "indigo", icon = "medal") {
-  const tone = METRIC_TONES[toneKey] || METRIC_TONES.indigo;
-  const trendDirection =
-    trend && (trend.direction === "up" || trend.direction === "down") ? trend.direction : null;
-  const trendValue = trend && trend.value ? escapeHtml(String(trend.value)) : null;
-  const trendCaption = trend && trend.caption ? escapeHtml(String(trend.caption)) : null;
-  const trendMarkup = trendValue
-    ? `<div class="metric-card__trend"${trendDirection ? ` data-direction="${trendDirection}"` : ""}>
-        <span>${trendValue}</span>
-        ${trendCaption ? `<small>${trendCaption}</small>` : ""}
-      </div>`
-    : "";
-
-  return `
-    <article class="metric-card" style="--tone-bg:${tone.bg};--tone-color:${tone.color};">
-      <span class="metric-card__icon">${renderIcon(icon, "md")}</span>
-      <div class="metric-card__body">
-        <span class="metric-card__label">${escapeHtml(String(label))}</span>
-        <strong class="metric-card__value">${escapeHtml(String(value))}</strong>
-        ${trendMarkup}
-      </div>
-    </article>
-  `;
-}
-
-function escapeHtml(value) {
-  if (value === null || value === undefined) return "";
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-const BADGE_TONES = {
-  violet: "linear-gradient(135deg, #ede9fe, #ddd6fe)",
-  cobalt: "linear-gradient(135deg, #dbeafe, #bfdbfe)",
-  coral: "linear-gradient(135deg, #ffe4e6, #fecdd3)",
-  emerald: "linear-gradient(135deg, #d1fae5, #a7f3d0)",
-  amber: "linear-gradient(135deg, #fde68a, #fcd34d)",
-  aqua: "linear-gradient(135deg, #cffafe, #bae6fd)",
-  midnight: "linear-gradient(135deg, #e0f2fe, #c7d2fe)",
-  blush: "linear-gradient(135deg, #fce7f3, #e9d5ff)",
-  gold: "linear-gradient(135deg, #fef9c3, #fde68a)",
-  slate: "linear-gradient(135deg, #f8fafc, #e2e8f0)"
-};
-
-const BADGE_ICON_BACKDROPS = {
-  violet: {
-    background: "linear-gradient(135deg, #c4b5fd, #a855f7)",
-    shadow: "rgba(124, 58, 237, 0.36)"
-  },
-  cobalt: {
-    background: "linear-gradient(135deg, #bfdbfe, #2563eb)",
-    shadow: "rgba(37, 99, 235, 0.32)"
-  },
-  coral: {
-    background: "linear-gradient(135deg, #fbcfe8, #f97316)",
-    shadow: "rgba(249, 115, 22, 0.34)"
-  },
-  emerald: {
-    background: "linear-gradient(135deg, #bbf7d0, #10b981)",
-    shadow: "rgba(16, 185, 129, 0.34)"
-  },
-  amber: {
-    background: "linear-gradient(135deg, #fde68a, #f59e0b)",
-    shadow: "rgba(245, 158, 11, 0.36)"
-  },
-  aqua: {
-    background: "linear-gradient(135deg, #bae6fd, #0ea5e9)",
-    shadow: "rgba(14, 165, 233, 0.32)"
-  },
-  midnight: {
-    background: "linear-gradient(135deg, #c7d2fe, #1e3a8a)",
-    shadow: "rgba(30, 58, 138, 0.38)"
-  },
-  blush: {
-    background: "linear-gradient(135deg, #fbcfe8, #ec4899)",
-    shadow: "rgba(236, 72, 153, 0.34)"
-  },
-  gold: {
-    background: "linear-gradient(135deg, #fef08a, #f59e0b)",
-    shadow: "rgba(217, 119, 6, 0.36)"
-  },
-  slate: {
-    background: "linear-gradient(135deg, #e2e8f0, #64748b)",
-    shadow: "rgba(100, 116, 139, 0.3)"
-  }
-};
-
-const POINTS_CARD_ICONS = {
-  medal: {
-    background: "linear-gradient(135deg, #facc15, #f97316)",
-    svg: `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
-        <circle cx="16" cy="16" r="13" fill="rgba(255,255,255,0.16)" />
-        <circle cx="16" cy="16" r="9.5" fill="#fde68a" />
-        <path d="M16 10.2 17.6 14h4.2l-3.3 2.3 1.2 3.8L16 18.8l-3.7 2.3 1.2-3.8L10.2 14h4.2z" fill="#f97316"/>
-        <path d="M12.4 7h2.8l1.2 2.8H13.6zM18.8 7h2.8l-1.1 2.8h-2.8z" fill="#fde68a" opacity="0.6"/>
-      </svg>
-    `
-  },
-  hourglass: {
-    background: "linear-gradient(135deg, #60a5fa, #0ea5e9)",
-    svg: `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
-        <rect x="10" y="6.5" width="12" height="2.8" rx="1.4" fill="#ffffff"/>
-        <rect x="10" y="22.7" width="12" height="2.8" rx="1.4" fill="#ffffff"/>
-        <path d="M11.8 10.6h8.4c0 2.4-1.9 4.2-4.2 5.7 2.3 1.4 4.2 3.3 4.2 5.7h-8.4c0-2.4 1.9-4.2 4.2-5.7-2.3-1.4-4.2-3.3-4.2-5.7z" fill="#bae6fd"/>
-        <path d="M12.8 14h6.4c0 1.1-0.9 2.1-2.6 2.7-1.7-0.6-2.6-1.6-2.6-2.7z" fill="#38bdf8"/>
-        <path d="M12.8 18.9c0-1.1 0.9-2.1 2.6-2.7 1.7 0.6 2.6 1.6 2.6 2.7z" fill="#0ea5e9"/>
-      </svg>
-    `
-  },
-  gift: {
-    background: "linear-gradient(135deg, #fb7185, #ec4899)",
-    svg: `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
-        <rect x="7" y="12.5" width="18" height="12" rx="2.6" fill="#fdf2f8" opacity="0.8"/>
-        <rect x="7" y="9" width="18" height="4" rx="1.6" fill="#fde68a" opacity="0.7"/>
-        <path d="M13.5 9c-1.5 0-2.7-1.2-2.7-2.6 0-1.1 0.8-1.9 1.8-1.9 1.5 0 3.4 1.3 4.5 2.7L17.5 9z" fill="#f97316"/>
-        <path d="M18.5 9c1.5 0 2.7-1.2 2.7-2.6 0-1.1-0.8-1.9-1.8-1.9-1.5 0-3.4 1.3-4.5 2.7L14.5 9z" fill="#f97316" opacity="0.75"/>
-        <rect x="14.6" y="9" width="2.8" height="15.5" fill="#fef08a"/>
-        <rect x="7" y="14.4" width="18" height="2.4" fill="#fef3c7" opacity="0.6"/>
-      </svg>
-    `
-  },
-  default: {
-    background: "linear-gradient(135deg, #cbd5f5, #818cf8)",
-    svg: `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
-        <circle cx="16" cy="16" r="10" fill="#f8fafc" opacity="0.5"/>
-        <circle cx="16" cy="16" r="6" fill="#f8fafc"/>
-      </svg>
-    `
-  }
-};
-
-
-const BADGES = [
-  {
-    id: "welcome-wave",
-    title: "Welcome Wave",
-    description: "Log into the WeldSecure hub within your first 24 hours.",
-    category: "Onboarding",
-    points: 20,
-    difficulty: "Starter",
-    icon: "spark",
-    tone: "violet"
-  },
-  {
-    id: "hub-hopper",
-    title: "Hub Hopper",
-    description: "Visit every navigation section during your first week.",
-    category: "Onboarding",
-    points: 30,
-    difficulty: "Starter",
-    icon: "network",
-    tone: "aqua"
-  },
-  {
-    id: "profile-polisher",
-    title: "Profile Polisher",
-    description: "Complete your profile and set your security preferences.",
-    category: "Onboarding",
-    points: 25,
-    difficulty: "Starter",
-    icon: "badge",
-    tone: "slate"
-  },
-  {
-    id: "orientation-ace",
-    title: "Orientation Ace",
-    description: "Watch the orientation walkthrough and pass the recap quiz.",
-    category: "Onboarding",
-    points: 30,
-    difficulty: "Starter",
-    icon: "lightbulb",
-    tone: "amber"
-  },
-  {
-    id: "tour-trailblazer",
-    title: "Tour Trailblazer",
-    description: "Finish the interactive product tour without skipping a stop.",
-    category: "Onboarding",
-    points: 35,
-    difficulty: "Rising",
-    icon: "compass",
-    tone: "aqua"
-  },
-  {
-    id: "kickoff-kudos",
-    title: "Kickoff Kudos",
-    description: "Send your first kudos or recognition note from the hub.",
-    category: "Onboarding",
-    points: 30,
-    difficulty: "Rising",
-    icon: "heart",
-    tone: "coral"
-  },
-  {
-    id: "launch-checklist",
-    title: "Launch Checklist",
-    description: "Complete every task on the onboarding checklist.",
-    category: "Onboarding",
-    points: 40,
-    difficulty: "Rising",
-    icon: "clipboard",
-    tone: "emerald"
-  },
-  {
-    id: "alert-acknowledged",
-    title: "Alert Acknowledged",
-    description: "Enable notifications across the channels your team uses.",
-    category: "Onboarding",
-    points: 25,
-    difficulty: "Rising",
-    icon: "whistle",
-    tone: "cobalt"
-  },
-  {
-    id: "mission-briefing",
-    title: "Mission Briefing",
-    description: "Complete your first interactive training mission.",
-    category: "Onboarding",
-    points: 35,
-    difficulty: "Rising",
-    icon: "book",
-    tone: "midnight"
-  },
-  {
-    id: "hub-habit",
-    title: "Hub Habit",
-    description: "Log in three consecutive days during onboarding.",
-    category: "Onboarding",
-    points: 40,
-    difficulty: "Skilled",
-    icon: "laurel",
-    tone: "emerald"
-  },
-  {
-    id: "toolkit-tour",
-    title: "Toolkit Tour",
-    description: "Install the WeldSecure add-ins and connect your devices.",
-    category: "Onboarding",
-    points: 40,
-    difficulty: "Skilled",
-    icon: "gear",
-    tone: "slate"
-  },
-  {
-    id: "first-catch",
-    title: "First Catch",
-    description: "Report your very first suspicious email through WeldSecure.",
-    category: "Onboarding",
-    points: 40,
-    difficulty: "Starter",
-    icon: "medal",
-    tone: "violet"
-  },
-  {
-    id: "launch-pad",
-    title: "Launch Pad",
-    description: "Complete every onboarding checklist item in your first week.",
-    category: "Onboarding",
-    points: 50,
-    difficulty: "Rising",
-    icon: "rocket",
-    tone: "aqua"
-  },
-  {
-    id: "reward-ready",
-    title: "Reward Ready",
-    description: "Earn enough points to unlock your first WeldSecure reward.",
-    category: "Onboarding",
-    points: 80,
-    difficulty: "Skilled",
-    icon: "gift",
-    tone: "gold"
-  },
-  {
-    id: "first-redemption",
-    title: "First Redemption",
-    description: "Redeem your first reward to celebrate getting started.",
-    category: "Onboarding",
-    points: 90,
-    difficulty: "Skilled",
-    icon: "trophy",
-    tone: "gold"
-  },
-  {
-    id: "rapid-reporter",
-    title: "Rapid Reporter",
-    description: "Flag a potentially risky message within 10 minutes of receiving it.",
-    category: "Speed",
-    points: 60,
-    difficulty: "Rising",
-    icon: "hourglass",
-    tone: "cobalt"
-  },
-  {
-    id: "whistle-watch",
-    title: "Whistle Watch",
-    description: "Escalate a suspicious phone call or SMS using WeldSecure tools.",
-    category: "Speed",
-    points: 115,
-    difficulty: "Expert",
-    icon: "whistle",
-    tone: "cobalt"
-  },
-  {
-    id: "resilience-ranger",
-    title: "Resilience Ranger",
-    description: "Coordinate a cross-team response that closes a high-severity incident in under an hour.",
-    category: "Speed",
-    points: 165,
-    difficulty: "Legendary",
-    icon: "shield",
-    tone: "emerald"
-  },
-  {
-    id: "spark-starter",
-    title: "Spark Starter",
-    description: "Be the first reporter to raise a newly trending threat subject.",
-    category: "Impact",
-    points: 85,
-    difficulty: "Skilled",
-    icon: "spark",
-    tone: "blush"
-  },
-  {
-    id: "automation-ally",
-    title: "Automation Ally",
-    description: "Trigger an automated secure response with your report metadata.",
-    category: "Impact",
-    points: 125,
-    difficulty: "Expert",
-    icon: "gear",
-    tone: "midnight"
-  },
-  {
-    id: "intel-curator",
-    title: "Intel Curator",
-    description: "Publish a weekly threat digest that five teammates subscribe to.",
-    category: "Impact",
-    points: 135,
-    difficulty: "Expert",
-    icon: "lightbulb",
-    tone: "amber"
-  },
-  {
-    id: "golden-signal",
-    title: "Golden Signal",
-    description: "Submit intel that leads to a high-severity threat takedown.",
-    category: "Impact",
-    points: 150,
-    difficulty: "Legendary",
-    icon: "diamond",
-    tone: "amber"
-  },
-  {
-    id: "threat-cartographer",
-    title: "Threat Cartographer",
-    description: "Map an emerging campaign across regions with actionable insights.",
-    category: "Impact",
-    points: 195,
-    difficulty: "Legendary",
-    icon: "globe",
-    tone: "midnight"
-  },
-  {
-    id: "zero-day-zeal",
-    title: "Zero-Day Zeal",
-    description: "Raise the first report tied to a zero-day alert in the news.",
-    category: "Impact",
-    points: 155,
-    difficulty: "Legendary",
-    icon: "flame",
-    tone: "gold"
-  },
-  {
-    id: "signal-sculptor",
-    title: "Signal Sculptor",
-    description: "Deliver ten high-confidence reports with full remediation playbooks.",
-    category: "Precision",
-    points: 190,
-    difficulty: "Legendary",
-    icon: "target",
-    tone: "cobalt"
-  },
-  {
-    id: "bullseye-breaker",
-    title: "Bullseye Breaker",
-    description: "Identify a targeted phishing attempt that hits multiple peers.",
-    category: "Precision",
-    points: 90,
-    difficulty: "Expert",
-    icon: "target",
-    tone: "cobalt"
-  },
-  {
-    id: "pattern-decoder",
-    title: "Pattern Decoder",
-    description: "Connect three related phishing emails across different days.",
-    category: "Impact",
-    points: 145,
-    difficulty: "Expert",
-    icon: "puzzle",
-    tone: "midnight"
-  },
-  {
-    id: "context-captain",
-    title: "Context Captain",
-    description: "Provide detailed notes and evidence for five consecutive reports.",
-    category: "Mastery",
-    points: 65,
-    difficulty: "Skilled",
-    icon: "clipboard",
-    tone: "emerald"
-  },
-  {
-    id: "playbook-pro",
-    title: "Playbook Pro",
-    description: "Complete every interactive training mission in the reporter hub.",
-    category: "Mastery",
-    points: 75,
-    difficulty: "Skilled",
-    icon: "book",
-    tone: "slate"
-  },
-  {
-    id: "playbook-architect",
-    title: "Playbook Architect",
-    description: "Design a custom response playbook adopted by your security team.",
-    category: "Mastery",
-    points: 185,
-    difficulty: "Legendary",
-    icon: "gear",
-    tone: "slate"
-  },
-  {
-    id: "insight-whisperer",
-    title: "Insight Whisperer",
-    description: "Spot a new attacker tactic before it appears in threat advisories.",
-    category: "Impact",
-    points: 140,
-    difficulty: "Expert",
-    icon: "lightbulb",
-    tone: "coral"
-  },
-  {
-    id: "hype-herald",
-    title: "Hype Herald",
-    description: "Promote WeldSecure reporting in a company-wide channel.",
-    category: "Culture",
-    points: 60,
-    difficulty: "Skilled",
-    icon: "megaphone",
-    tone: "emerald"
-  },
-  {
-    id: "culture-spark",
-    title: "Culture Spark",
-    description: "Share a vigilance tip that inspires three coworkers to report.",
-    category: "Culture",
-    points: 70,
-    difficulty: "Skilled",
-    icon: "heart",
-    tone: "emerald"
-  },
-  {
-    id: "buddy-system",
-    title: "Buddy System",
-    description: "Coach a colleague through their first WeldSecure report.",
-    category: "Collaboration",
-    points: 90,
-    difficulty: "Skilled",
-    icon: "handshake",
-    tone: "emerald"
-  },
-  {
-    id: "network-node",
-    title: "Network Node",
-    description: "Share a WeldSecure threat insight that sparks a team discussion.",
-    category: "Collaboration",
-    points: 80,
-    difficulty: "Skilled",
-    icon: "network",
-    tone: "aqua"
-  },
-  {
-    id: "mentor-maven",
-    title: "Mentor Maven",
-    description: "Guide three teammates to unlock their first advanced badge.",
-    category: "Collaboration",
-    points: 175,
-    difficulty: "Legendary",
-    icon: "handshake",
-    tone: "emerald"
-  },
-  {
-    id: "trend-setter",
-    title: "Trend Setter",
-    description: "Contribute to three weekly momentum report spikes in a quarter.",
-    category: "Consistency",
-    points: 95,
-    difficulty: "Expert",
-    icon: "chart",
-    tone: "slate"
-  },
-  {
-    id: "guardian-streak",
-    title: "Guardian Streak",
-    description: "Report suspicious content for seven days in a row.",
-    category: "Consistency",
-    points: 120,
-    difficulty: "Expert",
-    icon: "shield",
-    tone: "emerald"
-  },
-  {
-    id: "streak-ribbon",
-    title: "Streak Ribbon",
-    description: "Maintain a fourteen-day reporting streak without missing a beat.",
-    category: "Consistency",
-    points: 130,
-    difficulty: "Expert",
-    icon: "ribbon",
-    tone: "aqua"
-  },
-  {
-    id: "seasoned-sentinel",
-    title: "Seasoned Sentinel",
-    description: "Report suspicious activity every month for six consecutive months.",
-    category: "Consistency",
-    points: 160,
-    difficulty: "Legendary",
-    icon: "laurel",
-    tone: "amber"
-  },
-  {
-    id: "global-scout",
-    title: "Global Scout",
-    description: "Submit a report while traveling outside your primary office.",
-    category: "Mobility",
-    points: 100,
-    difficulty: "Skilled",
-    icon: "globe",
-    tone: "midnight"
-  },
-  {
-    id: "carry-on-defender",
-    title: "Carry-on Defender",
-    description: "Submit a high-quality report while traveling on business day one.",
-    category: "Mobility",
-    points: 100,
-    difficulty: "Expert",
-    icon: "plane",
-    tone: "blush"
-  },
-  {
-    id: "early-pathfinder",
-    title: "Early Pathfinder",
-    description: "Submit the first report from a newly onboarded location.",
-    category: "Activation",
-    points: 105,
-    difficulty: "Skilled",
-    icon: "compass",
-    tone: "slate"
-  },
-  {
-    id: "elevation-500",
-    title: "Elevation 500",
-    description: "Reach 500 lifetime WeldSecure points as a reporter.",
-    category: "Rewards",
-    points: 110,
-    difficulty: "Skilled",
-    icon: "mountain",
-    tone: "midnight"
-  },
-  {
-    id: "vanguard-veteran",
-    title: "Vanguard Veteran",
-    description: "Accumulate 1,000 lifetime points and keep your streak active.",
-    category: "Rewards",
-    points: 250,
-    difficulty: "Legendary",
-    icon: "crown",
-    tone: "gold"
-  },
-  {
-    id: "leaderboard-legend",
-    title: "Leaderboard Legend",
-    description: "Finish a month at the top of the reporter leaderboard.",
-    category: "Recognition",
-    points: 160,
-    difficulty: "Legendary",
-    icon: "trophy",
-    tone: "gold"
-  },
-  {
-    id: "spotlight-star",
-    title: "Spotlight Star",
-    description: "Be featured on the company vigilance wall of fame.",
-    category: "Recognition",
-    points: 170,
-    difficulty: "Legendary",
-    icon: "star",
-    tone: "gold"
-  },
-  {
-    id: "champion-circle",
-    title: "Champion Circle",
-    description: "Earn the monthly champion recognition from security leaders.",
-    category: "Recognition",
-    points: 180,
-    difficulty: "Legendary",
-    icon: "crown",
-    tone: "gold"
-  },
-  {
-    id: "sentinel-summit",
-    title: "Sentinel Summit",
-    description: "Headline a global security summit with a WeldSecure success story.",
-    category: "Recognition",
-    points: 210,
-    difficulty: "Legendary",
-    icon: "trophy",
-    tone: "midnight"
-  },
-  {
-    id: "badge-binge",
-    title: "Badge Binge",
-    description: "Unlock five unique reporter badges in a single quarter.",
-    category: "Meta",
-    points: 200,
-    difficulty: "Legendary",
-    icon: "badge",
-    tone: "amber"
-  }
-];
-
-const BADGE_CATEGORY_ORDER = [
-  "onboarding",
-  "activation",
-  "speed",
-  "impact",
-  "precision",
-  "mastery",
-  "collaboration",
-  "culture",
-  "consistency",
-  "mobility",
-  "rewards",
-  "recognition",
-  "meta"
-];
-
-const BADGE_DRAFTS = new Set([
-  "culture-spark",
-  "buddy-system",
-  "network-node",
-  "playbook-pro",
-  "mentor-maven",
-  "playbook-architect",
-  "threat-cartographer",
-  "signal-sculptor",
-  "vanguard-veteran",
-  "sentinel-summit"
-]);
-
-
-const DEFAULT_QUESTS = [
-  {
-    id: "phish-flash",
-    title: "Phish or Friend?",
-    icon: "target",
-    category: "Phishing defence",
-    difficulty: "Starter",
-    duration: 5,
-    questions: 6,
-    points: 120,
-    published: true,
-    format: "Inbox lightning round",
-    focus: ["Spot high-risk signals", "Practice one-click reporting", "Coach escalation confidence"],
-    bonus: "+20 streak bonus",
-    bonusDetail: "Complete this quiz two weeks in a row to unlock a ready-made recognition shout-out.",
-    description: "Review real inbox screenshots and choose whether to report, ignore, or escalate in under 20 seconds.",
-    sampleQuestion:
-      "A supplier email mirrors your branding and asks for credential re-entry. What is the next WeldSecure-approved step?"
-  },
-  {
-    id: "password-gauntlet",
-    title: "Password Gauntlet",
-    icon: "shield",
-    category: "Password hygiene",
-    difficulty: "Intermediate",
-    duration: 6,
-    questions: 8,
-    points: 140,
-    published: true,
-    format: "Drag-and-drop mission",
-    focus: ["Strengthen passphrases", "Prioritise MFA usage", "Promote password managers"],
-    bonus: "Double points on perfect run",
-    bonusDetail: "Score 100% to unlock an extra 140 bonus points for the participant.",
-    description: "Launch a timed challenge comparing passphrases, MFA prompts, and vault best practice.",
-    sampleQuestion:
-      "Which combination gives the strongest defence for a finance approver approving payments on the go?"
-  },
-  {
-    id: "shadow-it-sweep",
-    title: "Shadow IT Sweep",
-    icon: "network",
-    category: "Shadow IT awareness",
-    difficulty: "Intermediate",
-    duration: 7,
-    questions: 7,
-    points: 150,
-    published: true,
-    format: "Choose-your-path",
-    focus: ["Surface risky tools", "Coach safer swaps", "Reinforce reporting habits"],
-    bonus: "+30 guidance bonus",
-    bonusDetail: "Award additional points when teammates suggest Weld-approved replacements.",
-    description: "Guide employees through murky productivity tool choices without slowing their workflow.",
-    sampleQuestion:
-      "A colleague uploads customer data into an unsanctioned notes app. How do you protect the deal and momentum?"
-  },
-  {
-    id: "remote-first-response",
-    title: "Remote-First Response",
-    icon: "globe",
-    category: "Remote work hygiene",
-    difficulty: "Starter",
-    duration: 4,
-    questions: 5,
-    points: 100,
-    published: true,
-    format: "Tap-to-reveal story",
-    focus: ["Secure home setups", "Spot shoulder-surfing risk", "Keep VPN habits healthy"],
-    bonus: "+15 fast finish",
-    bonusDetail: "Wrap the quiz under four minutes to trigger a real-time kudos animation.",
-    description: "Short stories recreate remote mishaps from global deployments with choose-your-fix prompts.",
-    sampleQuestion:
-      "Your teammate joins a call from a cafe with customer dashboards on screen. What is the fastest mitigation?",
-    walkthrough: {
-      summary: "Use this quest to show how remote teammates stay sharp without a SOC on standby.",
-      learningObjectives: [
-        "Normalise quick remote environment checks before meetings.",
-        "Reinforce one-tap escalation from the Reporter add-in when context changes.",
-        "Celebrate streak momentum with bonus cues that feel rewarding, not punitive."
-      ],
-      setup: {
-        narrative: "Frame the story around Will, a revenue analyst dialing in from a pop-up coworking space.",
-        steps: [
-          "From the Reporter Hub, spotlight the quest card and mention the +15 fast finish incentive.",
-          "Call out that the quest is five micro-scenarios designed to be answered inside two minutes.",
-          "Explain that picking a risky option brings up instant guidance instead of just marking the answer wrong."
-        ]
-      },
-      storyBeats: [
-        {
-          title: "Beat 1 — Pop-up coworking chaos",
-          scenario: "Will squeezes into shared seating minutes before a customer renewal call.",
-          prompt: "Quiz asks whether to continue on the open floor, hunt for a focus room, or drop to audio only.",
-          idealAction: "Choose the focus room option and mention the in-quest reminder about badge access and privacy screens.",
-          callout: "Emphasise that the side panel presents the remote work checklist the moment the answer is submitted."
-        },
-        {
-          title: "Beat 2 — Shoulder surfing risk",
-          scenario: "A passer-by glances at pipeline dashboards while screen share is still active.",
-          prompt: "Learners decide between pausing the share, enabling blur, or continuing because the call is internal.",
-          idealAction: "Select 'Pause share + trigger WeldSecure alert' to show how the quest nudges the escalation flow.",
-          callout: "Point to the copy that reassures them a pre-filled Teams message is ready in the add-in."
-        },
-        {
-          title: "Beat 3 — VPN drop mid-call",
-          scenario: "The cafe Wi-Fi blips and the device quietly falls back to a hotspot.",
-          prompt: "Options include ignoring the change, reconnecting later, or re-authenticating immediately.",
-          idealAction: "Pick the immediate re-auth option to surface the fast finish tip for staying under four minutes.",
-          callout: "Note how the final screen tees up a recognition post security can paste into Slack."
-        }
-      ],
-      instrumentation: [
-        {
-          label: "Signals tracked",
-          detail: "VPN reconnect confirmations, device posture pings, and focus room bookings feed into Security Dashboards."
-        },
-        {
-          label: "Auto nudges",
-          detail: "Unsafe answers trigger microcopy nudging remote work policy, plus a one-click escalation draft."
-        }
-      ],
-      followUp: {
-        highlight: "Mention that completing the quest unlocks a templated kudos message security can send instantly.",
-        actions: [
-          "Jump to the Reporter points card to show the +15 fast finish bonus stacking on streaks.",
-          "Switch to the Security Team dashboard to highlight the remote context signal on the next sync."
-        ]
-      },
-      demoTips: [
-        "If time is tight, narrate Beat 2 in detail and summarise the others to keep momentum.",
-        "Reset demo data after the walkthrough to quickly rerun it with another audience."
-      ]
-    }
-  },
-  {
-    id: "gen-ai-guardrails",
-    title: "GenAI Guardrails Lab",
-    icon: "lightbulb",
-    category: "AI safety",
-    difficulty: "Advanced",
-    duration: 8,
-    questions: 9,
-    points: 180,
-    published: false,
-    format: "Scenario lab",
-    focus: ["Detect sensitive prompts", "Classify training data", "Escalate AI misuse"],
-    bonus: "+40 policy boost",
-    bonusDetail: "Completing awards an instant badge plus a personalised follow-up module.",
-    description: "Experience modern GenAI prompts and decide which ones violate policy before they spread.",
-    sampleQuestion:
-      "An engineer pastes client logs into an AI chat to debug an issue. What is the WeldSecure-approved response?"
-  },
-  {
-    id: "incident-escalation-sprint",
-    title: "Incident Escalation Sprint",
-    icon: "flame",
-    category: "Incident response",
-    difficulty: "Advanced",
-    duration: 9,
-    questions: 8,
-    points: 200,
-    published: false,
-    format: "Timer-based tabletop",
-    focus: ["Draft escalation updates", "Coordinate with SOC", "Protect comms channels"],
-    bonus: "+60 crisis mastery",
-    bonusDetail: "Finish under the time limit to unlock a post-incident debrief template.",
-    description: "Run a tight tabletop simulation that flexes response muscles without needing the SOC team online.",
-    sampleQuestion:
-      "Finance reports a compromised CFO mailbox. Who do you notify first and which channel keeps legal synced?"
-  }
-];
-
-const DEPARTMENT_LEADERBOARD = [
-  {
-    id: "finance-vanguard",
-    name: "Finance Vanguard",
-    department: "Finance & Procurement",
-    points: 1840,
-    trendDirection: "up",
-    trendValue: "+12%",
-    trendCaption: "vs last month",
-    participationRate: 0.88,
-    streakWeeks: 6,
-    avgResponseMinutes: 7,
-    featuredBadgeId: "zero-day-zeal",
-    featuredQuestId: "phish-flash",
-    momentumTag: "Invoice armour programme",
-    focusNarrative: "Refined vendor verification playbook and spotlighted cross-team hero catches.",
-    tone: "indigo",
-    published: true
-  },
-  {
-    id: "people-pulse",
-    name: "People Pulse",
-    department: "People & Culture",
-    points: 1520,
-    trendDirection: "up",
-    trendValue: "+8%",
-    trendCaption: "participation jump",
-    participationRate: 0.92,
-    streakWeeks: 9,
-    avgResponseMinutes: 5,
-    featuredBadgeId: "reward-ready",
-    featuredQuestId: "remote-first-response",
-    momentumTag: "Recognition wave",
-    focusNarrative: "Weekend flash quests with live kudos and squad shout-outs.",
-    tone: "rose",
-    published: true
-  },
-  {
-    id: "engineering-guild",
-    name: "Engineering Guild",
-    department: "Engineering & Product",
-    points: 1375,
-    trendDirection: "steady",
-    trendValue: "+0%",
-    trendCaption: "holding line",
-    participationRate: 0.71,
-    streakWeeks: 3,
-    avgResponseMinutes: 11,
-    featuredBadgeId: "automation-ally",
-    featuredQuestId: "gen-ai-guardrails",
-    momentumTag: "AI guardrails pilot",
-    focusNarrative: "Running targeted prompt labs for early adopters before wider launch.",
-    tone: "cyan",
-    published: false
-  },
-  {
-    id: "operations-shield",
-    name: "Operations Shield",
-    department: "Operations & Logistics",
-    points: 1655,
-    trendDirection: "up",
-    trendValue: "+5%",
-    trendCaption: "vs prior sprint",
-    participationRate: 0.83,
-    streakWeeks: 7,
-    avgResponseMinutes: 8,
-    featuredBadgeId: "resilience-ranger",
-    featuredQuestId: "incident-escalation-sprint",
-    momentumTag: "Tabletop surge",
-    focusNarrative: "Daily stand-ups highlight rapid approvals and rerun the crisis sprint.",
-    tone: "emerald",
-    published: true
-  }
-];
-
-const ENGAGEMENT_PROGRAMS = [
-  {
-    id: "double-points-weekender",
-    title: "Double points Friday",
-    category: "Live boost",
-    description: "Run a 90-minute double points window that encourages inbox clean-up before the weekend.",
-    metricValue: "x2.1",
-    metricCaption: "reports submitted",
-    audience: "Finance Vanguard",
-    owner: "Security champions",
-    status: "Running",
-    successSignal: "Finance Vanguard kept a six-week streak after launching this boost.",
-    tone: "fuchsia",
-    published: true
-  },
-  {
-    id: "quest-mini-series",
-    title: "Inbox mini-series",
-    category: "Seasonal quest",
-    description: "Bundle three quests into a themed playlist with auto-publishing between chapters.",
-    metricValue: "87%",
-    metricCaption: "completion rate",
-    audience: "People Pulse",
-    owner: "Enablement squad",
-    status: "Scheduled",
-    successSignal: "HR tees this up with a Monday post and finishes with raffle shout-outs.",
-    tone: "indigo",
-    published: false
-  },
-  {
-    id: "legendary-badge-chase",
-    title: "Legendary badge chase",
-    category: "Badge drop",
-    description: "Highlight the newest Legendary badges with a milestone tracker inside the hub.",
-    metricValue: "14",
-    metricCaption: "Legendary badges minted",
-    audience: "All departments",
-    owner: "Engagement operations",
-    status: "Draft",
-    successSignal: "Reporter success view now spotlights the latest Legendary unlock.",
-    tone: "amber",
-    published: false
-  }
-];
-
-function initialState() {
-  const reporterReasons = DEFAULT_REPORTER_REASONS.map(item => ({ ...item }));
-
-  return {
-    meta: {
-      role: null,
-      route: "landing",
-      addinScreen: "report",
-      lastReportedSubject: null,
-      lastReportPoints: null,
-      lastBalanceBefore: null,
-      lastBalanceAfter: null,
-      lastBadgeId: null,
-      lastBadgeIds: [],
-      lastBadgePoints: null,
-      lastTotalAwarded: null,
-      lastMessageId: null,
-      lastClientSnapshot: null,
-      reportFilter: null,
-      rewardFilter: null,
-      rewardStatusFilter: null,
-      questFilter: null,
-      questStatusFilter: null,
-      badgeFilter: null,
-      badgeStatusFilter: null,
-      settingsOpen: false,
-      settingsCategory: "reporter"
-    },
-    settings: {
-      reporter: {
-        reasonPrompt: DEFAULT_REPORTER_PROMPT,
-        emergencyLabel: DEFAULT_EMERGENCY_LABEL,
-        reasons: reporterReasons
-      }
-    },
-    customer: {
-      id: 501,
-      name: "Rachel Summers",
-      email: "rachel.summers@example.com",
-      currentPoints: 540,
-      redeemedPoints: 180,
-      clientId: 101,
-      bonusPoints: {
-        weeklyCap: 150,
-        earnedThisWeek: 110,
-        breakdown: [
-          {
-            id: "quests",
-            label: "Quests completed",
-            description: "First quest this month triggered the double-points boost.",
-            points: 60,
-            firstOfMonthDouble: true
-          },
-          {
-            id: "boosters",
-            label: "Learning boosters",
-            description: "Inbox coaching nudges acknowledged within 24 hours.",
-            points: 30
-          },
-          {
-            id: "team",
-            label: "Team streak bonus",
-            description: "Squad hit its weekly response streak target.",
-            points: 20
-          }
-        ]
-      },
-      questCompletions: []
-    },
-    teamMembers: [
-      {
-        id: "rachel-summers",
-        name: "Rachel Summers",
-        email: "rachel.summers@example.com",
-        title: "Operations Lead",
-        location: "London HQ",
-        specialty: "Finance workflows",
-        avatarTone: "violet"
-      },
-      {
-        id: "priya-shah",
-        name: "Priya Shah",
-        email: "priya.shah@example.com",
-        title: "Senior Security Analyst",
-        location: "London SOC",
-        specialty: "Payment diversion",
-        avatarTone: "teal"
-      },
-      {
-        id: "will-adams",
-        name: "Will Adams",
-        email: "will.adams@example.com",
-        title: "Risk Champion — Finance",
-        location: "Birmingham",
-        specialty: "Executive impersonation",
-        avatarTone: "amber"
-      },
-      {
-        id: "daniel-cho",
-        name: "Daniel Cho",
-        email: "daniel.cho@example.com",
-        title: "Trading Operations Associate",
-        location: "London HQ",
-        specialty: "Market alerts",
-        avatarTone: "blue"
-      },
-      {
-        id: "hannah-elliott",
-        name: "Hannah Elliott",
-        email: "hannah.elliott@example.com",
-        title: "Employee Success Partner",
-        location: "Manchester",
-        specialty: "Awareness programmes",
-        avatarTone: "rose"
-      }
-    ],
-    recognitions: [
-      {
-        id: "rec-1001",
-        senderEmail: "priya.shah@example.com",
-        senderName: "Priya Shah",
-        senderTitle: "Senior Security Analyst",
-        recipientEmail: "rachel.summers@example.com",
-        recipientName: "Rachel Summers",
-        recipientTitle: "Operations Lead",
-        points: 35,
-        focus: "Vendor payment spoof",
-        message:
-          "Rachel spotted the spoofed supplier account change before finance processed it and kept GBP 32k in our accounts.",
-        channel: "Hub spotlight",
-        createdAt: "2025-10-08T09:55:00Z"
-      },
-      {
-        id: "rec-1002",
-        senderEmail: "will.adams@example.com",
-        senderName: "Will Adams",
-        senderTitle: "Risk Champion — Finance",
-        recipientEmail: "rachel.summers@example.com",
-        recipientName: "Rachel Summers",
-        recipientTitle: "Operations Lead",
-        points: 20,
-        focus: "BEC attempt escalated",
-        message:
-          "Thanks for looping me in on the fake CEO request. Your context helped us warn the exec team before any funds moved.",
-        channel: "Slack kudos",
-        createdAt: "2025-10-06T14:25:00Z"
-      },
-      {
-        id: "rec-1003",
-        senderEmail: "hannah.elliott@example.com",
-        senderName: "Hannah Elliott",
-        senderTitle: "Employee Success Partner",
-        recipientEmail: "rachel.summers@example.com",
-        recipientName: "Rachel Summers",
-        recipientTitle: "Operations Lead",
-        points: 25,
-        focus: "Awareness champion",
-        message:
-          "Rachel’s town hall walkthrough on spotting bogus invoices gave every squad a playbook to challenge risky requests.",
-        channel: "Town hall shout-out",
-        createdAt: "2025-10-04T17:20:00Z"
-      },
-      {
-        id: "rec-1004",
-        senderEmail: "rachel.summers@example.com",
-        senderName: "Rachel Summers",
-        senderTitle: "Operations Lead",
-        recipientEmail: "daniel.cho@example.com",
-        recipientName: "Daniel Cho",
-        recipientTitle: "Trading Operations Associate",
-        points: 15,
-        focus: "Credential lure spotted",
-        message:
-          "Daniel reset credentials within minutes of the lure email and blocked the follow-up attempt from reaching the desk.",
-        channel: "Hub spotlight",
-        createdAt: "2025-10-05T11:02:00Z"
-      }
-    ],
-    rewards: [
-      {
-        id: 1,
-        name: "Fortnum & Mason Afternoon Tea",
-        description: "Premium afternoon tea experience for two, delivered to your door.",
-        pointsCost: 400,
-        icon: "gift",
-        category: "experience",
-        provider: "Fortnum & Mason",
-        image: "linear-gradient(135deg, #9457ff 0%, #4e0dff 100%)",
-        remaining: 6,
-        published: true
-      },
-      {
-        id: 2,
-        name: "Selfridges Gift Card",
-        description: "Digital gift card redeemable online or in-store.",
-        pointsCost: 280,
-        icon: "gift",
-        category: "voucher",
-        provider: "Selfridges & Co",
-        image: "linear-gradient(135deg, #ff8a80 0%, #ff416c 100%)",
-        remaining: 12,
-        published: true
-      },
-      {
-        id: 3,
-        name: "Margot & Montanez Chocolate Hamper",
-        description: "Limited edition artisan chocolate selection to celebrate vigilance.",
-        pointsCost: 120,
-        icon: "gift",
-        category: "merchandise",
-        provider: "Margot & Montanez",
-        image: "linear-gradient(135deg, #ffbe0b 0%, #fb5607 100%)",
-        remaining: 20,
-        published: false
-      },
-      {
-        id: 4,
-        name: "Weld Champion Hoodie",
-        description: "Exclusive Weld hoodie for team members leading the risk scoreboard.",
-        pointsCost: 260,
-        icon: "gift",
-        category: "merchandise",
-        provider: "Weld Apparel",
-        image: "linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)",
-        remaining: 15,
-        published: false
-      },
-      {
-        id: 5,
-        name: "Amazon Gift Card",
-        description: "Digital code redeemable across Amazon.co.uk for everyday essentials or treats.",
-        pointsCost: 220,
-        icon: "gift",
-        category: "voucher",
-        provider: "Amazon UK",
-        image: "linear-gradient(135deg, #f97316 0%, #facc15 100%)",
-        remaining: 18,
-        published: true
-      },
-      {
-        id: 6,
-        name: "Plant a Tree",
-        description: "Fund the planting of a tree through our sustainability partner.",
-        pointsCost: 150,
-        icon: "gift",
-        category: "sustainability",
-        provider: "Green Earth Collective",
-        image: "linear-gradient(135deg, #22c55e 0%, #0ea5e9 100%)",
-        remaining: 40,
-        published: true
-      },
-      {
-        id: 7,
-        name: "Extra Day of Annual Leave",
-        description: "Enjoy an additional day of paid leave approved by your manager.",
-        pointsCost: 480,
-        icon: "gift",
-        category: "benefit",
-        provider: "People Team",
-        image: "linear-gradient(135deg, #818cf8 0%, #312e81 100%)",
-        remaining: 5,
-        published: false
-      },
-      {
-        id: 8,
-        name: "Donate to Charity",
-        description: "Direct a WeldSecure-supported donation to a charitable partner of your choice.",
-        pointsCost: 180,
-        icon: "gift",
-        category: "charity",
-        provider: "WeldSecure Giving",
-        image: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
-        remaining: null,
-        unlimited: true,
-        published: true
-      },
-      {
-        id: 9,
-        name: "Contribute to Work Social Event",
-        description: "Add funds to enhance the next team social experience.",
-        pointsCost: 140,
-        icon: "gift",
-        category: "culture",
-        provider: "Employee Engagement",
-        image: "linear-gradient(135deg, #38bdf8 0%, #6366f1 100%)",
-        remaining: 25,
-        published: false
-      }
-    ],
-    quests: DEFAULT_QUESTS.map(quest => ({
-      ...quest,
-      published: typeof quest.published === "boolean" ? quest.published : true
-    })),
-    badges: BADGES.map(badge => ({
-      ...badge,
-      published: !BADGE_DRAFTS.has(badge.id)
-    })),
-    departmentLeaderboard: DEPARTMENT_LEADERBOARD.map(entry => ({
-      ...entry
-    })),
-    engagementPrograms: ENGAGEMENT_PROGRAMS.map(program => ({
-      ...program
-    })),
-    labs: {
-      lastReviewAt: "2025-10-18T08:30:00Z",
-      features: [
-        {
-          id: "adaptive-detections",
-          name: "Adaptive detection tuning",
-          status: "Private beta",
-          summary: "Automatically recalibrates phishing heuristics per tenant using cross-network telemetry.",
-          benefit: "Cuts analyst investigation time by serving enriched verdicts back into the queue.",
-          tags: ["Detection", "Automation"],
-          owner: "Product incubation",
-          enabledClientIds: [101, 103]
-        },
-        {
-          id: "just-in-time-nudges",
-          name: "Just-in-time nudges",
-          status: "Design partner",
-          summary: "Pushes contextual prompts to employees immediately after a risky action is detected.",
-          benefit: "Reduces repeat risky behaviour through targeted reinforcement moments.",
-          tags: ["Behaviour change", "Reporter experience"],
-          owner: "Behaviour Lab",
-          enabledClientIds: [102]
-        },
-        {
-          id: "tenant-signal-exchange",
-          name: "Tenant signal exchange",
-          status: "Private preview",
-          summary: "Shares anonymised threat fingerprints between tenants to accelerate pattern blocking.",
-          benefit: "Creates early warning signals ahead of spikes hitting the broader customer base.",
-          tags: ["Threat intel", "Network effects"],
-          owner: "WeldSecure Labs",
-          enabledClientIds: []
-        }
-      ]
-    },
-    rewardRedemptions: [
-      { id: 1, rewardId: 3, redeemedAt: "2025-09-12T09:30:00Z", status: "fulfilled" }
-    ],
-    messages: [
-      {
-        id: 9001,
-        messageId: "AAMkAGU0Zjk5ZGMyLTQ4M2UtND",
-        subject: "Caller posing as IT support about device settings",
-        reporterName: "Rachel Summers",
-        reporterEmail: "rachel.summers@example.com",
-        clientId: 101,
-        reportedAt: "2025-10-07T08:45:00Z",
-        status: MessageStatus.APPROVED,
-        reasons: ["reason-suspicious-call", "reason-urgent-tone"],
-        pointsOnMessage: 20,
-        pointsOnApproval: 80,
-        additionalNotes:
-          "They phoned saying they were from IT and pushed me to disable MFA and read out a reset PIN."
-      },
-      {
-        id: 9002,
-        messageId: "AAMkAGRjYTgzZjAtOGQ0Mi00",
-        subject: "WhatsApp message pretending to be our CFO",
-        reporterName: "Rachel Summers",
-        reporterEmail: "rachel.summers@example.com",
-        clientId: 101,
-        reportedAt: "2025-10-02T17:12:00Z",
-        status: MessageStatus.PENDING,
-        reasons: ["reason-suspicious-text", "reason-spoofing-senior"],
-        pointsOnMessage: 20,
-        pointsOnApproval: 80,
-        additionalNotes:
-          "Request came from an unknown number asking for an urgent gift card purchase and to keep it secret."
-      },
-      {
-        id: 9003,
-        messageId: "AAMkAGQxZTZlNDAtZWMxOS00",
-        subject: "Unfamiliar QR code posted at the car park entrance",
-        reporterName: "Rachel Summers",
-        reporterEmail: "rachel.summers@example.com",
-        clientId: 101,
-        reportedAt: "2025-09-26T11:06:00Z",
-        status: MessageStatus.APPROVED,
-        reasons: ["reason-suspicious-qr", "reason-unexpected-attachment"],
-        pointsOnMessage: 20,
-        pointsOnApproval: 80,
-        additionalNotes:
-          "Sticker looked unofficial and led to a fake login page when scanned — removed it and reported facilities."
-      }
-    ],
-    clients: [
-      {
-        id: 101,
-        name: "Evergreen Capital",
-        organizationId: "e3a4-uk-lon",
-        pointsPerMessage: 20,
-        pointsOnApproval: 80,
-        activeUsers: 184,
-        healthScore: 92,
-        openCases: 3,
-        lastReportAt: "2025-10-07T08:45:00Z"
-      },
-      {
-        id: 102,
-        name: "Harper & Black",
-        organizationId: "hb-uk-lon",
-        pointsPerMessage: 20,
-        pointsOnApproval: 80,
-        activeUsers: 82,
-        healthScore: 86,
-        openCases: 5,
-        lastReportAt: "2025-10-06T15:20:00Z"
-      },
-      {
-        id: 103,
-        name: "Cobalt Manufacturing",
-        organizationId: "cobalt-emea",
-        pointsPerMessage: 20,
-        pointsOnApproval: 80,
-        activeUsers: 241,
-        healthScore: 74,
-        openCases: 9,
-        lastReportAt: "2025-10-05T10:15:00Z"
-      }
-    ]
-  };
-}
-
-function clone(value) {
-  return JSON.parse(JSON.stringify(value));
-}
-
-function storageAvailable() {
-  try {
-    const testKey = "__weldTest";
-    localStorage.setItem(testKey, "1");
-    localStorage.removeItem(testKey);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function loadState() {
-  if (!storageAvailable()) {
-    return initialState();
-  }
-
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    return initialState();
-  }
-
-  try {
-    const parsed = JSON.parse(raw);
-    const baseState = initialState();
-    const {
-      reportReasons: legacyReportReasons,
-      settings: storedSettingsRaw,
-      ...passthrough
-    } = parsed;
-    const parsedSettings =
-      storedSettingsRaw && typeof storedSettingsRaw === "object" ? storedSettingsRaw : {};
-    const normalizedQuests = Array.isArray(parsed.quests)
-      ? parsed.quests.map(quest => {
-          const baseQuest = baseState.quests.find(item => item.id === quest.id);
-          return {
-            ...baseQuest,
-            ...quest,
-            published:
-              typeof quest.published === "boolean"
-                ? quest.published
-                : baseQuest?.published ?? true
-          };
-        })
-      : baseState.quests;
-    const normalizedRewards = Array.isArray(parsed.rewards)
-      ? (() => {
-          const mergedRewards = parsed.rewards.map(reward => {
-            const baseReward =
-              baseState.rewards.find(item => item.id === reward.id) || {};
-            const unlimited = baseReward.unlimited === true || reward.unlimited === true;
-            const hasFiniteRemaining = Number.isFinite(reward.remaining);
-            const baseRemaining = Number.isFinite(baseReward.remaining)
-              ? baseReward.remaining
-              : 0;
-            return {
-              ...baseReward,
-              ...reward,
-              icon: "gift",
-              unlimited,
-              remaining: unlimited
-                ? null
-                : hasFiniteRemaining
-                ? reward.remaining
-                : baseRemaining,
-              published:
-                typeof reward.published === "boolean"
-                  ? reward.published
-                  : baseReward.published ?? true
-            };
-          });
-          const existingRewardIds = new Set(
-            mergedRewards.map(reward => reward.id)
-          );
-          const newRewards = baseState.rewards
-            .filter(reward => !existingRewardIds.has(reward.id))
-            .map(reward => ({ ...reward }));
-          return [...mergedRewards, ...newRewards];
-        })()
-      : baseState.rewards;
-    const normalizedBadges = Array.isArray(parsed.badges)
-      ? (() => {
-          const overrides = new Map();
-          parsed.badges.forEach(item => {
-            if (!item) return;
-            const key =
-              typeof item.id === "string" && item.id.trim().length > 0
-                ? item.id.trim()
-                : null;
-            if (key) {
-              overrides.set(key, { ...item, id: key });
-            } else {
-              const fallbackId = generateId("badge");
-              overrides.set(fallbackId, { ...item, id: fallbackId });
-            }
-          });
-          const merged = baseState.badges.map(baseBadge => {
-            const override = overrides.get(baseBadge.id);
-            if (!override) {
-              return { ...baseBadge };
-            }
-            overrides.delete(baseBadge.id);
-            return {
-              ...baseBadge,
-              ...override,
-              id: baseBadge.id,
-              published:
-                typeof override.published === "boolean"
-                  ? override.published
-                  : baseBadge.published
-            };
-          });
-          const additional = Array.from(overrides.values()).map(item => ({
-            ...item,
-            published:
-              typeof item.published === "boolean"
-                ? item.published
-                : !BADGE_DRAFTS.has(item.id)
-          }));
-          return [...merged, ...additional];
-        })()
-      : baseState.badges;
-    const normalizedClients = Array.isArray(parsed.clients)
-      ? parsed.clients.map(client => {
-          const baseClient = baseState.clients.find(item => item.id === client.id);
-          return {
-            ...client,
-            pointsPerMessage: baseClient ? baseClient.pointsPerMessage : 20,
-            pointsOnApproval: baseClient ? baseClient.pointsOnApproval : 80
-          };
-        })
-      : baseState.clients;
-    const normalizedRewardRedemptions = Array.isArray(parsed.rewardRedemptions)
-      ? parsed.rewardRedemptions.map(entry => ({
-          ...entry,
-          id: normalizeId(entry.id, "redemption") ?? generateId("redemption")
-        }))
-      : baseState.rewardRedemptions.map(entry => ({
-          ...entry,
-          id: normalizeId(entry.id, "redemption") ?? generateId("redemption")
-        }));
-    const baseTeamMembers = Array.isArray(baseState.teamMembers) ? baseState.teamMembers : [];
-    const normalizedTeamMembers = Array.isArray(parsed.teamMembers)
-      ? (() => {
-          const seenEmails = new Set();
-          const normalized = [];
-          parsed.teamMembers.forEach(member => {
-            if (!member) return;
-            const email =
-              typeof member.email === "string" && member.email.trim().length > 0
-                ? member.email.trim()
-                : null;
-            if (!email) return;
-            const emailKey = email.toLowerCase();
-            if (seenEmails.has(emailKey)) return;
-            seenEmails.add(emailKey);
-            const candidateId = normalizeId(member.id, "member") ?? generateId("member");
-            const baseMatch =
-              baseTeamMembers.find(baseMember => {
-                if (!baseMember) return false;
-                if (baseMember.id && baseMember.id === candidateId) return true;
-                if (typeof baseMember.email !== "string") return false;
-                return baseMember.email.trim().toLowerCase() === emailKey;
-              }) || null;
-            normalized.push({
-              ...(baseMatch ? { ...baseMatch } : {}),
-              ...member,
-              id: candidateId,
-              email
-            });
-          });
-          baseTeamMembers.forEach(baseMember => {
-            if (!baseMember || typeof baseMember.email !== "string") return;
-            const emailKey = baseMember.email.trim().toLowerCase();
-            if (!emailKey || seenEmails.has(emailKey)) return;
-            seenEmails.add(emailKey);
-            normalized.push({ ...baseMember });
-          });
-          return normalized;
-        })()
-      : baseTeamMembers.map(member => ({ ...member }));
-    const teamMemberLookup = new Map();
-    normalizedTeamMembers.forEach(member => {
-      if (!member || typeof member.email !== "string") return;
-      const key = member.email.trim().toLowerCase();
-      if (!key || teamMemberLookup.has(key)) return;
-      teamMemberLookup.set(key, member);
-    });
-    const normalizedRecognitions = Array.isArray(parsed.recognitions)
-      ? (() => {
-          const seenIds = new Set();
-          return parsed.recognitions
-            .map(entry => {
-              if (!entry) return null;
-              const id = normalizeId(entry.id, "recognition") ?? generateId("recognition");
-              if (seenIds.has(id)) return null;
-              seenIds.add(id);
-              const senderEmail =
-                typeof entry.senderEmail === "string" && entry.senderEmail.trim().length > 0
-                  ? entry.senderEmail.trim()
-                  : null;
-              const recipientEmail =
-                typeof entry.recipientEmail === "string" && entry.recipientEmail.trim().length > 0
-                  ? entry.recipientEmail.trim()
-                  : null;
-              if (!senderEmail || !recipientEmail) return null;
-              const senderMember = teamMemberLookup.get(senderEmail.toLowerCase()) || null;
-              const recipientMember = teamMemberLookup.get(recipientEmail.toLowerCase()) || null;
-              const rawPoints = Number(entry.points);
-              const normalizedPoints =
-                Number.isFinite(rawPoints) && rawPoints > 0 ? Math.round(rawPoints) : 0;
-              const focusLabel =
-                typeof entry.focus === "string" && entry.focus.trim().length > 0
-                  ? entry.focus.trim()
-                  : "Recognition spotlight";
-              const channelLabel =
-                typeof entry.channel === "string" && entry.channel.trim().length > 0
-                  ? entry.channel.trim()
-                  : "Hub spotlight";
-              const message =
-                typeof entry.message === "string" && entry.message.trim().length > 0
-                  ? entry.message.trim()
-                  : null;
-              if (!message) return null;
-              const createdAt =
-                typeof entry.createdAt === "string" && entry.createdAt.trim().length > 0
-                  ? entry.createdAt.trim()
-                  : new Date().toISOString();
-              return {
-                id,
-                senderEmail,
-                senderName: entry.senderName || senderMember?.name || senderEmail,
-                senderTitle: entry.senderTitle || senderMember?.title || "",
-                recipientEmail,
-                recipientName: entry.recipientName || recipientMember?.name || recipientEmail,
-                recipientTitle: entry.recipientTitle || recipientMember?.title || "",
-                points: normalizedPoints,
-                focus: focusLabel,
-                message,
-                channel: channelLabel,
-                createdAt
-              };
-            })
-            .filter(Boolean);
-        })()
-      : (baseState.recognitions || []).map(entry => ({ ...entry }));
-    const normalizedLeaderboard = Array.isArray(parsed.departmentLeaderboard)
-      ? (() => {
-          const baseMap = new Map(
-            (baseState.departmentLeaderboard || []).map(entry => [entry.id, entry])
-          );
-          const seen = new Set();
-          const merged = parsed.departmentLeaderboard
-            .map(entry => {
-              if (!entry) return null;
-              const normalizedId = normalizeId(entry.id, "dept") ?? generateId("dept");
-              const baseEntry = baseMap.get(normalizedId) || {};
-              seen.add(normalizedId);
-              return {
-                ...baseEntry,
-                ...entry,
-                id: normalizedId,
-                published:
-                  typeof entry.published === "boolean"
-                    ? entry.published
-                    : baseEntry.published ?? true
-              };
-            })
-            .filter(Boolean);
-          const additions = (baseState.departmentLeaderboard || [])
-            .filter(entry => entry && !seen.has(entry.id))
-            .map(entry => ({ ...entry }));
-          return [...merged, ...additions];
-        })()
-      : (baseState.departmentLeaderboard || []).map(entry => ({ ...entry }));
-    const normalizedPrograms = Array.isArray(parsed.engagementPrograms)
-      ? (() => {
-          const baseMap = new Map((baseState.engagementPrograms || []).map(item => [item.id, item]));
-          const seen = new Set();
-          const merged = parsed.engagementPrograms
-            .map(item => {
-              if (!item) return null;
-              const normalizedId = normalizeId(item.id, "program") ?? generateId("program");
-              const baseItem = baseMap.get(normalizedId) || {};
-              seen.add(normalizedId);
-              return {
-                ...baseItem,
-                ...item,
-                id: normalizedId,
-                published:
-                  typeof item.published === "boolean"
-                    ? item.published
-                    : baseItem.published ?? true
-              };
-            })
-            .filter(Boolean);
-          const additions = (baseState.engagementPrograms || [])
-            .filter(item => item && !seen.has(item.id))
-            .map(item => ({ ...item }));
-          return [...merged, ...additions];
-        })()
-      : (baseState.engagementPrograms || []).map(item => ({ ...item }));
-    const normalizedLabs = (() => {
-      const baseLabs = baseState.labs && typeof baseState.labs === "object" ? baseState.labs : {};
-      const parsedLabs = parsed.labs && typeof parsed.labs === "object" ? parsed.labs : {};
-      const baseFeatures = Array.isArray(baseLabs.features) ? baseLabs.features : [];
-      const parsedFeatures = Array.isArray(parsedLabs.features) ? parsedLabs.features : [];
-      const overrides = new Map();
-      parsedFeatures.forEach(item => {
-        if (!item) return;
-        const key =
-          typeof item.id === "string" && item.id.trim().length > 0
-            ? item.id.trim()
-            : typeof item.id === "number" && Number.isFinite(item.id)
-            ? String(item.id)
-            : null;
-        if (!key) return;
-        overrides.set(key, { ...item, id: key });
-      });
-      const normalizeClientIds = source => {
-        if (!Array.isArray(source)) return [];
-        const seen = new Set();
-        const normalized = [];
-        source.forEach(value => {
-          let candidate = null;
-          if (Number.isFinite(value)) {
-            candidate = Number(value);
-          } else if (typeof value === "string") {
-            const trimmed = value.trim();
-            if (!trimmed) return;
-            const numeric = Number(trimmed);
-            candidate = Number.isFinite(numeric) ? numeric : trimmed;
-          }
-          if (candidate === null) return;
-          const key = typeof candidate === "number" ? candidate : String(candidate);
-          if (seen.has(key)) return;
-          seen.add(key);
-          normalized.push(candidate);
-        });
-        return normalized;
-      };
-      const mergedFeatures = baseFeatures.map(feature => {
-        const id =
-          typeof feature.id === "string" && feature.id.trim().length > 0
-            ? feature.id.trim()
-            : typeof feature.id === "number" && Number.isFinite(feature.id)
-            ? String(feature.id)
-            : generateId("lab");
-        const override = overrides.get(id);
-        if (override) {
-          overrides.delete(id);
-        }
-        const enabledSource = override?.enabledClientIds ?? feature.enabledClientIds ?? [];
-        return {
-          ...feature,
-          ...(override ? { ...override } : {}),
-          id,
-          enabledClientIds: normalizeClientIds(enabledSource)
-        };
-      });
-      overrides.forEach((override, id) => {
-        mergedFeatures.push({
-          ...override,
-          id,
-          enabledClientIds: normalizeClientIds(override.enabledClientIds)
-        });
-      });
-      const lastReviewAt =
-        typeof parsedLabs.lastReviewAt === "string" && parsedLabs.lastReviewAt.trim().length > 0
-          ? parsedLabs.lastReviewAt.trim()
-          : typeof baseLabs.lastReviewAt === "string" && baseLabs.lastReviewAt.trim().length > 0
-          ? baseLabs.lastReviewAt.trim()
-          : null;
-      return {
-        ...baseLabs,
-        ...parsedLabs,
-        lastReviewAt,
-        features: mergedFeatures
-      };
-    })();
-    const baseReporterSettings = baseState.settings?.reporter || {
-      reasonPrompt: DEFAULT_REPORTER_PROMPT,
-      emergencyLabel: DEFAULT_EMERGENCY_LABEL,
-      reasons: []
-    };
-    const storedReporterSettings =
-      parsedSettings && typeof parsedSettings.reporter === "object"
-        ? parsedSettings.reporter
-        : null;
-    const reporterReasonsSource = Array.isArray(storedReporterSettings?.reasons)
-      ? storedReporterSettings.reasons
-      : Array.isArray(legacyReportReasons)
-      ? legacyReportReasons
-      : baseReporterSettings.reasons;
-    const seenReasonIds = new Set();
-    const reasonIdMap = new Map();
-    const normalizedReporterReasons = [];
-    reporterReasonsSource.forEach((reason, index) => {
-      if (!reason) return;
-      const labelSource =
-        typeof reason === "string"
-          ? reason
-          : typeof reason.label === "string"
-          ? reason.label
-          : typeof reason.description === "string"
-          ? reason.description
-          : null;
-      if (!labelSource) return;
-      const label = labelSource.trim();
-      if (!label) return;
-      const idCandidate =
-        typeof reason === "string" ? null : reason.id ?? reason.key ?? reason.value ?? null;
-      let normalizedId = normalizeId(idCandidate, "reason");
-      const legacyKey = normalizedId;
-      if (!normalizedId) {
-        normalizedId = `reason-${index + 1}`;
-      }
-      while (seenReasonIds.has(normalizedId)) {
-        normalizedId = `${normalizedId}-${index + 1}`;
-      }
-      seenReasonIds.add(normalizedId);
-      if (legacyKey) {
-        reasonIdMap.set(legacyKey, normalizedId);
-      }
-      reasonIdMap.set(String(index + 1), normalizedId);
-      normalizedReporterReasons.push({ id: normalizedId, label });
-    });
-    const reporterReasons =
-      normalizedReporterReasons.length > 0
-        ? normalizedReporterReasons
-        : baseReporterSettings.reasons.map(item => ({ ...item }));
-    const normalizedReporterSettings = {
-      reasonPrompt:
-        typeof storedReporterSettings?.reasonPrompt === "string" &&
-        storedReporterSettings.reasonPrompt.trim().length > 0
-          ? storedReporterSettings.reasonPrompt.trim()
-          : baseReporterSettings.reasonPrompt,
-      emergencyLabel:
-        typeof storedReporterSettings?.emergencyLabel === "string" &&
-        storedReporterSettings.emergencyLabel.trim().length > 0
-          ? storedReporterSettings.emergencyLabel.trim()
-          : baseReporterSettings.emergencyLabel,
-      reasons: reporterReasons
-    };
-    if (
-      typeof normalizedReporterSettings.emergencyLabel === "string" &&
-      normalizedReporterSettings.emergencyLabel.trim().toLowerCase() ===
-        PREVIOUS_EMERGENCY_LABEL.toLowerCase()
-    ) {
-      normalizedReporterSettings.emergencyLabel = DEFAULT_EMERGENCY_LABEL;
-    }
-    const normalizedSettings = {
-      ...baseState.settings,
-      ...(parsedSettings && typeof parsedSettings === "object" ? parsedSettings : {}),
-      reporter: normalizedReporterSettings
-    };
-    const normalizedMessages = Array.isArray(parsed.messages)
-      ? parsed.messages.map(message => {
-          const clientId = message.clientId ?? baseState.customer.clientId;
-          const clientConfig =
-            normalizedClients.find(client => client.id === clientId) ??
-            baseState.clients.find(client => client.id === clientId);
-          const normalizedMessageId = normalizeId(message.id, "message") ?? generateId("message");
-          const externalMessageId =
-            typeof message.messageId === "string" && message.messageId.trim().length > 0
-              ? message.messageId.trim()
-              : generateId("MSG").toUpperCase();
-          const rawReasons = Array.isArray(message.reasons) ? message.reasons : [];
-          const normalizedReasonIds = [];
-          rawReasons.forEach((reasonId, index) => {
-            const normalizedKey = normalizeId(reasonId, "reason");
-            let mappedId = null;
-            if (normalizedKey && reasonIdMap.has(normalizedKey)) {
-              mappedId = reasonIdMap.get(normalizedKey);
-            } else if (reasonIdMap.has(String(index + 1))) {
-              mappedId = reasonIdMap.get(String(index + 1));
-            } else if (normalizedKey) {
-              mappedId = normalizedKey;
-            }
-            if (mappedId && !normalizedReasonIds.includes(mappedId)) {
-              normalizedReasonIds.push(mappedId);
-            }
-          });
-          return {
-            ...message,
-            id: normalizedMessageId,
-            messageId: externalMessageId,
-            clientId,
-            pointsOnMessage: message.pointsOnMessage ?? clientConfig?.pointsPerMessage ?? 20,
-            pointsOnApproval: message.pointsOnApproval ?? clientConfig?.pointsOnApproval ?? 80,
-            reasons: normalizedReasonIds
-          };
-        })
-      : baseState.messages.map(message => {
-          const normalizedMessageId = normalizeId(message.id, "message") ?? generateId("message");
-          const externalMessageId =
-            typeof message.messageId === "string" && message.messageId.trim().length > 0
-              ? message.messageId.trim()
-              : generateId("MSG").toUpperCase();
-          const baseReasons = Array.isArray(message.reasons) ? message.reasons : [];
-          const normalizedReasonIds = [];
-          baseReasons.forEach((reasonId, index) => {
-            const normalizedKey = normalizeId(reasonId, "reason");
-            let mappedId = null;
-            if (normalizedKey && reasonIdMap.has(normalizedKey)) {
-              mappedId = reasonIdMap.get(normalizedKey);
-            } else if (reasonIdMap.has(String(index + 1))) {
-              mappedId = reasonIdMap.get(String(index + 1));
-            } else if (normalizedKey) {
-              mappedId = normalizedKey;
-            }
-            if (mappedId && !normalizedReasonIds.includes(mappedId)) {
-              normalizedReasonIds.push(mappedId);
-            }
-          });
-          return {
-            ...message,
-            id: normalizedMessageId,
-            messageId: externalMessageId,
-            reasons: normalizedReasonIds
-          };
-        });
-    const mergedMeta = {
-      ...baseState.meta,
-      ...parsed.meta
-    };
-    if (mergedMeta.lastMessageId === null || mergedMeta.lastMessageId === undefined) {
-      mergedMeta.lastMessageId = null;
-    } else if (typeof mergedMeta.lastMessageId === "string") {
-      mergedMeta.lastMessageId = mergedMeta.lastMessageId.trim() || null;
-    } else if (Number.isFinite(mergedMeta.lastMessageId)) {
-      mergedMeta.lastMessageId = String(mergedMeta.lastMessageId);
-    } else {
-      mergedMeta.lastMessageId = null;
-    }
-    const normalizeFilter = value =>
-      typeof value === "string" && value.trim().length > 0 ? value.trim().toLowerCase() : null;
-    const normalizeStatusFilter = value => {
-      const normalized = normalizeFilter(value);
-      return normalized === "published" || normalized === "unpublished" ? normalized : null;
-    };
-    const normalizeReportFilter = value => {
-      const normalized = normalizeFilter(value);
-      return normalized === "other" ? "other" : null;
-    };
-    mergedMeta.reportFilter = normalizeReportFilter(mergedMeta.reportFilter);
-    mergedMeta.rewardFilter = normalizeFilter(mergedMeta.rewardFilter);
-    mergedMeta.rewardStatusFilter = normalizeStatusFilter(mergedMeta.rewardStatusFilter);
-    mergedMeta.questFilter = normalizeFilter(mergedMeta.questFilter);
-    mergedMeta.questStatusFilter = normalizeStatusFilter(mergedMeta.questStatusFilter);
-    mergedMeta.badgeFilter = normalizeFilter(mergedMeta.badgeFilter);
-    mergedMeta.badgeStatusFilter = normalizeStatusFilter(mergedMeta.badgeStatusFilter);
-    if (Array.isArray(mergedMeta.lastBadgeIds)) {
-      mergedMeta.lastBadgeIds = mergedMeta.lastBadgeIds
-        .map(id => {
-          if (typeof id === "string") {
-            const trimmed = id.trim();
-            return trimmed.length > 0 ? trimmed : null;
-          }
-          if (Number.isFinite(id)) {
-            return String(id);
-          }
-          return null;
-        })
-        .filter(Boolean);
-    } else {
-      mergedMeta.lastBadgeIds = [];
-    }
-    mergedMeta.settingsOpen = false;
-    if (
-      mergedMeta.settingsCategory &&
-      !SETTINGS_CATEGORIES.some(
-        category => category.id === mergedMeta.settingsCategory && !category.disabled
-      )
-    ) {
-      const fallbackCategory =
-        SETTINGS_CATEGORIES.find(category => !category.disabled) || SETTINGS_CATEGORIES[0] || null;
-      mergedMeta.settingsCategory = fallbackCategory ? fallbackCategory.id : null;
-    }
-    const { customer: storedCustomer, ...restPassthrough } = passthrough;
-    const normalizeBonusPoints = (candidate, baseBonus) => {
-      const fallback = baseBonus && typeof baseBonus === "object" ? baseBonus : {};
-      const baseBreakdown = Array.isArray(fallback.breakdown) ? fallback.breakdown : [];
-      const cloneBaseBreakdown = () => baseBreakdown.map(item => ({ ...item }));
-      if (!candidate || typeof candidate !== "object") {
-        const weeklyCapFallback = Number(fallback.weeklyCap);
-        const earnedFallback = Number(fallback.earnedThisWeek);
-        return {
-          weeklyCap: Math.max(0, Number.isFinite(weeklyCapFallback) ? weeklyCapFallback : 0),
-          earnedThisWeek: Math.max(0, Number.isFinite(earnedFallback) ? earnedFallback : 0),
-          breakdown: cloneBaseBreakdown()
-        };
-      }
-      const weeklyCapRaw = Number(candidate.weeklyCap);
-      const earnedRaw = Number(
-        candidate.earnedThisWeek ?? candidate.earned ?? candidate.current ?? fallback.earnedThisWeek
-      );
-      const weeklyCap = Math.max(
-        0,
-        Number.isFinite(weeklyCapRaw) ? weeklyCapRaw : Number(fallback.weeklyCap) || 0
-      );
-      const earnedThisWeek = Math.max(
-        0,
-        Number.isFinite(earnedRaw) ? earnedRaw : Number(fallback.earnedThisWeek) || 0
-      );
-      const sourceBreakdown = Array.isArray(candidate.breakdown) ? candidate.breakdown : [];
-      const baseMap = new Map(
-        baseBreakdown
-          .map(entry => {
-            if (!entry || typeof entry !== "object") return null;
-            const key =
-              typeof entry.id === "string" && entry.id.trim().length > 0 ? entry.id.trim() : null;
-            return key ? [key, entry] : null;
-          })
-          .filter(Boolean)
-      );
-      const normalizedBreakdown = sourceBreakdown
-        .map((entry, index) => {
-          if (!entry || typeof entry !== "object") return null;
-          const rawId =
-            typeof entry.id === "string" && entry.id.trim().length > 0 ? entry.id.trim() : null;
-          const baseEntry = (rawId && baseMap.get(rawId)) || baseBreakdown[index] || null;
-          const labelCandidate =
-            typeof entry.label === "string" && entry.label.trim().length > 0
-              ? entry.label.trim()
-              : typeof baseEntry?.label === "string"
-              ? baseEntry.label
-              : "";
-          if (!labelCandidate) return null;
-          const normalizedId =
-            rawId ||
-            (typeof baseEntry?.id === "string" && baseEntry.id.trim().length > 0
-              ? baseEntry.id.trim()
-              : generateId(`bonus-${index + 1}`));
-          const descriptionCandidate =
-            typeof entry.description === "string" && entry.description.trim().length > 0
-              ? entry.description.trim()
-              : typeof baseEntry?.description === "string"
-              ? baseEntry.description
-              : "";
-          const pointsCandidate = Number(entry.points);
-          const basePointsCandidate = Number(baseEntry?.points);
-          const points = Number.isFinite(pointsCandidate)
-            ? pointsCandidate
-            : Number.isFinite(basePointsCandidate)
-            ? basePointsCandidate
-            : 0;
-          const firstOfMonthDouble =
-            entry.firstOfMonthDouble === true ||
-            (baseEntry && baseEntry.firstOfMonthDouble === true);
-          return {
-            id: normalizedId,
-            label: labelCandidate,
-            description: descriptionCandidate,
-            points,
-            firstOfMonthDouble
-          };
-        })
-        .filter(Boolean);
-      const breakdown =
-        normalizedBreakdown.length > 0 ? normalizedBreakdown : cloneBaseBreakdown();
-      return {
-        weeklyCap,
-        earnedThisWeek,
-        breakdown
-      };
-    };
-    const normalizeQuestCompletions = (source, baseHistory) => {
-      const baseList = Array.isArray(baseHistory) ? baseHistory : [];
-      const cloneBaseList = () => baseList.map(entry => ({ ...entry }));
-      if (!Array.isArray(source)) {
-        return cloneBaseList();
-      }
-      const normalized = source
-        .map((entry, index) => {
-          if (!entry || typeof entry !== "object") return null;
-          const questIdSource =
-            entry.questId !== undefined && entry.questId !== null ? String(entry.questId) : null;
-          const questId = questIdSource ? questIdSource.trim() : "";
-          if (!questId) return null;
-          const rawCompleted =
-            typeof entry.completedAt === "string" ? entry.completedAt.trim() : "";
-          let completedAt = null;
-          if (rawCompleted) {
-            const parsed = new Date(rawCompleted);
-            if (!Number.isNaN(parsed.getTime())) {
-              completedAt = parsed.toISOString();
-            }
-          }
-          if (!completedAt) {
-            const baseEntry = baseList[index];
-            if (baseEntry && typeof baseEntry.completedAt === "string") {
-              const parsed = new Date(baseEntry.completedAt);
-              if (!Number.isNaN(parsed.getTime())) {
-                completedAt = parsed.toISOString();
-              }
-            }
-          }
-          if (!completedAt) {
-            completedAt = new Date().toISOString();
-          }
-          const rawAwarded = Number(entry.pointsAwarded);
-          const rawBase = Number(entry.basePoints);
-          const pointsAwarded = Number.isFinite(rawAwarded)
-            ? rawAwarded
-            : Number.isFinite(rawBase)
-            ? rawBase
-            : 0;
-          const basePoints = Number.isFinite(rawBase) ? rawBase : null;
-          const doubled = entry.doubled === true;
-          const idSource =
-            typeof entry.id === "string" && entry.id.trim().length > 0
-              ? entry.id.trim()
-              : null;
-          const id = idSource || generateId(`quest-completion-${index + 1}`);
-          return {
-            id,
-            questId,
-            completedAt,
-            pointsAwarded,
-            basePoints,
-            doubled
-          };
-        })
-        .filter(Boolean);
-      if (normalized.length === 0) {
-        return cloneBaseList();
-      }
-      const maxEntries = 50;
-      return normalized.slice(0, maxEntries);
-    };
-    const baseCustomer =
-      baseState.customer && typeof baseState.customer === "object" ? baseState.customer : {};
-    const normalizedCustomer = (() => {
-      if (!storedCustomer || typeof storedCustomer !== "object") {
-        const baseBonus = baseCustomer.bonusPoints || {};
-        return {
-          ...baseCustomer,
-          bonusPoints: normalizeBonusPoints(null, baseBonus),
-          questCompletions: normalizeQuestCompletions(null, baseCustomer.questCompletions)
-        };
-      }
-      const baseBonus = baseCustomer.bonusPoints || {};
-      return {
-        ...baseCustomer,
-        ...storedCustomer,
-        bonusPoints: normalizeBonusPoints(storedCustomer.bonusPoints, baseBonus),
-        questCompletions: normalizeQuestCompletions(
-          storedCustomer.questCompletions,
-          baseCustomer.questCompletions
-        )
-      };
-    })();
-    return {
-      ...baseState,
-      ...restPassthrough,
-      customer: normalizedCustomer,
-      meta: mergedMeta,
-      rewards: normalizedRewards,
-      quests: normalizedQuests,
-      badges: normalizedBadges,
-      messages: normalizedMessages,
-      clients: normalizedClients,
-      rewardRedemptions: normalizedRewardRedemptions,
-      teamMembers: normalizedTeamMembers,
-      recognitions: normalizedRecognitions,
-      departmentLeaderboard: normalizedLeaderboard,
-      engagementPrograms: normalizedPrograms,
-      labs: normalizedLabs,
-      settings: normalizedSettings
-    };
-  } catch {
-    return initialState();
-  }
-}
-
-let state = loadState();
-
+const ROLE_LABELS = window.AppData.ROLE_LABELS;
+const ROUTES = window.AppData.ROUTES;
+const MessageStatus = window.AppData.MessageStatus;
+const NAV_GROUPS = window.AppData.NAV_GROUPS;
+const QUEST_DIFFICULTY_ORDER = window.AppData.QUEST_DIFFICULTY_ORDER;
+const SETTINGS_CATEGORIES = window.AppData.SETTINGS_CATEGORIES;
+const DEFAULT_REPORTER_PROMPT = window.AppData.DEFAULT_REPORTER_PROMPT;
+const DEFAULT_EMERGENCY_LABEL = window.AppData.DEFAULT_EMERGENCY_LABEL;
+const PREVIOUS_EMERGENCY_LABEL = window.AppData.PREVIOUS_EMERGENCY_LABEL;
+const DEFAULT_REPORTER_REASONS = window.AppData.DEFAULT_REPORTER_REASONS;
+const ICONS = window.AppData.ICONS;
+const METRIC_TONES = window.AppData.METRIC_TONES;
+const BADGE_TONES = window.AppData.BADGE_TONES;
+const BADGE_ICON_BACKDROPS = window.AppData.BADGE_ICON_BACKDROPS;
+const POINTS_CARD_ICONS = window.AppData.POINTS_CARD_ICONS;
+const BADGES = window.AppData.BADGES;
+const BADGE_CATEGORY_ORDER = window.AppData.BADGE_CATEGORY_ORDER;
+const BADGE_DRAFTS = new Set(window.AppData.BADGE_DRAFTS);
+const DEFAULT_QUESTS = window.AppData.DEFAULT_QUESTS;
+const DEPARTMENT_LEADERBOARD = window.AppData.DEPARTMENT_LEADERBOARD;
+const ENGAGEMENT_PROGRAMS = window.AppData.ENGAGEMENT_PROGRAMS;
+let state = WeldState.loadState();
+
 function initializeRoute() {
   const hashRoute = window.location.hash.replace("#", "");
   if (hashRoute && ROUTES[hashRoute]) {
@@ -2610,13 +35,8 @@ function initializeRoute() {
   }
 }
 
-initializeRoute();
-
-function persist() {
-  if (!storageAvailable()) return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
-
+initializeRoute();
+
 function navigate(route) {
   const nextRoute = ROUTES[route] ? route : "landing";
   state.meta.route = nextRoute;
@@ -2626,7 +46,7 @@ function navigate(route) {
   if (nextRoute !== "customer-reports") {
     state.meta.reportFilter = null;
   }
-  persist();
+  WeldState.saveState(state);
   renderApp();
 }
 
@@ -2638,28 +58,28 @@ function setRole(role, route) {
     }
     state.meta.route = route;
   }
-  persist();
+  WeldState.saveState(state);
   renderApp();
 }
 
 function resetDemo() {
-  const defaultState = initialState();
-  state.meta = clone(defaultState.meta);
-  state.customer = clone(defaultState.customer);
-  state.rewards = clone(defaultState.rewards);
-  state.quests = clone(defaultState.quests);
-  state.badges = clone(defaultState.badges);
-  state.rewardRedemptions = clone(defaultState.rewardRedemptions);
-  state.settings = clone(defaultState.settings);
-  state.messages = clone(defaultState.messages);
-  state.clients = clone(defaultState.clients);
-  state.departmentLeaderboard = clone(defaultState.departmentLeaderboard);
-  state.engagementPrograms = clone(defaultState.engagementPrograms);
-  state.labs = clone(defaultState.labs);
-  if (storageAvailable()) {
-    localStorage.removeItem(STORAGE_KEY);
+  const defaultState = WeldState.initialState();
+  state.meta = WeldUtil.clone(defaultState.meta);
+  state.customer = WeldUtil.clone(defaultState.customer);
+  state.rewards = WeldUtil.clone(defaultState.rewards);
+  state.quests = WeldUtil.clone(defaultState.quests);
+  state.badges = WeldUtil.clone(defaultState.badges);
+  state.rewardRedemptions = WeldUtil.clone(defaultState.rewardRedemptions);
+  state.settings = WeldUtil.clone(defaultState.settings);
+  state.messages = WeldUtil.clone(defaultState.messages);
+  state.clients = WeldUtil.clone(defaultState.clients);
+  state.departmentLeaderboard = WeldUtil.clone(defaultState.departmentLeaderboard);
+  state.engagementPrograms = WeldUtil.clone(defaultState.engagementPrograms);
+  state.labs = WeldUtil.clone(defaultState.labs);
+  if (WeldState.storageAvailable()) {
+    localStorage.removeItem(WeldState.STORAGE_KEY);
   }
-  persist();
+  WeldState.saveState(state);
   if (window.location.hash) {
     if (window.history && window.history.replaceState) {
       window.history.replaceState(null, "", window.location.pathname + window.location.search);
@@ -2717,7 +137,7 @@ function completeQuest(questId, options = {}) {
     state.customer.currentPoints += awardedPoints;
   }
   state.customer.questCompletions.unshift({
-    id: generateId("quest-completion"),
+    id: WeldUtil.generateId("quest-completion"),
     questId: quest.id,
     completedAt,
     pointsAwarded: awardedPoints,
@@ -2761,7 +181,7 @@ function completeQuest(questId, options = {}) {
       }
     }
   }
-  persist();
+  WeldState.saveState(state);
   renderApp();
   return { success: true, awardedPoints, doubled, completedAt };
 }
@@ -3274,14 +694,14 @@ function redeemReward(rewardId) {
   }
 
   const redemption = {
-    id: generateId("redemption"),
+    id: WeldUtil.generateId("redemption"),
     rewardId: reward.id,
     redeemedAt: new Date().toISOString(),
     status: "pending"
   };
 
   state.rewardRedemptions.unshift(redemption);
-  persist();
+  WeldState.saveState(state);
   renderApp();
 
   return { success: true, redemption };
@@ -3322,7 +742,7 @@ function recordRecognition({ recipientEmail, points, focus, message, channel }) 
     typeof channel === "string" && channel.trim().length > 0 ? channel.trim() : "Hub spotlight";
 
   const recognition = {
-    id: generateId("recognition"),
+    id: WeldUtil.generateId("recognition"),
     senderEmail: senderEmail,
     senderName: senderMember?.name || sender.name || senderEmail,
     senderTitle: senderMember?.title || sender.title || "",
@@ -3342,7 +762,7 @@ function recordRecognition({ recipientEmail, points, focus, message, channel }) 
   state.recognitions.unshift(recognition);
   state.meta.recognitionFilter = "given";
 
-  persist();
+  WeldState.saveState(state);
   renderApp();
 
   return { success: true, recognition };
@@ -3370,9 +790,9 @@ function openRecognitionFormDialog() {
         typeof member.title === "string" && member.title.trim().length > 0
           ? member.title.trim()
           : "";
-      const titleMarkup = title ? ` - ${escapeHtml(title)}` : "";
+      const titleMarkup = title ? ` - ${WeldUtil.escapeHtml(title)}` : "";
       const displayName = member.name || email;
-      return `<option value="${escapeHtml(email)}">${escapeHtml(
+      return `<option value="${WeldUtil.escapeHtml(email)}">${WeldUtil.escapeHtml(
         displayName
       )}${titleMarkup}</option>`;
     })
@@ -3389,9 +809,9 @@ function openRecognitionFormDialog() {
   const pointsOptionsMarkup = recognitionPointChoices
     .map(choice => {
       const selectedAttr = choice.default ? " selected" : "";
-      return `<option value="${escapeHtml(
+      return `<option value="${WeldUtil.escapeHtml(
         String(choice.value)
-      )}"${selectedAttr}>${escapeHtml(choice.label)}</option>`;
+      )}"${selectedAttr}>${WeldUtil.escapeHtml(choice.label)}</option>`;
     })
     .join("");
   const recognitionFocusChoices = [
@@ -3404,7 +824,7 @@ function openRecognitionFormDialog() {
   const focusOptionsMarkup = recognitionFocusChoices
     .map((label, index) => {
       const selectedAttr = index === 0 ? " selected" : "";
-      return `<option value="${escapeHtml(label)}"${selectedAttr}>${escapeHtml(
+      return `<option value="${WeldUtil.escapeHtml(label)}"${selectedAttr}>${WeldUtil.escapeHtml(
         label
       )}</option>`;
     })
@@ -3511,7 +931,7 @@ function setRewardPublication(rewardId, published) {
   const reward = rewardById(rewardId);
   if (!reward) return;
   reward.published = Boolean(published);
-  persist();
+  WeldState.saveState(state);
   renderApp();
 }
 
@@ -3522,7 +942,7 @@ function setBadgePublication(badgeId, published) {
   const badge = state.badges.find(item => item.id === targetId);
   if (!badge) return;
   badge.published = Boolean(published);
-  persist();
+  WeldState.saveState(state);
   renderApp();
 }
 
@@ -3536,7 +956,7 @@ function setAllRewardsPublication(published) {
     }
   });
   if (!changed) return;
-  persist();
+  WeldState.saveState(state);
   renderApp();
 }
 
@@ -3551,7 +971,7 @@ function setAllBadgesPublication(published) {
     }
   });
   if (!changed) return;
-  persist();
+  WeldState.saveState(state);
   renderApp();
 }
 
@@ -3566,7 +986,7 @@ function setAllQuestsPublication(published) {
     }
   });
   if (!changed) return;
-  persist();
+  WeldState.saveState(state);
   renderApp();
 }
 
@@ -3576,7 +996,7 @@ function setQuestPublication(questId, published) {
   const quest = state.quests.find(item => String(item.id) === targetId);
   if (!quest) return;
   quest.published = Boolean(published);
-  persist();
+  WeldState.saveState(state);
   renderApp();
 }
 
@@ -3602,7 +1022,7 @@ function setLeaderboardEntryPublication(entryId, published) {
   const nextPublished = Boolean(published);
   if (entry.published === nextPublished) return;
   entry.published = nextPublished;
-  persist();
+  WeldState.saveState(state);
   renderApp();
 }
 
@@ -3617,7 +1037,7 @@ function setAllLeaderboardPublication(published) {
     }
   });
   if (!changed) return;
-  persist();
+  WeldState.saveState(state);
   renderApp();
 }
 
@@ -3643,7 +1063,7 @@ function setEngagementProgramPublication(programId, published) {
   const nextPublished = Boolean(published);
   if (program.published === nextPublished) return;
   program.published = nextPublished;
-  persist();
+  WeldState.saveState(state);
   renderApp();
 }
 
@@ -3658,7 +1078,7 @@ function setAllEngagementProgramsPublication(published) {
     }
   });
   if (!changed) return;
-  persist();
+  WeldState.saveState(state);
   renderApp();
 }
 
@@ -3731,7 +1151,7 @@ function setLabFeatureAccess(featureId, clientIdValue, enabled) {
       if (!key) return false;
       return array.findIndex(candidate => labClientKey(candidate) === key) === index;
     });
-  persist();
+  WeldState.saveState(state);
   renderApp();
 }
 
@@ -3749,7 +1169,7 @@ function setLabFeatureAccessForAll(featureId, enabled) {
   if (!enabled) {
     if (feature.enabledClientIds.length === 0) return;
     feature.enabledClientIds = [];
-    persist();
+    WeldState.saveState(state);
     renderApp();
     return;
   }
@@ -3771,7 +1191,7 @@ function setLabFeatureAccessForAll(featureId, enabled) {
   }
   if (!changed) return;
   feature.enabledClientIds = targetIds;
-  persist();
+  WeldState.saveState(state);
   renderApp();
 }
 
@@ -3789,11 +1209,11 @@ function reportMessage(payload) {
   const pointsOnMessage = 20;
   const pointsOnApproval = client?.pointsOnApproval ?? 80;
   const beforePoints = state.customer.currentPoints;
-  const internalMessageId = generateId("message");
+  const internalMessageId = WeldUtil.generateId("message");
   const messageIdValue =
     typeof payload.messageId === "string" && payload.messageId.trim().length > 0
       ? payload.messageId.trim()
-      : generateId("MSG").toUpperCase();
+      : WeldUtil.generateId("MSG").toUpperCase();
   const message = {
     id: internalMessageId,
     messageId: messageIdValue,
@@ -3886,7 +1306,7 @@ function reportMessage(payload) {
   if (Array.isArray(payload.emergencyFlags) && payload.emergencyFlags.length > 0) {
     message.emergencyFlags = payload.emergencyFlags;
   }
-  persist();
+  WeldState.saveState(state);
   renderApp();
   return message;
 }
@@ -3985,7 +1405,7 @@ function revertLastReportAward() {
   state.meta.lastTotalAwarded = null;
   state.meta.lastClientSnapshot = null;
 
-  persist();
+  WeldState.saveState(state);
   renderApp();
 }
 
@@ -4072,7 +1492,7 @@ function updateMessageStatus(messageId, status) {
     }
   }
 
-  persist();
+  WeldState.saveState(state);
   renderApp();
 }
 
@@ -4766,7 +2186,7 @@ function openRewardConfig(rewardId) {
         reward.remaining = remainingValue ?? 0;
       }
 
-      persist();
+      WeldState.saveState(state);
       renderApp();
       close();
     }
@@ -4996,7 +2416,7 @@ function renderFeatureShowcase() {
     .map(card => {
       return `
         <article class="feature-card">
-          <div class="feature-card__icon">${renderIcon(card.icon, "sm")}</div>
+          <div class="feature-card__icon">${WeldUtil.renderIcon(card.icon, "sm")}</div>
           <div class="feature-card__body">
             <h3>${card.title}</h3>
             <p>${card.description}</p>
@@ -5010,14 +2430,13 @@ function renderFeatureShowcase() {
     .join("");
 }
 
-
 function renderHubBadgeCard(badge) {
   if (!badge) return "";
-  const rawId = String(badge.id ?? generateId("badge"));
-  const normalizedId = rawId.trim().length > 0 ? rawId.trim() : generateId("badge");
-  const safeDataId = escapeHtml(normalizedId);
+  const rawId = String(badge.id ?? WeldUtil.generateId("badge"));
+  const normalizedId = rawId.trim().length > 0 ? rawId.trim() : WeldUtil.generateId("badge");
+  const safeDataId = WeldUtil.escapeHtml(normalizedId);
   const sanitizedId = normalizedId.replace(/[^a-zA-Z0-9:_-]/g, "-");
-  const cardId = escapeHtml(`${sanitizedId}-card`);
+  const cardId = WeldUtil.escapeHtml(`${sanitizedId}-card`);
   const toneKey = BADGE_TONES[badge.tone] ? badge.tone : "violet";
   const tone = BADGE_TONES[toneKey] || BADGE_TONES.violet;
   const iconBackdrop =
@@ -5038,17 +2457,17 @@ function renderHubBadgeCard(badge) {
       : null;
   const tags = [];
   if (normalizedCategory && normalizedCategory !== "Badge") {
-    tags.push(`<span class="catalogue-card__tag gem-badge-card__tag">${escapeHtml(normalizedCategory)}</span>`);
+    tags.push(`<span class="catalogue-card__tag gem-badge-card__tag">${WeldUtil.escapeHtml(normalizedCategory)}</span>`);
   }
   if (difficultyLabel) {
-    tags.push(`<span class="catalogue-card__tag gem-badge-card__tag">${escapeHtml(difficultyLabel)}</span>`);
+    tags.push(`<span class="catalogue-card__tag gem-badge-card__tag">${WeldUtil.escapeHtml(difficultyLabel)}</span>`);
   }
   const tagsMarkup = tags.length
     ? `<div class="gem-badge-card__tags catalogue-card__tags">${tags.join("")}</div>`
     : "";
   const pointsValue = Number(badge.points) || 0;
   const toggleTitle = difficultyLabel
-    ? `${escapeHtml(difficultyLabel)}  ${formatNumber(pointsValue)} pts`
+    ? `${WeldUtil.escapeHtml(difficultyLabel)}  ${formatNumber(pointsValue)} pts`
     : `${formatNumber(pointsValue)} pts`;
   const ariaLabel = `${badge.title} badge, worth ${formatNumber(pointsValue)} points in the collection.`;
 
@@ -5056,29 +2475,29 @@ function renderHubBadgeCard(badge) {
     <article
       class="gem-badge gem-badge--hub"
       data-badge="${safeDataId}"
-      style="--badge-tone:${escapeHtml(tone)};--badge-icon-tone:${escapeHtml(iconBackdrop)};--badge-icon-shadow:${escapeHtml(
+      style="--badge-tone:${WeldUtil.escapeHtml(tone)};--badge-icon-tone:${WeldUtil.escapeHtml(iconBackdrop)};--badge-icon-shadow:${WeldUtil.escapeHtml(
         iconShadow
       )};">
       <button
         type="button"
         class="gem-badge__trigger"
         aria-haspopup="true"
-        aria-label="${escapeHtml(badge.title)} badge details"
+        aria-label="${WeldUtil.escapeHtml(badge.title)} badge details"
         aria-controls="${cardId}"
-        title="${escapeHtml(toggleTitle)}">
+        title="${WeldUtil.escapeHtml(toggleTitle)}">
         <span class="gem-badge__icon" style="background:${iconBackdrop}; box-shadow:0 18px 32px ${iconShadow};">
-          ${renderIcon(badge.icon || "medal", "sm")}
+          ${WeldUtil.renderIcon(badge.icon || "medal", "sm")}
         </span>
       </button>
-      <span class="gem-badge__label">${escapeHtml(badge.title)}</span>
-      <div id="${cardId}" class="gem-badge-card gem-badge-card--hub" role="group" aria-label="${escapeHtml(ariaLabel)}">
+      <span class="gem-badge__label">${WeldUtil.escapeHtml(badge.title)}</span>
+      <div id="${cardId}" class="gem-badge-card gem-badge-card--hub" role="group" aria-label="${WeldUtil.escapeHtml(ariaLabel)}">
         <span class="gem-badge-card__halo"></span>
         <span class="gem-badge-card__orb gem-badge-card__orb--one"></span>
         <span class="gem-badge-card__orb gem-badge-card__orb--two"></span>
         <div class="gem-badge-card__main">
-          <h3 class="gem-badge-card__title">${escapeHtml(badge.title)}</h3>
+          <h3 class="gem-badge-card__title">${WeldUtil.escapeHtml(badge.title)}</h3>
           ${tagsMarkup}
-          <p class="gem-badge-card__description">${escapeHtml(badge.description)}</p>
+          <p class="gem-badge-card__description">${WeldUtil.escapeHtml(badge.description)}</p>
         </div>
         <footer class="gem-badge-card__footer">
           <span class="gem-badge-card__points">
@@ -5090,7 +2509,6 @@ function renderHubBadgeCard(badge) {
     </article>
   `;
 }
-
 
 function renderRecognitionCard(entry, currentEmail) {
   if (!entry) return "";
@@ -5121,34 +2539,34 @@ function renderRecognitionCard(entry, currentEmail) {
   const relativeLabel = hasValidDate ? relativeTime(createdAt) : "Just now";
   const absoluteLabel = hasValidDate ? formatDateTime(createdAt) : "";
   const timeMarkup = hasValidDate
-    ? `<time datetime="${escapeHtml(createdAt)}" title="${escapeHtml(absoluteLabel)}">${escapeHtml(
+    ? `<time datetime="${WeldUtil.escapeHtml(createdAt)}" title="${WeldUtil.escapeHtml(absoluteLabel)}">${WeldUtil.escapeHtml(
         relativeLabel
       )}</time>`
     : `<span class="recognition-card__time">Just now</span>`;
   const tagMarkup = channelLabel
-    ? `<span class="recognition-card__tag">${escapeHtml(channelLabel)}</span>`
+    ? `<span class="recognition-card__tag">${WeldUtil.escapeHtml(channelLabel)}</span>`
     : "";
   const entryId =
     entry?.id !== undefined && entry?.id !== null
-      ? escapeHtml(String(entry.id))
-      : escapeHtml(generateId("recognition"));
+      ? WeldUtil.escapeHtml(String(entry.id))
+      : WeldUtil.escapeHtml(WeldUtil.generateId("recognition"));
 
   return `
     <article class="recognition-card${isForCurrentUser ? " recognition-card--highlight" : ""}" data-recognition="${entryId}">
       <header class="recognition-card__header">
-        <span class="recognition-card__eyebrow">${escapeHtml(contextLabel)}</span>
+        <span class="recognition-card__eyebrow">${WeldUtil.escapeHtml(contextLabel)}</span>
         ${tagMarkup}
         ${pointsMarkup}
       </header>
       <div class="recognition-card__body">
-        <h4 class="recognition-card__title">${escapeHtml(focusLabel)}</h4>
-        <p class="recognition-card__message">${escapeHtml(entry.message || "")}</p>
+        <h4 class="recognition-card__title">${WeldUtil.escapeHtml(focusLabel)}</h4>
+        <p class="recognition-card__message">${WeldUtil.escapeHtml(entry.message || "")}</p>
       </div>
       <footer class="recognition-card__footer">
         <div class="recognition-card__actors">
-          <span>${escapeHtml(senderName)}</span>
+          <span>${WeldUtil.escapeHtml(senderName)}</span>
           <span aria-hidden="true">&rarr;</span>
-          <span>${escapeHtml(recipientName)}</span>
+          <span>${WeldUtil.escapeHtml(recipientName)}</span>
         </div>
         ${timeMarkup}
       </footer>
@@ -5156,14 +2574,13 @@ function renderRecognitionCard(entry, currentEmail) {
   `;
 }
 
-
 function renderCustomer() {
   const customerMessages = state.messages.filter(messageBelongsToCustomer);
   const pendingMessages = customerMessages.filter(message => message.status === MessageStatus.PENDING);
   const pendingApprovalPoints = pendingMessages.reduce((sum, message) => sum + (message.pointsOnApproval || 0), 0);
   const publishedRewards = state.rewards.filter(reward => reward.published);
   const publishedQuests = Array.isArray(state.quests)
-    ? state.quests.filter(quest => quest.published).sort(compareQuestsByDifficulty)
+    ? state.quests.filter(quest => quest.published).sort(WeldUtil.compareQuestsByDifficulty)
     : [];
   const publishedBadges = getBadges().filter(badge => badge.published);
   const bonusConfig = state.customer?.bonusPoints || {};
@@ -5197,7 +2614,7 @@ function renderCustomer() {
     ? `Double points segment: ${formatNumber(doublePointsTotal)} bonus points.`
     : "";
   const boostMarkup = boostActive
-    ? `<span class="points-bonus__meter-boost" style="--bonus-boost:${boostPercentOfTrack}%;" aria-label="${escapeHtml(
+    ? `<span class="points-bonus__meter-boost" style="--bonus-boost:${boostPercentOfTrack}%;" aria-label="${WeldUtil.escapeHtml(
         boostDescription
       )}">
         <span class="points-bonus__boost-label" aria-hidden="true">x2</span>
@@ -5232,7 +2649,7 @@ function renderCustomer() {
         if (isDouble) {
           tooltipParts.push("First quest completion this month delivered double points.");
         }
-        const tooltipText = tooltipParts.join(" · ");
+        const tooltipText = tooltipParts.join(" � ");
         const sourceClasses = [
           "points-bonus__source",
           isDouble ? "points-bonus__source--boost" : ""
@@ -5247,11 +2664,11 @@ function renderCustomer() {
             class="${sourceClasses}"
             role="listitem"
             tabindex="0"
-            data-source="${escapeHtml(normalizedId)}"
-            data-tooltip="${escapeHtml(tooltipText)}"
-            title="${escapeHtml(tooltipText)}"
-            aria-label="${escapeHtml(tooltipText)}">
-            <span class="points-bonus__source-label">${escapeHtml(label)}</span>
+            data-source="${WeldUtil.escapeHtml(normalizedId)}"
+            data-tooltip="${WeldUtil.escapeHtml(tooltipText)}"
+            title="${WeldUtil.escapeHtml(tooltipText)}"
+            aria-label="${WeldUtil.escapeHtml(tooltipText)}">
+            <span class="points-bonus__source-label">${WeldUtil.escapeHtml(label)}</span>
             ${boostBadge}
             <span class="points-bonus__source-points">+${formatNumber(points)} pts</span>
           </span>
@@ -5279,12 +2696,12 @@ function renderCustomer() {
       <div class="points-bonus" role="region" aria-label="Weekly bonus points">
         <div class="points-bonus__header">
           <h3>Weekly bonus points</h3>
-          <span class="points-bonus__cap">${escapeHtml(bonusCapLabel)}</span>
+          <span class="points-bonus__cap">${WeldUtil.escapeHtml(bonusCapLabel)}</span>
         </div>
         <p class="points-bonus__summary">
           Earn extra points from quests and team boosts. Reporting suspicious emails always awards your core points outside this cap.
         </p>
-        <div class="points-bonus__meter" role="img" aria-label="${escapeHtml(bonusMeterLabel)}">
+        <div class="points-bonus__meter" role="img" aria-label="${WeldUtil.escapeHtml(bonusMeterLabel)}">
           <div class="points-bonus__meter-track">
             <span class="points-bonus__meter-fill" style="--bonus-progress:${progressPercent}%;"></span>
             ${boostMarkup}
@@ -5371,7 +2788,7 @@ function renderCustomer() {
     ? recognitionFeedEntries
         .map(entry => renderRecognitionCard(entry, state.customer.email))
         .join("")
-    : `<div class="recognition-empty"><p>${escapeHtml(recognitionEmptyCopy)}</p></div>`;
+    : `<div class="recognition-empty"><p>${WeldUtil.escapeHtml(recognitionEmptyCopy)}</p></div>`;
   const recognitionFilterButtons = [
     { id: "received", label: "Got" },
     { id: "given", label: "Gave" },
@@ -5379,7 +2796,7 @@ function renderCustomer() {
   ]
     .map(filter => {
       const isActive = activeRecognitionFilter === filter.id;
-      return `<button type="button" class="recognition-filter${isActive ? " recognition-filter--active" : ""}" data-recognition-filter="${filter.id}">${escapeHtml(filter.label)}</button>`;
+      return `<button type="button" class="recognition-filter${isActive ? " recognition-filter--active" : ""}" data-recognition-filter="${filter.id}">${WeldUtil.escapeHtml(filter.label)}</button>`;
     })
     .join("");
   const recognitionControlsMarkup = `
@@ -5414,16 +2831,16 @@ function renderCustomer() {
       latestRecognition.focus.trim().length > 0
         ? latestRecognition.focus.trim()
         : "";
-    const focusMarkup = focusLabel ? ` - ${escapeHtml(focusLabel)}` : "";
+    const focusMarkup = focusLabel ? ` - ${WeldUtil.escapeHtml(focusLabel)}` : "";
     const snippetMarkup = snippet
-      ? `<blockquote class="recognition-summary__quote">"${escapeHtml(
+      ? `<blockquote class="recognition-summary__quote">"${WeldUtil.escapeHtml(
           snippet
         )}"</blockquote>`
       : "";
     return `
       <div class="recognition-summary__recent">
         <span class="recognition-summary__recent-label">Latest recognition</span>
-        <p><strong>${escapeHtml(senderLabel)}</strong> ${escapeHtml(
+        <p><strong>${WeldUtil.escapeHtml(senderLabel)}</strong> ${WeldUtil.escapeHtml(
           relativeLabel
         )}${focusMarkup}</p>
         ${snippetMarkup}
@@ -5457,7 +2874,7 @@ function renderCustomer() {
           recognitionPeerCount
         )}</strong><span>Boost</span></li>
       </ul>
-      <p class="recognition-summary__helper">${escapeHtml(
+      <p class="recognition-summary__helper">${WeldUtil.escapeHtml(
         recognitionSummaryHelper
       )}</p>
       ${latestSnippet}
@@ -5498,16 +2915,16 @@ function renderCustomer() {
       const remainingLabel = rewardRemainingLabel(reward);
       const pointsCost = Number(reward.pointsCost) || 0;
       return `
-      <article class="reward-card reward-card--catalogue reward-card--hub" data-reward="${escapeHtml(String(reward.id))}">
+      <article class="reward-card reward-card--catalogue reward-card--hub" data-reward="${WeldUtil.escapeHtml(String(reward.id))}">
         <div class="reward-card__artwork" style="background:${reward.image};">
-          ${renderIcon(reward.icon || "gift", "lg")}
+          ${WeldUtil.renderIcon(reward.icon || "gift", "lg")}
         </div>
         <div class="reward-card__meta">
-          <span class="reward-card__chip reward-card__chip--category">${escapeHtml(reward.category || "Reward")}</span>
-          <span class="reward-card__chip reward-card__chip--provider">${escapeHtml(reward.provider || "WeldSecure")}</span>
+          <span class="reward-card__chip reward-card__chip--category">${WeldUtil.escapeHtml(reward.category || "Reward")}</span>
+          <span class="reward-card__chip reward-card__chip--provider">${WeldUtil.escapeHtml(reward.provider || "WeldSecure")}</span>
         </div>
-        <h4 class="reward-card__title">${escapeHtml(reward.name || "Reward")}</h4>
-        <p class="reward-card__desc">${escapeHtml(reward.description || "")}</p>
+        <h4 class="reward-card__title">${WeldUtil.escapeHtml(reward.name || "Reward")}</h4>
+        <p class="reward-card__desc">${WeldUtil.escapeHtml(reward.description || "")}</p>
         <div class="reward-card__footer">
           <span>${remainingLabel} left</span>
         </div>
@@ -5525,22 +2942,22 @@ function renderCustomer() {
 
   const questsHtml = publishedQuests
     .map(quest => {
-      const questId = escapeHtml(String(quest.id));
+      const questId = WeldUtil.escapeHtml(String(quest.id));
       const focusTags = Array.isArray(quest.focus)
-        ? quest.focus.slice(0, 2).map(item => `<span>${escapeHtml(item)}</span>`).join("")
+        ? quest.focus.slice(0, 2).map(item => `<span>${WeldUtil.escapeHtml(item)}</span>`).join("")
         : "";
       const focusBlock = focusTags ? `<div class="quest-card__focus quest-card__focus--compact">${focusTags}</div>` : "";
       const difficultyChip = quest.difficulty
-        ? `<span class="quest-card__chip quest-card__chip--difficulty" data-difficulty="${escapeHtml(
+        ? `<span class="quest-card__chip quest-card__chip--difficulty" data-difficulty="${WeldUtil.escapeHtml(
             quest.difficulty
-          )}">${escapeHtml(quest.difficulty)}</span>`
+          )}">${WeldUtil.escapeHtml(quest.difficulty)}</span>`
         : "";
       const difficultyRow = difficultyChip ? `<div class="quest-card__header-top">${difficultyChip}</div>` : "";
       const headerTags = [];
-      if (quest.category) headerTags.push(`<span class="quest-card__chip">${escapeHtml(quest.category)}</span>`);
+      if (quest.category) headerTags.push(`<span class="quest-card__chip">${WeldUtil.escapeHtml(quest.category)}</span>`);
       const chipGroup = headerTags.length ? `<div class="quest-card__chip-group">${headerTags.join("")}</div>` : "";
-      const questLabel = quest.title ? escapeHtml(quest.title) : "quest";
-      const configButton = `<button type="button" class="quest-card__config" data-quest="${questId}" title="Configure ${questLabel}" aria-label="Configure ${questLabel}"><span class="quest-card__config-cog" aria-hidden="true">⚙</span></button>`;
+      const questLabel = quest.title ? WeldUtil.escapeHtml(quest.title) : "quest";
+      const configButton = `<button type="button" class="quest-card__config" data-quest="${questId}" title="Configure ${questLabel}" aria-label="Configure ${questLabel}"><span class="quest-card__config-cog" aria-hidden="true">?</span></button>`;
       return `
       <article class="quest-card quest-card--hub" data-quest="${questId}">
         ${configButton}
@@ -5548,12 +2965,12 @@ function renderCustomer() {
           ${difficultyRow}
           ${chipGroup}
         </header>
-        <h4 class="quest-card__title">${escapeHtml(quest.title)}</h4>
-        <p class="quest-card__description">${escapeHtml(quest.description)}</p>
+        <h4 class="quest-card__title">${WeldUtil.escapeHtml(quest.title)}</h4>
+        <p class="quest-card__description">${WeldUtil.escapeHtml(quest.description)}</p>
         <ul class="quest-card__details quest-card__details--compact">
-          <li><span>Duration</span><strong>${escapeHtml(String(quest.duration))} min</strong></li>
-          <li><span>Questions</span><strong>${escapeHtml(String(quest.questions))}</strong></li>
-          <li><span>Format</span><strong>${escapeHtml(quest.format || "")}</strong></li>
+          <li><span>Duration</span><strong>${WeldUtil.escapeHtml(String(quest.duration))} min</strong></li>
+          <li><span>Questions</span><strong>${WeldUtil.escapeHtml(String(quest.questions))}</strong></li>
+          <li><span>Format</span><strong>${WeldUtil.escapeHtml(quest.format || "")}</strong></li>
         </ul>
         ${focusBlock}
         <div class="quest-card__footer quest-card__footer--hub">
@@ -5619,7 +3036,7 @@ function renderCustomer() {
     const achievedDate = badge?.achievedAt ? new Date(badge.achievedAt) : null;
     const metaMarkup =
       achievedDate && !Number.isNaN(achievedDate.getTime())
-        ? `<span class="badge-showcase__meta">Unlocked ${escapeHtml(formatDateTime(badge.achievedAt))}</span>`
+        ? `<span class="badge-showcase__meta">Unlocked ${WeldUtil.escapeHtml(formatDateTime(badge.achievedAt))}</span>`
         : "";
     return `
       <div class="badge-showcase__item${extraClass ? ` ${extraClass}` : ""}" role="listitem">
@@ -5664,7 +3081,7 @@ function renderCustomer() {
 
   return `
     <header class="customer-hero">
-      <h1>Good day, ${escapeHtml(state.customer.name)}</h1>
+      <h1>Good day, ${WeldUtil.escapeHtml(state.customer.name)}</h1>
       <p>Your vigilance is fuelling a safer inbox for everyone at Evergreen Capital.</p>
     </header>
     <div class="customer-hero-actions">
@@ -5695,7 +3112,7 @@ function renderCustomer() {
         </div>
         <div class="points-card__content">
           <span class="points-icon" style="background: linear-gradient(135deg, #ede9fe, #c7d2fe);">
-            ${renderIcon("medal", "sm")}
+            ${WeldUtil.renderIcon("medal", "sm")}
           </span>
           <div class="points-card__metrics">
             <span class="points-card__value">${formatNumber(state.customer.currentPoints)}</span>
@@ -5710,7 +3127,7 @@ function renderCustomer() {
         </div>
         <div class="points-card__content">
           <span class="points-icon" style="background: linear-gradient(135deg, #fff7ed, #ffedd5);">
-            ${renderIcon("hourglass", "sm")}
+            ${WeldUtil.renderIcon("hourglass", "sm")}
           </span>
           <div class="points-card__metrics">
             <span class="points-card__value">${formatNumber(pendingApprovalPoints)}</span>
@@ -5725,7 +3142,7 @@ function renderCustomer() {
         </div>
         <div class="points-card__content">
           <span class="points-icon" style="background: linear-gradient(135deg, #dbeafe, #bfdbfe);">
-            ${renderIcon("gift", "sm")}
+            ${WeldUtil.renderIcon("gift", "sm")}
           </span>
           <div class="points-card__metrics">
             <span class="points-card__value">${formatNumber(state.customer.redeemedPoints)}</span>
@@ -5794,7 +3211,7 @@ function renderCustomerBadgesPage() {
     : `<div class="customer-detail__empty">No badges are currently published. Return to the hub to curate or publish them.</div>`;
 
   const descriptionTail = badgeCount
-    ? ` Currently showing ${escapeHtml(formatNumber(badgeCount))} ${badgeLabel}.`
+    ? ` Currently showing ${WeldUtil.escapeHtml(formatNumber(badgeCount))} ${badgeLabel}.`
     : "";
 
   return `
@@ -5830,7 +3247,7 @@ function renderCustomerReportsPage() {
     .map(message => {
       const reasons = Array.isArray(message.reasons) ? message.reasons.map(reasonById).filter(Boolean) : [];
       const reasonChips = reasons
-        .map(reason => `<span class="detail-chip">${escapeHtml(reason.label)}</span>`)
+        .map(reason => `<span class="detail-chip">${WeldUtil.escapeHtml(reason.label)}</span>`)
         .join("");
       const approvedPoints = message.status === MessageStatus.APPROVED ? message.pointsOnApproval || 0 : 0;
       const totalPoints = (message.pointsOnMessage || 0) + approvedPoints;
@@ -5838,21 +3255,21 @@ function renderCustomerReportsPage() {
       const hasLocation =
         typeof message?.incidentLocation === "string" && message.incidentLocation.trim().length > 0;
       const activityMeta = activityLabel
-        ? `<span class="detail-table__meta">${escapeHtml(activityLabel)}${
-            hasLocation ? ` • ${escapeHtml(message.incidentLocation.trim())}` : ""
+        ? `<span class="detail-table__meta">${WeldUtil.escapeHtml(activityLabel)}${
+            hasLocation ? ` � ${WeldUtil.escapeHtml(message.incidentLocation.trim())}` : ""
           }</span>`
         : hasLocation
-        ? `<span class="detail-table__meta">Location: ${escapeHtml(message.incidentLocation.trim())}</span>`
+        ? `<span class="detail-table__meta">Location: ${WeldUtil.escapeHtml(message.incidentLocation.trim())}</span>`
         : "";
       return `
         <tr>
           <td>${formatDateTime(message.reportedAt)}</td>
           <td>
-            <strong>${escapeHtml(message.subject || "Suspicious message")}</strong>
+            <strong>${WeldUtil.escapeHtml(message.subject || "Suspicious message")}</strong>
             ${activityMeta}
             ${reasonChips ? `<div class="detail-table__chips">${reasonChips}</div>` : ""}
           </td>
-          <td><span class="badge" data-state="${escapeHtml(message.status)}">${escapeHtml(message.status)}</span></td>
+          <td><span class="badge" data-state="${WeldUtil.escapeHtml(message.status)}">${WeldUtil.escapeHtml(message.status)}</span></td>
           <td>
             <div class="detail-table__points">
               <span>+${formatNumber(message.pointsOnMessage || 0)}</span>
@@ -5890,7 +3307,7 @@ function renderCustomerReportsPage() {
         </table>
       </div>
     `
-    : `<div class="customer-detail__empty">${escapeHtml(emptyCopy)}</div>`;
+    : `<div class="customer-detail__empty">${WeldUtil.escapeHtml(emptyCopy)}</div>`;
 
   const filterNote =
     reportFilter === "other"
@@ -5920,18 +3337,18 @@ function renderCustomerRedemptionsPage() {
     .map(entry => {
       const reward = rewardById(entry.rewardId);
       const rewardName = reward ? reward.name : "Reward";
-      const provider = reward?.provider ? `<span class="detail-table__meta">${escapeHtml(reward.provider)}</span>` : "";
+      const provider = reward?.provider ? `<span class="detail-table__meta">${WeldUtil.escapeHtml(reward.provider)}</span>` : "";
       return `
         <tr>
           <td>${formatDateTime(entry.redeemedAt)}</td>
           <td>
-            <strong>${escapeHtml(rewardName)}</strong>
+            <strong>${WeldUtil.escapeHtml(rewardName)}</strong>
             ${provider}
           </td>
           <td>${formatNumber(reward?.pointsCost || 0)} pts</td>
           <td>
-            <span class="badge" data-state="${escapeHtml(entry.status || "pending")}">
-              ${escapeHtml(entry.status || "pending")}
+            <span class="badge" data-state="${WeldUtil.escapeHtml(entry.status || "pending")}">
+              ${WeldUtil.escapeHtml(entry.status || "pending")}
             </span>
           </td>
         </tr>
@@ -5966,471 +3383,6 @@ function renderCustomerRedemptionsPage() {
       <h1>Your redemption history</h1>
       <p>Show stakeholders how Weld provides instant recognition and celebration moments.</p>
     </header>
-    ${tableMarkup}
-  `;
-}
-
-function renderClientDashboard() {
-  const clients = Array.isArray(state.clients) ? state.clients.slice() : [];
-  const totalActiveUsers = clients.reduce(
-    (sum, client) => sum + (Number(client.activeUsers) || 0),
-    0
-  );
-  const averageHealth = clients.length
-    ? Math.round(
-        clients.reduce((sum, client) => sum + (Number(client.healthScore) || 0), 0) / clients.length
-      )
-    : 0;
-  const openCases = clients.reduce((sum, client) => sum + (Number(client.openCases) || 0), 0);
-  const pendingMessages = Array.isArray(state.messages)
-    ? state.messages.filter(message => message?.status === MessageStatus.PENDING).length
-    : 0;
-
-  const metricsConfig = [
-    {
-      label: "Active reporters",
-      value: clients.length ? formatNumber(totalActiveUsers) : "--",
-      trend: clients.length
-        ? { direction: "up", value: "+18", caption: "vs last quarter" }
-        : { direction: "up", value: "Ready to demo", caption: "Add sample data" },
-      tone: "indigo",
-      icon: "rocket"
-    },
-    {
-      label: "Average health",
-      value: clients.length ? `${formatNumber(averageHealth)}%` : "--",
-      trend: clients.length
-        ? { direction: "up", value: "+5 pts", caption: "quarter to date" }
-        : { direction: "up", value: "Set baseline", caption: "Import client scores" },
-      tone: "emerald",
-      icon: "shield"
-    },
-    {
-      label: "Open cases",
-      value: formatNumber(openCases),
-      trend: openCases > 0
-        ? { direction: "up", value: `${formatNumber(openCases)} escalations`, caption: "Prioritise follow-up" }
-        : { direction: "down", value: "Queue cleared", caption: "No escalations pending" },
-      tone: "amber",
-      icon: "hourglass"
-    },
-    {
-      label: "Pending approvals",
-      value: formatNumber(pendingMessages),
-      trend: pendingMessages > 0
-        ? { direction: "up", value: `${formatNumber(pendingMessages)} awaiting`, caption: "Action in security view" }
-        : { direction: "down", value: "All approved", caption: "Celebrate the wins" },
-      tone: "fuchsia",
-      icon: "target"
-    }
-  ];
-
-  const metricsMarkup = metricsConfig
-    .map(metric => renderMetricCard(metric.label, metric.value, metric.trend, metric.tone, metric.icon))
-    .join("");
-
-  const leaderboardEntries = Array.isArray(state.departmentLeaderboard)
-    ? state.departmentLeaderboard
-        .slice()
-        .sort((a, b) => (Number(b?.points) || 0) - (Number(a?.points) || 0))
-    : [];
-  const publishedDepartments = leaderboardEntries.filter(entry => entry && entry.published);
-  const leaderboardRows = leaderboardEntries.length
-    ? leaderboardEntries
-        .map((entry, index) => {
-          if (!entry) return "";
-          const fallbackId = `dept-${index}`;
-          const entryId =
-            typeof entry.id === "string" && entry.id.trim().length > 0 ? entry.id.trim() : fallbackId;
-          const tone =
-            typeof entry.tone === "string" && entry.tone.trim().length > 0
-              ? entry.tone.trim().toLowerCase()
-              : "indigo";
-          const pointsValue = Number.isFinite(entry.points) ? formatNumber(entry.points) : "0";
-          const momentumTag =
-            typeof entry.momentumTag === "string" && entry.momentumTag.trim().length > 0
-              ? entry.momentumTag.trim()
-              : "Momentum story";
-          const rawTrendDirection =
-            typeof entry.trendDirection === "string" && entry.trendDirection.trim().length > 0
-              ? entry.trendDirection.trim().toLowerCase()
-              : "";
-          const trendDirection =
-            rawTrendDirection === "up" || rawTrendDirection === "down" ? rawTrendDirection : "steady";
-          const trendValue =
-            typeof entry.trendValue === "string" && entry.trendValue.trim().length > 0
-              ? entry.trendValue.trim()
-              : "--";
-          const trendCaption =
-            typeof entry.trendCaption === "string" && entry.trendCaption.trim().length > 0
-              ? `<span class="detail-table__meta">${escapeHtml(entry.trendCaption)}</span>`
-              : "";
-          const participation = Number.isFinite(entry.participationRate)
-            ? formatPercent(entry.participationRate)
-            : "--";
-          const streakWeeks = Number.isFinite(entry.streakWeeks)
-            ? `${formatNumber(entry.streakWeeks)} wks`
-            : "--";
-          const badge = badgeById(entry.featuredBadgeId);
-          const badgeLabel = badge ? `Badge: ${badge.title}` : null;
-          const quest = Array.isArray(state.quests)
-            ? state.quests.find(questItem => String(questItem.id) === String(entry.featuredQuestId))
-            : null;
-          const questLabel = quest ? `Quest: ${quest.title}` : null;
-          const avgResponse =
-            Number.isFinite(entry.avgResponseMinutes) && entry.avgResponseMinutes > 0
-              ? `Avg triage ${formatNumber(entry.avgResponseMinutes)} mins`
-              : null;
-          const chips = [];
-          if (badgeLabel) chips.push(`<span class="department-leaderboard__chip">${escapeHtml(badgeLabel)}</span>`);
-          if (questLabel) chips.push(`<span class="department-leaderboard__chip">${escapeHtml(questLabel)}</span>`);
-          if (avgResponse) chips.push(`<span class="department-leaderboard__chip">${escapeHtml(avgResponse)}</span>`);
-          const chipsMarkup = chips.length
-            ? `<div class="department-leaderboard__chips">${chips.join("")}</div>`
-            : "";
-          const focusNarrative =
-            typeof entry.focusNarrative === "string" && entry.focusNarrative.trim().length > 0
-              ? `<p class="department-leaderboard__focus">${escapeHtml(entry.focusNarrative)}</p>`
-              : "";
-          const action = entry.published ? "unpublish" : "publish";
-          const actionLabel = entry.published ? "Unpublish" : "Publish";
-          const actionTone = entry.published ? "button-pill--danger-light" : "button-pill--primary";
-          const statusLabel = entry.published ? "Published" : "Draft";
-          const statusClass = entry.published
-            ? "department-leaderboard__state--published"
-            : "department-leaderboard__state--draft";
-          return `
-            <tr class="department-leaderboard__row" data-tone="${escapeHtml(tone)}" data-department="${escapeHtml(entryId)}">
-              <td class="department-leaderboard__rank-cell">
-                <span class="department-leaderboard__rank" data-rank="${index + 1}">${formatNumber(index + 1)}</span>
-              </td>
-              <td>
-                <div class="department-leaderboard__team">
-                  <strong>${escapeHtml(entry.name || "Department")}</strong>
-                  <span class="detail-table__meta">${escapeHtml(entry.department || "Organisation team")}</span>
-                </div>
-              </td>
-              <td>
-                <div class="department-leaderboard__metric">
-                  <strong>${pointsValue}</strong>
-                  <span class="detail-table__meta">${escapeHtml(momentumTag)}</span>
-                </div>
-              </td>
-              <td>
-                <div class="department-leaderboard__trend" data-direction="${trendDirection}">
-                  <strong>${escapeHtml(trendValue)}</strong>
-                  ${trendCaption}
-                </div>
-              </td>
-              <td>
-                <div class="department-leaderboard__metric">
-                  <strong>${escapeHtml(participation)}</strong>
-                  <span class="detail-table__meta">Participation</span>
-                </div>
-              </td>
-              <td>
-                <div class="department-leaderboard__metric">
-                  <strong>${escapeHtml(streakWeeks)}</strong>
-                  <span class="detail-table__meta">Streak</span>
-                </div>
-              </td>
-              <td>
-                ${chipsMarkup}${focusNarrative}
-              </td>
-              <td class="department-leaderboard__actions">
-                <span class="department-leaderboard__state ${statusClass}">${statusLabel}</span>
-                <div class="table-actions">
-                  <button
-                    type="button"
-                    class="button-pill ${actionTone} department-publish-toggle"
-                    data-department="${escapeHtml(entryId)}"
-                    data-action="${action}">
-                    ${actionLabel}
-                  </button>
-                </div>
-              </td>
-            </tr>
-          `;
-        })
-        .join("")
-    : `<tr><td colspan="8" class="department-leaderboard__empty">Add departments to highlight the leaderboard story.</td></tr>`;
-
-  const leaderboardSummaryItems = [
-    `${formatNumber(leaderboardEntries.length)} departments`,
-    `${formatNumber(publishedDepartments.length)} published`
-  ];
-  const leaderboardSummaryCopy = leaderboardSummaryItems.join(" | ");
-  const leaderboardMarkup = `
-    <section class="department-leaderboard">
-      <div class="section-header">
-        <h2>Department leaderboard</h2>
-        <p>Inspire friendly competition with streaks, spotlighted badges, and hub-ready publishing.</p>
-      </div>
-      <div class="department-leaderboard__controls">
-        <p class="detail-table__meta">${escapeHtml(leaderboardSummaryCopy)}</p>
-        <div class="department-leaderboard__bulk">
-          <button type="button" class="button-pill button-pill--primary" data-bulk-department-action="publish">Publish all</button>
-          <button type="button" class="button-pill button-pill--danger-light" data-bulk-department-action="unpublish">Unpublish all</button>
-        </div>
-      </div>
-      <div class="detail-table-wrapper department-leaderboard__table-wrapper">
-        <table class="detail-table department-leaderboard__table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Department</th>
-              <th>Points</th>
-              <th>Trend</th>
-              <th>Participation</th>
-              <th>Streak</th>
-              <th>Spotlight</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>${leaderboardRows}</tbody>
-        </table>
-      </div>
-    </section>
-  `;
-
-  const programs = Array.isArray(state.engagementPrograms) ? state.engagementPrograms.slice() : [];
-  programs.sort((a, b) => {
-    const aPublished = Boolean(a?.published);
-    const bPublished = Boolean(b?.published);
-    if (aPublished !== bPublished) {
-      return aPublished ? -1 : 1;
-    }
-    const titleA = typeof a?.title === "string" ? a.title : "";
-    const titleB = typeof b?.title === "string" ? b.title : "";
-    return titleA.localeCompare(titleB, undefined, { sensitivity: "base" });
-  });
-  const publishedPrograms = programs.filter(program => program && program.published);
-  const programCards = programs.length
-    ? programs
-        .map((program, index) => {
-          if (!program) return "";
-          const fallbackId = `program-${index}`;
-          const programId =
-            typeof program.id === "string" && program.id.trim().length > 0 ? program.id.trim() : fallbackId;
-          const tone =
-            typeof program.tone === "string" && program.tone.trim().length > 0
-              ? program.tone.trim().toLowerCase()
-              : "indigo";
-          const statusLabel = program.published
-            ? "Published"
-            : program.status && String(program.status).trim().length > 0
-            ? String(program.status).trim()
-            : "Draft";
-          const statusClass = program.published
-            ? "engagement-card__status--published"
-            : "engagement-card__status--draft";
-          const action = program.published ? "unpublish" : "publish";
-          const actionLabel = program.published ? "Unpublish" : "Publish";
-          const actionTone = program.published ? "button-pill--danger-light" : "button-pill--primary";
-          const metricValue =
-            typeof program.metricValue === "string" && program.metricValue.trim().length > 0
-              ? program.metricValue.trim()
-              : "--";
-          const metricCaption =
-            typeof program.metricCaption === "string" && program.metricCaption.trim().length > 0
-              ? program.metricCaption.trim()
-              : "";
-          const audience =
-            typeof program.audience === "string" && program.audience.trim().length > 0
-              ? program.audience.trim()
-              : "";
-          const owner =
-            typeof program.owner === "string" && program.owner.trim().length > 0 ? program.owner.trim() : "";
-          const successSignal =
-            typeof program.successSignal === "string" && program.successSignal.trim().length > 0
-              ? program.successSignal.trim()
-              : "";
-          const metaItems = [];
-          if (audience) {
-            metaItems.push(`<li><strong>Audience</strong><span>${escapeHtml(audience)}</span></li>`);
-          }
-          if (owner) {
-            metaItems.push(`<li><strong>Owner</strong><span>${escapeHtml(owner)}</span></li>`);
-          }
-          const metaMarkup = metaItems.length
-            ? `<ul class="engagement-card__meta">${metaItems.join("")}</ul>`
-            : "";
-          const successMarkup = successSignal
-            ? `<p class="engagement-card__signal">${escapeHtml(successSignal)}</p>`
-            : "";
-          const category =
-            typeof program.category === "string" && program.category.trim().length > 0
-              ? program.category.trim()
-              : "Programme";
-          const description =
-            typeof program.description === "string" && program.description.trim().length > 0
-              ? program.description.trim()
-              : "";
-          return `
-            <article
-              class="engagement-card ${program.published ? "engagement-card--published" : "engagement-card--draft"}"
-              data-program="${escapeHtml(programId)}"
-              data-tone="${escapeHtml(tone)}">
-              <header class="engagement-card__header">
-                <span class="engagement-card__category">${escapeHtml(category)}</span>
-                <span class="engagement-card__status ${statusClass}">${escapeHtml(statusLabel)}</span>
-              </header>
-              <h3 class="engagement-card__title">${escapeHtml(program.title || "Gamification boost")}</h3>
-              <p class="engagement-card__description">${escapeHtml(description)}</p>
-              <div class="engagement-card__metric">
-                <span class="engagement-card__metric-value">${escapeHtml(metricValue)}</span>
-                <span class="engagement-card__metric-caption">${escapeHtml(metricCaption)}</span>
-              </div>
-              ${metaMarkup}
-              ${successMarkup}
-              <footer class="engagement-card__footer">
-                <span class="detail-table__meta">${escapeHtml(program.published ? "Visible in hub" : "Draft only")}</span>
-                <button
-                  type="button"
-                  class="button-pill ${actionTone} program-publish-toggle"
-                  data-program="${escapeHtml(programId)}"
-                  data-action="${action}">
-                  ${actionLabel}
-                </button>
-              </footer>
-            </article>
-          `;
-        })
-        .join("")
-    : `<div class="engagement-empty"><p>No gamification boosts configured yet. Pair the leaderboard with a programme to make it shine.</p></div>`;
-
-  const programSummaryItems = [
-    `${formatNumber(programs.length)} programmes`,
-    `${formatNumber(publishedPrograms.length)} published`
-  ];
-  const programSummaryCopy = programSummaryItems.join(" | ");
-  const programsMarkup = `
-    <section class="engagement-programs">
-      <div class="section-header">
-        <h2>Gamification boosts</h2>
-        <p>Bundle badge drops, double points windows, and quest playlists, then publish when the story is ready.</p>
-      </div>
-      <div class="engagement-programs__controls">
-        <p class="detail-table__meta">${escapeHtml(programSummaryCopy)}</p>
-        <div class="engagement-programs__bulk">
-          <button type="button" class="button-pill button-pill--primary" data-bulk-program-action="publish">Publish all</button>
-          <button type="button" class="button-pill button-pill--danger-light" data-bulk-program-action="unpublish">Unpublish all</button>
-        </div>
-      </div>
-      <div class="engagement-programs__grid">
-        ${programCards}
-      </div>
-    </section>
-  `;
-
-  return `
-    <section class="client-catalogue__intro">
-      <span class="client-catalogue__eyebrow">Organisation Hub</span>
-      <h1>Track health and momentum in one glance.</h1>
-      <p>Use this view to connect reporter energy, security follow-up, and the rewards in flight. Everything aligns to the questions prospects ask.</p>
-    </section>
-    <section class="metrics-grid">
-      ${metricsMarkup}
-    </section>
-    ${leaderboardMarkup}
-    ${programsMarkup}
-  `;
-}
-function renderClientReporting() {
-  const messages = Array.isArray(state.messages)
-    ? state.messages.slice().sort((a, b) => new Date(b.reportedAt).getTime() - new Date(a.reportedAt).getTime())
-    : [];
-
-  const rowsMarkup = messages
-    .map(message => {
-      const reasons = Array.isArray(message.reasons) ? message.reasons.map(reasonById).filter(Boolean) : [];
-      const reasonChips = reasons
-        .map(reason => `<span class="detail-chip">${escapeHtml(reason.label)}</span>`)
-        .join("");
-      const client =
-        state.clients && message && Number.isFinite(message.clientId)
-          ? state.clients.find(item => Number(item.id) === Number(message.clientId))
-          : null;
-      const reporterName = message?.reporterName ? escapeHtml(message.reporterName) : "Reporter";
-      const reporterEmail = message?.reporterEmail ? escapeHtml(message.reporterEmail) : "n/a";
-      const clientName = client ? escapeHtml(client.name) : "Client view";
-      const clientOrgId = client?.organizationId ? escapeHtml(client.organizationId) : "Org ID pending";
-      const reportedAt = message?.reportedAt ? formatDateTime(message.reportedAt) : "Unknown";
-      const status = escapeHtml(message?.status || MessageStatus.PENDING);
-      const isPending = message?.status === MessageStatus.PENDING;
-      const approvePoints = Number(message?.pointsOnApproval) || 0;
-      const capturePoints = Number(message?.pointsOnMessage) || 0;
-      const totalPoints = capturePoints + (message?.status === MessageStatus.APPROVED ? approvePoints : 0);
-      const actionsMarkup = isPending
-        ? `<div class="table-actions">
-            <button type="button" class="button-pill button-pill--primary" data-action="approve" data-message="${escapeHtml(
-              String(message.id)
-            )}">Approve</button>
-            <button type="button" class="button-pill button-pill--critical" data-action="reject" data-message="${escapeHtml(
-              String(message.id)
-            )}">Reject</button>
-          </div>`
-        : `<span class="detail-table__meta">Decision recorded</span>`;
-      return `
-        <tr>
-          <td>${reportedAt}</td>
-          <td>
-            <strong>${reporterName}</strong>
-            <span class="detail-table__meta">${reporterEmail}</span>
-          </td>
-          <td>
-            <strong>${clientName}</strong>
-            <span class="detail-table__meta">${clientOrgId}</span>
-          </td>
-          <td>
-            <strong>${escapeHtml(message?.subject || "Suspicious message")}</strong>
-            ${reasonChips ? `<div class="detail-table__chips">${reasonChips}</div>` : ""}
-          </td>
-          <td>
-            <div class="detail-table__points">
-              <span>+${formatNumber(capturePoints)}</span>
-              ${message?.status === MessageStatus.APPROVED ? `<span>+${formatNumber(approvePoints)}</span>` : ""}
-              <strong>= ${formatNumber(totalPoints)}</strong>
-            </div>
-          </td>
-          <td>
-            <span class="badge" data-state="${status}">${status}</span>
-            ${actionsMarkup}
-          </td>
-        </tr>
-      `;
-    })
-    .join("");
-
-  const tableMarkup = messages.length
-    ? `
-      <div class="detail-table-wrapper">
-        <table class="detail-table detail-table--reports detail-table--client">
-          <thead>
-            <tr>
-              <th>Reported</th>
-              <th>Reporter</th>
-              <th>Client</th>
-              <th>Subject &amp; reasons</th>
-              <th>Points</th>
-              <th>Status &amp; actions</th>
-            </tr>
-          </thead>
-          <tbody>${rowsMarkup}</tbody>
-        </table>
-      </div>
-    `
-    : `<div class="customer-detail__empty">No security follow-up yet. Use the add-in journey to generate the first report.</div>`;
-
-  return `
-    <section class="client-catalogue__intro">
-      <span class="client-catalogue__eyebrow">Security team dashboard</span>
-      <h1>Approve reports and talk through the audit trail.</h1>
-      <p>Highlight how reviewers approve submissions, gift bonus points, and export a full audit log without leaving the workflow.</p>
-      <div class="client-rewards__actions">
-        <button type="button" class="button-pill button-pill--primary" id="download-csv-button">Download CSV</button>
-      </div>
-    </section>
     ${tableMarkup}
   `;
 }
@@ -6513,9 +3465,9 @@ function renderClientRewards() {
     .map(
       metric => `
         <article class="client-rewards__metric">
-          <h3>${escapeHtml(metric.label)}</h3>
-          <strong>${escapeHtml(String(metric.value))}</strong>
-          <span>${escapeHtml(metric.caption)}</span>
+          <h3>${WeldUtil.escapeHtml(metric.label)}</h3>
+          <strong>${WeldUtil.escapeHtml(String(metric.value))}</strong>
+          <span>${WeldUtil.escapeHtml(metric.caption)}</span>
         </article>
       `
     )
@@ -6524,7 +3476,7 @@ function renderClientRewards() {
   const rewardsMarkup = filteredRewards.length
     ? filteredRewards
         .map(reward => {
-          const id = escapeHtml(String(reward.id));
+          const id = WeldUtil.escapeHtml(String(reward.id));
           const isPublished = reward.published === true;
           const action = isPublished ? "unpublish" : "publish";
           const actionLabel = isPublished ? "Unpublish" : "Publish";
@@ -6537,24 +3489,24 @@ function renderClientRewards() {
           const pointsCost = Number(reward.pointsCost) || 0;
           const categoryLabel = formatCatalogueLabel(reward.category || "Reward");
           const providerLabel = reward.provider ? reward.provider : "WeldSecure";
-          const rewardLabel = reward.name ? escapeHtml(reward.name) : "Reward";
-          const configButton = `<button type="button" class="reward-card__config" data-reward="${id}" title="Configure ${rewardLabel}" aria-label="Configure ${rewardLabel}"><span class="reward-card__config-cog" aria-hidden="true">⚙</span></button>`;
+          const rewardLabel = reward.name ? WeldUtil.escapeHtml(reward.name) : "Reward";
+          const configButton = `<button type="button" class="reward-card__config" data-reward="${id}" title="Configure ${rewardLabel}" aria-label="Configure ${rewardLabel}"><span class="reward-card__config-cog" aria-hidden="true">?</span></button>`;
           return `
             <article class="reward-card reward-card--catalogue ${isPublished ? "reward-card--published" : "reward-card--draft"}" data-reward="${id}">
               ${configButton}
               <div class="reward-card__artwork" style="background:${reward.image};">
-                ${renderIcon(reward.icon || "gift", "lg")}
+                ${WeldUtil.renderIcon(reward.icon || "gift", "lg")}
               </div>
               <div class="reward-card__meta catalogue-card__tags">
-                <span class="catalogue-card__tag reward-card__chip reward-card__chip--category">${escapeHtml(
+                <span class="catalogue-card__tag reward-card__chip reward-card__chip--category">${WeldUtil.escapeHtml(
                   categoryLabel
                 )}</span>
-                <span class="catalogue-card__tag reward-card__chip reward-card__chip--provider">${escapeHtml(
+                <span class="catalogue-card__tag reward-card__chip reward-card__chip--provider">${WeldUtil.escapeHtml(
                   providerLabel
                 )}</span>
               </div>
-              <h4 class="reward-card__title">${escapeHtml(reward.name || "Reward")}</h4>
-              <p class="reward-card__desc">${escapeHtml(reward.description || "")}</p>
+              <h4 class="reward-card__title">${WeldUtil.escapeHtml(reward.name || "Reward")}</h4>
+              <p class="reward-card__desc">${WeldUtil.escapeHtml(reward.description || "")}</p>
               <div class="reward-card__footer">
                 <span>${remainingCopy}</span>
               </div>
@@ -6618,7 +3570,7 @@ function renderClientRewards() {
 
   const filterButtons = rewardCategories
     .map(category => {
-      const value = escapeHtml(category.value);
+      const value = WeldUtil.escapeHtml(category.value);
       const isActive = activeFilter === category.value;
       const label = formatCatalogueLabel(category.label);
       return `
@@ -6627,7 +3579,7 @@ function renderClientRewards() {
           class="badge-filter__item${isActive ? " badge-filter__item--active" : ""}"
           data-reward-filter="${value}"
           aria-pressed="${isActive ? "true" : "false"}">
-          ${escapeHtml(label)}
+          ${WeldUtil.escapeHtml(label)}
         </button>
       `;
     })
@@ -6676,7 +3628,7 @@ function renderClientRewards() {
       : "";
 
   const summaryMarkup = actionsMeta
-    ? `<p class="detail-table__meta">${escapeHtml(actionsMeta)}</p>`
+    ? `<p class="detail-table__meta">${WeldUtil.escapeHtml(actionsMeta)}</p>`
     : "";
 
   return `
@@ -6703,696 +3655,6 @@ function renderClientRewards() {
   `;
 }
 
-function renderClientQuests() {
-  const quests = Array.isArray(state.quests)
-    ? state.quests.slice().sort(compareQuestsByDifficulty)
-    : [];
-  const publishedQuests = quests.filter(quest => quest.published);
-  const draftQuests = quests.filter(quest => !quest.published);
-  const averagePoints = quests.length
-    ? Math.round(quests.reduce((sum, quest) => sum + (Number(quest.points) || 0), 0) / quests.length)
-    : 0;
-  const averageDuration = quests.length
-    ? Math.round(
-        quests.reduce((sum, quest) => sum + (Number(quest.duration) || 0), 0) / quests.length
-      )
-    : 0;
-
-  const categoryMap = new Map();
-  quests.forEach(quest => {
-    const rawCategory = typeof quest.category === "string" ? quest.category.trim() : "";
-    if (!rawCategory) return;
-    const normalized = rawCategory.toLowerCase();
-    if (!categoryMap.has(normalized)) {
-      categoryMap.set(normalized, rawCategory);
-    }
-  });
-
-  const questCategories = Array.from(categoryMap.entries())
-    .sort((a, b) => a[1].localeCompare(b[1], undefined, { sensitivity: "base" }))
-    .map(([value, label]) => ({ value, label }));
-
-  const activeFilter =
-    typeof state.meta.questFilter === "string" && state.meta.questFilter.length > 0
-      ? state.meta.questFilter
-      : null;
-  const statusFilter =
-    typeof state.meta.questStatusFilter === "string" && state.meta.questStatusFilter.length > 0
-      ? state.meta.questStatusFilter
-      : null;
-
-  const categoryFilteredQuests = activeFilter
-    ? quests.filter(quest => {
-        const category = typeof quest.category === "string" ? quest.category.trim().toLowerCase() : "";
-        return category === activeFilter;
-      })
-    : quests;
-
-  const filteredQuests =
-    statusFilter === "published"
-      ? categoryFilteredQuests.filter(quest => quest.published)
-      : statusFilter === "unpublished"
-      ? categoryFilteredQuests.filter(quest => !quest.published)
-      : categoryFilteredQuests;
-
-  const metricsConfig = [
-    {
-      label: "Total quests",
-      value: formatNumber(quests.length),
-      caption: "Across the catalogue"
-    },
-    {
-      label: "Published quests",
-      value: formatNumber(publishedQuests.length),
-      caption: "Visible to reporters"
-    },
-    {
-      label: "Draft quests",
-      value: formatNumber(draftQuests.length),
-      caption: "Queued for the next beat"
-    },
-    {
-      label: "Average duration",
-      value: quests.length ? `${formatNumber(averageDuration)} min` : "--",
-      caption: "Per quest experience"
-    }
-  ];
-
-  const metricsMarkup = metricsConfig
-    .map(
-      metric => `
-        <article class="client-quests__metric">
-          <h3>${escapeHtml(metric.label)}</h3>
-          <strong>${escapeHtml(String(metric.value))}</strong>
-          <span>${escapeHtml(metric.caption)}</span>
-        </article>
-      `
-    )
-    .join("");
-
-  const questsMarkup = filteredQuests.length
-    ? filteredQuests
-        .map(quest => {
-          const id = escapeHtml(String(quest.id));
-          const isPublished = quest.published === true;
-          const action = isPublished ? "unpublish" : "publish";
-          const actionLabel = isPublished ? "Unpublish" : "Publish";
-          const actionTone = isPublished ? "button-pill--danger-light" : "button-pill--primary";
-          const difficultyChip = quest.difficulty
-            ? `<span class="catalogue-card__tag quest-card__chip quest-card__chip--difficulty" data-difficulty="${escapeHtml(
-                quest.difficulty
-              )}">${escapeHtml(quest.difficulty)}</span>`
-            : "";
-          const difficultyRow = difficultyChip ? `<div class="quest-card__header-top">${difficultyChip}</div>` : "";
-          const otherTags = [];
-          if (quest.category) {
-            otherTags.push(
-              `<span class="catalogue-card__tag quest-card__chip">${escapeHtml(
-                formatCatalogueLabel(quest.category)
-              )}</span>`
-            );
-          }
-          const tagMarkup = otherTags.length
-            ? `<div class="quest-card__chip-group catalogue-card__tags">${otherTags.join("")}</div>`
-            : "";
-          const focusMarkup = Array.isArray(quest.focus) && quest.focus.length
-            ? `<div class="quest-card__focus">${quest.focus
-                .slice(0, 3)
-                .map(item => `<span>${escapeHtml(item)}</span>`)
-                .join("")}</div>`
-            : "";
-          const questLabel = quest.title ? escapeHtml(quest.title) : "Quest";
-          const configButton = `<button type="button" class="quest-card__config" data-quest="${id}" title="Configure ${questLabel}" aria-label="Configure ${questLabel}"><span class="quest-card__config-cog" aria-hidden="true">⚙</span></button>`;
-          return `
-            <article class="quest-card ${isPublished ? "quest-card--published" : "quest-card--draft"}" data-quest="${id}">
-              ${configButton}
-              <header class="quest-card__header">
-                ${difficultyRow}
-                ${tagMarkup}
-              </header>
-              <h3 class="quest-card__title">${escapeHtml(quest.title || "Quest")}</h3>
-              <p class="quest-card__description">${escapeHtml(quest.description || "")}</p>
-              <ul class="quest-card__details">
-                <li><span>Format</span><strong>${escapeHtml(quest.format || "Interactive")}</strong></li>
-                <li><span>Duration</span><strong>${formatNumber(Number(quest.duration) || 0)} min</strong></li>
-                <li><span>Questions</span><strong>${formatNumber(Number(quest.questions) || 0)}</strong></li>
-              </ul>
-              ${focusMarkup}
-              ${
-                quest.bonus
-                  ? `<p class="detail-table__meta"><strong>${escapeHtml(quest.bonus)}</strong> ${escapeHtml(
-                      quest.bonusDetail || ""
-                    )}</p>`
-                  : ""
-              }
-              <footer class="quest-card__footer">
-                <span class="quest-card__points">
-                  <strong class="quest-card__points-value">${formatNumber(Number(quest.points) || 0)}</strong>
-                  <span class="quest-card__points-unit">pts</span>
-                </span>
-                <button
-                  type="button"
-                  class="button-pill ${actionTone} quest-publish-toggle"
-                  data-action="${action}"
-                  data-quest="${id}">
-                  ${actionLabel}
-                </button>
-              </footer>
-            </article>
-          `;
-        })
-        .join("")
-    : `<div class="customer-detail__empty">${
-        quests.length
-          ? "No quests match the selected filter."
-          : "Build a quest to showcase how Weld coaches behaviour change."
-      }</div>`;
-
-  const catalogueMarkup = filteredQuests.length
-    ? `<div class="quest-grid quest-grid--catalogue">${questsMarkup}</div>`
-    : questsMarkup;
-
-  const filterButtons = questCategories
-    .map(category => {
-      const value = escapeHtml(category.value);
-      const isActive = activeFilter === category.value;
-      const label = formatCatalogueLabel(category.label);
-      return `
-        <button
-          type="button"
-          class="badge-filter__item${isActive ? " badge-filter__item--active" : ""}"
-          data-quest-filter="${value}"
-          aria-pressed="${isActive ? "true" : "false"}">
-          ${escapeHtml(label)}
-        </button>
-      `;
-    })
-    .join("");
-
-  const statusFilterMarkup = `
-        <div class="badge-filter client-catalogue__status" role="toolbar" aria-label="Quest publication status">
-          <button
-            type="button"
-            class="badge-filter__item${statusFilter ? "" : " badge-filter__item--active"}"
-            data-quest-status=""
-            aria-pressed="${statusFilter ? "false" : "true"}">
-            All statuses
-          </button>
-          <button
-            type="button"
-            class="badge-filter__item${statusFilter === "published" ? " badge-filter__item--active" : ""}"
-            data-quest-status="published"
-            aria-pressed="${statusFilter === "published" ? "true" : "false"}">
-            Published
-          </button>
-          <button
-            type="button"
-            class="badge-filter__item${statusFilter === "unpublished" ? " badge-filter__item--active" : ""}"
-            data-quest-status="unpublished"
-            aria-pressed="${statusFilter === "unpublished" ? "true" : "false"}">
-            Unpublished
-          </button>
-        </div>
-      `;
-
-  const filterMarkup =
-    questCategories.length > 1
-      ? `
-        <div class="catalogue-filter badge-filter client-quests__filters" role="toolbar" aria-label="Quest categories">
-          <button
-            type="button"
-            class="badge-filter__item${activeFilter ? "" : " badge-filter__item--active"}"
-            data-quest-filter=""
-            aria-pressed="${activeFilter ? "false" : "true"}">
-            All quests
-          </button>
-          ${filterButtons}
-        </div>
-      `
-      : "";
-
-  const selectedCategoryLabel =
-    activeFilter && categoryMap.has(activeFilter)
-      ? formatCatalogueLabel(categoryMap.get(activeFilter))
-      : null;
-
-  const filterSummaryParts = [];
-  if (statusFilter === "published") {
-    filterSummaryParts.push("Published only");
-  } else if (statusFilter === "unpublished") {
-    filterSummaryParts.push("Unpublished only");
-  }
-  if (selectedCategoryLabel) {
-    filterSummaryParts.push(`Category: ${selectedCategoryLabel}`);
-  }
-
-  const filterSummaryText = filterSummaryParts.length ? filterSummaryParts.join(" - ") : "";
-  const resultsSummary =
-    activeFilter || statusFilter
-      ? `${formatNumber(filteredQuests.length)} of ${formatNumber(quests.length)} quests shown`
-      : "";
-
-  const actionsMeta = [resultsSummary, filterSummaryText].filter(Boolean).join(" | ");
-
-  const summaryMarkup = actionsMeta
-    ? `<p class="detail-table__meta">${escapeHtml(actionsMeta)}</p>`
-    : "";
-
-  return `
-    <section class="client-catalogue__intro">
-      <span class="client-catalogue__eyebrow">Quest catalogue</span>
-      <h1>Coach behaviour change with curated quests.</h1>
-      <p>Demonstrate how Weld guides employees through inbox scenarios, verifies understanding, and rewards mastery.</p>
-    </section>
-    <section class="client-quests__metrics">
-      ${metricsMarkup}
-    </section>
-    <div class="client-quests__actions">
-      <div class="client-catalogue__actions-row">
-        <div class="client-quests__bulk">
-          <button type="button" class="button-pill button-pill--primary" data-bulk-quest-action="publish">Publish all quests</button>
-          <button type="button" class="button-pill button-pill--danger-light" data-bulk-quest-action="unpublish">Unpublish all quests</button>
-        </div>
-        ${statusFilterMarkup}
-      </div>
-      ${filterMarkup}
-      ${summaryMarkup}
-    </div>
-    ${catalogueMarkup}
-  `;
-}
-
-function renderClientBadges() {
-  const badges = getBadges().slice();
-  const difficultyOrder = ["Starter", "Rising", "Skilled", "Expert", "Legendary"];
-  badges.sort((a, b) => {
-    const indexA = difficultyOrder.indexOf(typeof a.difficulty === "string" ? a.difficulty : "Skilled");
-    const indexB = difficultyOrder.indexOf(typeof b.difficulty === "string" ? b.difficulty : "Skilled");
-    const diffRankA = indexA === -1 ? difficultyOrder.length : indexA;
-    const diffRankB = indexB === -1 ? difficultyOrder.length : indexB;
-    if (diffRankA !== diffRankB) return diffRankA - diffRankB;
-    const categoryA = typeof a.category === "string" ? a.category : "";
-    const categoryB = typeof b.category === "string" ? b.category : "";
-    if (categoryA !== categoryB) return categoryA.localeCompare(categoryB, undefined, { sensitivity: "base" });
-    const pointsA = Number(a.points) || 0;
-    const pointsB = Number(b.points) || 0;
-    if (pointsA !== pointsB) return pointsB - pointsA;
-    const titleA = typeof a.title === "string" ? a.title : "";
-    const titleB = typeof b.title === "string" ? b.title : "";
-    return titleA.localeCompare(titleB, undefined, { sensitivity: "base" });
-  });
-
-  const publishedBadges = badges.filter(badge => badge.published);
-  const draftBadges = badges.filter(badge => !badge.published);
-  const publishedPointsTotal = publishedBadges.reduce((sum, badge) => sum + (Number(badge.points) || 0), 0);
-  const totalPoints = badges.reduce((sum, badge) => sum + (Number(badge.points) || 0), 0);
-
-  const categoryMap = new Map();
-  badges.forEach(badge => {
-    const rawCategory = typeof badge.category === "string" ? badge.category.trim() : "";
-    if (!rawCategory) return;
-    const normalized = rawCategory.toLowerCase();
-    if (!categoryMap.has(normalized)) {
-      categoryMap.set(normalized, rawCategory);
-    }
-  });
-
-  const categories = Array.from(categoryMap.entries())
-    .sort((a, b) => a[1].localeCompare(b[1], undefined, { sensitivity: "base" }))
-    .map(([value, label]) => ({ value, label }));
-
-  const activeFilter =
-    typeof state.meta.badgeFilter === "string" && state.meta.badgeFilter.length > 0
-      ? state.meta.badgeFilter
-      : null;
-  const statusFilter =
-    typeof state.meta.badgeStatusFilter === "string" && state.meta.badgeStatusFilter.length > 0
-      ? state.meta.badgeStatusFilter
-      : null;
-
-  const categoryFilteredBadges = activeFilter
-    ? badges.filter(badge => {
-        const category = typeof badge.category === "string" ? badge.category.trim().toLowerCase() : "";
-        return category === activeFilter;
-      })
-    : badges;
-
-  const filteredBadges =
-    statusFilter === "published"
-      ? categoryFilteredBadges.filter(badge => badge.published)
-      : statusFilter === "unpublished"
-      ? categoryFilteredBadges.filter(badge => !badge.published)
-      : categoryFilteredBadges;
-
-  const selectedCategoryLabel =
-    activeFilter && categoryMap.has(activeFilter)
-      ? formatCatalogueLabel(categoryMap.get(activeFilter))
-      : null;
-
-  const summaryParts = [];
-  if (activeFilter || statusFilter) {
-    summaryParts.push(`${formatNumber(filteredBadges.length)} of ${formatNumber(badges.length)} badges shown`);
-  }
-  if (statusFilter === "published") {
-    summaryParts.push("Published only");
-  } else if (statusFilter === "unpublished") {
-    summaryParts.push("Unpublished only");
-  }
-  if (selectedCategoryLabel) {
-    summaryParts.push(`Category: ${selectedCategoryLabel}`);
-  }
-
-  const summaryMarkup = summaryParts.length
-    ? `<p class="detail-table__meta">${escapeHtml(summaryParts.join(" | "))}</p>`
-    : "";
-
-  const filterButtons = categories
-    .map(category => {
-      const isActive = activeFilter === category.value;
-      const value = escapeHtml(category.value);
-      const label = formatCatalogueLabel(category.label);
-      return `
-        <button
-          type="button"
-          class="badge-filter__item${isActive ? " badge-filter__item--active" : ""}"
-          data-badge-filter="${value}"
-          aria-pressed="${isActive ? "true" : "false"}">
-          ${escapeHtml(label)}
-        </button>
-      `;
-    })
-    .join("");
-
-  const statusFilterMarkup = `
-      <div class="badge-filter client-catalogue__status" role="toolbar" aria-label="Badge publication status">
-        <button
-          type="button"
-          class="badge-filter__item${statusFilter ? "" : " badge-filter__item--active"}"
-          data-badge-status=""
-          aria-pressed="${statusFilter ? "false" : "true"}">
-          All statuses
-        </button>
-        <button
-          type="button"
-          class="badge-filter__item${statusFilter === "published" ? " badge-filter__item--active" : ""}"
-          data-badge-status="published"
-          aria-pressed="${statusFilter === "published" ? "true" : "false"}">
-          Published
-        </button>
-        <button
-          type="button"
-          class="badge-filter__item${statusFilter === "unpublished" ? " badge-filter__item--active" : ""}"
-          data-badge-status="unpublished"
-          aria-pressed="${statusFilter === "unpublished" ? "true" : "false"}">
-          Unpublished
-        </button>
-      </div>
-      `;
-
-  const filterMarkup = categories.length
-    ? `
-      <div class="badge-filter client-badges__filters" role="toolbar" aria-label="Badge categories">
-        <button
-          type="button"
-          class="badge-filter__item${activeFilter ? "" : " badge-filter__item--active"}"
-          data-badge-filter=""
-          aria-pressed="${activeFilter ? "false" : "true"}">
-          All badges
-        </button>
-        ${filterButtons}
-      </div>
-    `
-    : "";
-
-  const renderBadgeCard = (badge, index) => {
-    const rawId = String(badge.id ?? generateId("badge"));
-    const sanitizedId = rawId.replace(/[^a-zA-Z0-9:_-]/g, "-");
-    const id = escapeHtml(rawId);
-    const cardId = escapeHtml(`badge-card-${index}-${sanitizedId || "detail"}`);
-    const action = badge.published ? "unpublish" : "publish";
-    const actionLabel = badge.published ? "Unpublish" : "Publish";
-    const actionTone = badge.published ? "button-pill--danger-light" : "button-pill--primary";
-    const toneKey = BADGE_TONES[badge.tone] ? badge.tone : "violet";
-    const tone = BADGE_TONES[toneKey] || BADGE_TONES.violet;
-    const iconBackdrop =
-      BADGE_ICON_BACKDROPS[toneKey]?.background ||
-      BADGE_ICON_BACKDROPS.violet?.background ||
-      "linear-gradient(135deg, #c7d2fe, #818cf8)";
-    const iconShadow =
-      BADGE_ICON_BACKDROPS[toneKey]?.shadow || BADGE_ICON_BACKDROPS.violet?.shadow || "rgba(79, 70, 229, 0.32)";
-    const difficultyLabel =
-      typeof badge.difficulty === "string" && badge.difficulty.trim().length > 0
-        ? badge.difficulty.trim()
-        : "Skilled";
-    const rawCategory =
-      typeof badge.category === "string" && badge.category.trim().length > 0
-        ? badge.category.trim()
-        : "Badge";
-    const categoryLabel = formatCatalogueLabel(rawCategory);
-    const pointsValue = Number(badge.points) || 0;
-    const statusLabel = badge.published ? "Published" : "Draft";
-    const statusClass = badge.published ? "gem-badge-card__status--published" : "gem-badge-card__status--draft";
-    const ariaLabel = `${badge.title} badge, ${difficultyLabel} difficulty, worth ${formatNumber(pointsValue)} points.`;
-    const tags = [];
-    if (rawCategory && rawCategory.toLowerCase() !== "badge") {
-      tags.push(
-        `<span class="catalogue-card__tag gem-badge-card__tag">${escapeHtml(categoryLabel)}</span>`
-      );
-    }
-    if (difficultyLabel) {
-      tags.push(
-        `<span class="catalogue-card__tag gem-badge-card__tag">${escapeHtml(difficultyLabel)}</span>`
-      );
-    }
-    const tagsMarkup = tags.length
-      ? `<div class="gem-badge-card__tags catalogue-card__tags">${tags.join("")}</div>`
-      : "";
-    const bonusMarkup =
-      badge.bonus && badge.bonusDetail
-        ? `<p class="gem-badge-card__bonus"><strong>${escapeHtml(badge.bonus)}</strong> ${escapeHtml(
-            badge.bonusDetail
-          )}</p>`
-        : "";
-    const toggleTitleParts = [];
-    if (badge.published) toggleTitleParts.push("Published");
-    if (difficultyLabel) toggleTitleParts.push(difficultyLabel);
-    if (rawCategory && rawCategory.toLowerCase() !== "badge") toggleTitleParts.push(categoryLabel);
-    if (badge.points) toggleTitleParts.push(`${formatNumber(pointsValue)} pts`);
-    const toggleTitle = toggleTitleParts.join(" • ");
-
-    return `
-      <article
-        class="gem-badge ${badge.published ? "gem-badge--published" : "gem-badge--draft"}"
-        data-badge="${id}"
-        style="--badge-tone:${tone};--badge-icon-tone:${iconBackdrop};--badge-icon-shadow:${iconShadow};">
-        <button
-          type="button"
-          class="gem-badge__trigger"
-          aria-haspopup="true"
-          aria-label="${escapeHtml(badge.title)} badge details"
-          aria-controls="${cardId}"
-          title="${escapeHtml(toggleTitle)}">
-          <span class="gem-badge__icon" style="background:${iconBackdrop}; box-shadow:0 18px 32px ${iconShadow};">
-            ${renderIcon(badge.icon || "medal", "sm")}
-          </span>
-        </button>
-        <span class="gem-badge__label">${escapeHtml(badge.title)}</span>
-        <div
-          id="${cardId}"
-          class="gem-badge-card ${badge.published ? "gem-badge-card--published" : "gem-badge-card--draft"}"
-          role="group"
-          aria-label="${escapeHtml(ariaLabel)}">
-          <span class="gem-badge-card__halo"></span>
-          <span class="gem-badge-card__orb gem-badge-card__orb--one"></span>
-          <span class="gem-badge-card__orb gem-badge-card__orb--two"></span>
-          <header class="gem-badge-card__header">
-            <span>${escapeHtml(categoryLabel)}</span>
-            <span class="gem-badge-card__status ${statusClass}">${statusLabel}</span>
-          </header>
-          <div class="gem-badge-card__main">
-            <h3 class="gem-badge-card__title">${escapeHtml(badge.title)}</h3>
-            ${tagsMarkup}
-            <p class="gem-badge-card__description">${escapeHtml(badge.description)}</p>
-            ${bonusMarkup}
-          </div>
-        <footer class="gem-badge-card__footer">
-          <span class="gem-badge-card__points">
-            <span class="gem-badge-card__points-value">+${formatNumber(pointsValue)}</span>
-            <span class="gem-badge-card__points-unit">pts</span>
-          </span>
-          <button
-            type="button"
-            class="button-pill ${actionTone} badge-publish-toggle gem-badge-card__action"
-            data-action="${action}"
-            data-badge="${id}">
-              ${actionLabel}
-            </button>
-          </footer>
-        </div>
-      </article>
-    `;
-  };
-
-  const difficultyRank = value => {
-    const normalized = typeof value === "string" ? value.trim() : "";
-    const rank = difficultyOrder.indexOf(normalized);
-    return rank === -1 ? difficultyOrder.length : rank;
-  };
-
-  const getCategoryRank = label => {
-    const normalized = typeof label === "string" ? label.trim().toLowerCase() : "";
-    const index = BADGE_CATEGORY_ORDER.indexOf(normalized);
-    return index === -1 ? BADGE_CATEGORY_ORDER.length : index;
-  };
-
-  const groupedBadges = (() => {
-    if (!filteredBadges.length) return [];
-    const map = new Map();
-    filteredBadges.forEach(badge => {
-      const rawCategory =
-        typeof badge.category === "string" && badge.category.trim().length > 0
-          ? badge.category.trim()
-          : "Badge";
-      const key = rawCategory.toLowerCase();
-      if (!map.has(key)) {
-        map.set(key, {
-          key,
-          rawLabel: rawCategory,
-          badges: []
-        });
-      }
-      map.get(key).badges.push(badge);
-    });
-    return Array.from(map.values())
-      .sort((a, b) => {
-        const rankA = getCategoryRank(a.rawLabel);
-        const rankB = getCategoryRank(b.rawLabel);
-        if (rankA !== rankB) return rankA - rankB;
-        return a.rawLabel.localeCompare(b.rawLabel, undefined, { sensitivity: "base" });
-      })
-      .map(group => ({
-        key: group.key,
-        label: formatCatalogueLabel(group.rawLabel),
-        badges: group.badges
-          .slice()
-          .sort((a, b) => {
-            const rankA = difficultyRank(a.difficulty);
-            const rankB = difficultyRank(b.difficulty);
-            if (rankA !== rankB) return rankA - rankB;
-            const pointsA = Number(a.points) || 0;
-            const pointsB = Number(b.points) || 0;
-            if (pointsA !== pointsB) return pointsB - pointsA;
-            const titleA = typeof a.title === "string" ? a.title : "";
-            const titleB = typeof b.title === "string" ? b.title : "";
-            return titleA.localeCompare(titleB, undefined, { sensitivity: "base" });
-          })
-      }));
-  })();
-
-  let badgeIndex = 0;
-
-  const gridMarkup = filteredBadges.length
-    ? `
-      <div class="client-badges__groups">
-        ${groupedBadges
-          .map(group => {
-            const count = group.badges.length;
-            const countLabel = `${formatNumber(count)} badge${count === 1 ? "" : "s"}`;
-            return `
-              <section class="gem-badge-group" data-badge-category="${escapeHtml(group.key)}">
-                <header class="gem-badge-group__header">
-                  <h3>${escapeHtml(group.label)}</h3>
-                  <span class="detail-table__meta">${escapeHtml(countLabel)}</span>
-                </header>
-                <div class="gem-badge-grid gem-badge-group__grid client-badges__grid">
-                  ${group.badges
-                    .map(badge => {
-                      const markup = renderBadgeCard(badge, badgeIndex);
-                      badgeIndex += 1;
-                      return markup;
-                    })
-                    .join("")}
-                </div>
-              </section>
-            `;
-          })
-          .join("")}
-      </div>
-    `
-    : `<div class="badge-empty"><p>${
-        activeFilter ? "No badges match the selected filter." : "No badges are configured yet."
-      }</p></div>`;
-
-  const metricsConfig = [
-    {
-      label: "Total badges",
-      value: formatNumber(badges.length),
-      caption: "Across all tiers"
-    },
-    {
-      label: "Published badges",
-      value: formatNumber(publishedBadges.length),
-      caption: "Visible in experiences"
-    },
-    {
-      label: "Draft badges",
-      value: formatNumber(draftBadges.length),
-      caption: "Awaiting publication"
-    },
-    {
-      label: "Catalogue categories",
-      value: formatNumber(categories.length),
-      caption: "Storytelling themes"
-    }
-  ];
-
-  const metricsMarkup = metricsConfig
-    .map(
-      metric => `
-        <article class="client-badges__metric">
-          <h3>${escapeHtml(metric.label)}</h3>
-          <strong>${escapeHtml(String(metric.value))}</strong>
-          <span>${escapeHtml(metric.caption)}</span>
-        </article>
-      `
-    )
-    .join("");
-
-  return `
-    <section class="client-catalogue__intro">
-      <span class="client-catalogue__eyebrow">Badge catalogue</span>
-      <h1>Celebrate progress with curated badges.</h1>
-      <p>Curate the badge tiers you want squads to chase. Publish just the stories you need and bring the sparkle into every hub and add-in moment.</p>
-    </section>
-    <section class="client-badges__metrics">
-      ${metricsMarkup}
-    </section>
-    <div class="client-badges__actions">
-      <div class="client-catalogue__actions-row">
-        <div class="client-badges__bulk">
-          <button
-            type="button"
-            class="button-pill button-pill--primary"
-            data-bulk-badge-action="publish">
-            Publish all badges
-          </button>
-          <button
-            type="button"
-            class="button-pill button-pill--danger-light"
-            data-bulk-badge-action="unpublish">
-            Unpublish all badges
-          </button>
-        </div>
-        ${statusFilterMarkup}
-      </div>
-      ${filterMarkup}
-      ${summaryMarkup}
-    </div>
-    <section class="gem-badge-grid client-badges__grid">
-      ${gridMarkup}
-    </section>
-  `;
-}
 function renderWeldLabs() {
   const labs = state.labs && typeof state.labs === "object" ? state.labs : {};
   const features = Array.isArray(labs.features) ? labs.features : [];
@@ -7437,9 +3699,9 @@ function renderWeldLabs() {
     .map(
       metric => `
         <article class="weld-labs__metric">
-          <h3>${escapeHtml(metric.label)}</h3>
-          <strong>${escapeHtml(metric.value)}</strong>
-          <span>${escapeHtml(metric.caption)}</span>
+          <h3>${WeldUtil.escapeHtml(metric.label)}</h3>
+          <strong>${WeldUtil.escapeHtml(metric.value)}</strong>
+          <span>${WeldUtil.escapeHtml(metric.caption)}</span>
         </article>
       `
     )
@@ -7449,8 +3711,8 @@ function renderWeldLabs() {
     ? `
         <div class="weld-labs__review">
           <span>Last review</span>
-          <strong>${escapeHtml(formatDateTime(labs.lastReviewAt))}</strong>
-          <small>${escapeHtml(relativeTime(labs.lastReviewAt))}</small>
+          <strong>${WeldUtil.escapeHtml(formatDateTime(labs.lastReviewAt))}</strong>
+          <small>${WeldUtil.escapeHtml(relativeTime(labs.lastReviewAt))}</small>
         </div>
       `
     : `
@@ -7504,23 +3766,23 @@ function renderWeldLabs() {
                   if (client?.organizationId) {
                     titleParts.push(`Org ID ${client.organizationId}`);
                   }
-                  const toggleTitle = titleParts.join(" â€¢ ");
+                  const toggleTitle = titleParts.join(" • ");
                   const actionLabel = isEnabled ? "Disable" : "Enable";
                   return `
                     <button
                       type="button"
                       class="button-pill ${toneClass} weld-labs__toggle"
                       data-lab-toggle
-                      data-lab-feature="${escapeHtml(featureId)}"
-                      data-client="${escapeHtml(String(client.id))}"
+                      data-lab-feature="${WeldUtil.escapeHtml(featureId)}"
+                      data-client="${WeldUtil.escapeHtml(String(client.id))}"
                       data-enabled="${enabledAttr}"
                       aria-pressed="${enabledAttr}"
-                      aria-label="${escapeHtml(
+                      aria-label="${WeldUtil.escapeHtml(
                         `${actionLabel} ${clientName} for ${name}`
                       )}"
-                      ${toggleTitle ? `title="${escapeHtml(toggleTitle)}"` : ""}
+                      ${toggleTitle ? `title="${WeldUtil.escapeHtml(toggleTitle)}"` : ""}
                     >
-                      ${escapeHtml(clientName)}
+                      ${WeldUtil.escapeHtml(clientName)}
                     </button>
                   `;
                 })
@@ -7528,14 +3790,14 @@ function renderWeldLabs() {
             : "";
           const tagsMarkup = tags.length
             ? `<div class="weld-labs__tags">${tags
-                .map(tag => `<span class="weld-labs__tag">${escapeHtml(tag)}</span>`)
+                .map(tag => `<span class="weld-labs__tag">${WeldUtil.escapeHtml(tag)}</span>`)
                 .join("")}</div>`
             : "";
           const toggleSection = clients.length
             ? `
               <div class="weld-labs__toggle-header">
                 <h4>Organisations</h4>
-                <span>${escapeHtml(
+                <span>${WeldUtil.escapeHtml(
                   `${formatNumber(enabledCount)} of ${formatNumber(clients.length)} active`
                 )}</span>
               </div>
@@ -7546,18 +3808,18 @@ function renderWeldLabs() {
                 <button
                   type="button"
                   class="button-pill button-pill--ghost weld-labs__bulk-action"
-                  data-lab-feature="${escapeHtml(featureId)}"
+                  data-lab-feature="${WeldUtil.escapeHtml(featureId)}"
                   data-lab-bulk="enable"
-                  aria-label="${escapeHtml(`Enable ${name} for all organisations`)}"
+                  aria-label="${WeldUtil.escapeHtml(`Enable ${name} for all organisations`)}"
                 >
                   Enable all
                 </button>
                 <button
                   type="button"
                   class="button-pill button-pill--ghost weld-labs__bulk-action"
-                  data-lab-feature="${escapeHtml(featureId)}"
+                  data-lab-feature="${WeldUtil.escapeHtml(featureId)}"
                   data-lab-bulk="disable"
-                  aria-label="${escapeHtml(`Disable ${name} for all organisations`)}"
+                  aria-label="${WeldUtil.escapeHtml(`Disable ${name} for all organisations`)}"
                 >
                   Disable all
                 </button>
@@ -7565,25 +3827,25 @@ function renderWeldLabs() {
             `
             : `<p class="weld-labs__no-clients">Add organisation accounts to pilot this experiment.</p>`;
           return `
-            <article class="weld-labs__feature" data-feature="${escapeHtml(featureId)}">
+            <article class="weld-labs__feature" data-feature="${WeldUtil.escapeHtml(featureId)}">
               <header class="weld-labs__feature-header">
-                <span class="weld-labs__status">${escapeHtml(status)}</span>
-                <h3>${escapeHtml(name)}</h3>
+                <span class="weld-labs__status">${WeldUtil.escapeHtml(status)}</span>
+                <h3>${WeldUtil.escapeHtml(name)}</h3>
                 ${tagsMarkup}
               </header>
-              <p class="weld-labs__summary">${escapeHtml(summary)}</p>
-              ${benefit ? `<p class="weld-labs__benefit">${escapeHtml(benefit)}</p>` : ""}
+              <p class="weld-labs__summary">${WeldUtil.escapeHtml(summary)}</p>
+              ${benefit ? `<p class="weld-labs__benefit">${WeldUtil.escapeHtml(benefit)}</p>` : ""}
               <div class="weld-labs__meta">
                 ${
                   owner
-                    ? `<span class="weld-labs__owner">Owner: ${escapeHtml(owner)}</span>`
+                    ? `<span class="weld-labs__owner">Owner: ${WeldUtil.escapeHtml(owner)}</span>`
                     : ""
                 }
-                <span class="weld-labs__assignments">${escapeHtml(
+                <span class="weld-labs__assignments">${WeldUtil.escapeHtml(
                   `${formatNumber(enabledCount)} organisations enabled`
                 )}</span>
               </div>
-              <section class="weld-labs__toggle-panel" aria-label="Manage access for ${escapeHtml(
+              <section class="weld-labs__toggle-panel" aria-label="Manage access for ${WeldUtil.escapeHtml(
                 name
               )}">
                 ${toggleSection}
@@ -7613,7 +3875,7 @@ function renderWeldLabs() {
         ${metricsMarkup}
       </section>
       <section class="weld-labs__assignments-summary">
-        <strong>${escapeHtml(formatNumber(totalAssignments))}</strong>
+        <strong>${WeldUtil.escapeHtml(formatNumber(totalAssignments))}</strong>
         <span>Total tenant toggles active</span>
       </section>
       <section class="weld-labs__list">
@@ -7670,15 +3932,15 @@ function renderWeldAdmin() {
       <button class="button-pill button-pill--primary" id="trigger-playbook">Trigger playbook</button>
     </header>
     <section class="metrics-grid">
-      ${renderMetricCard("Active clients", state.clients.length.toString(), { direction: "up", value: "2 onboarded", caption: "last month" }, "indigo", "shield")}
-      ${renderMetricCard(
+      ${WeldUtil.renderMetricCard("Active clients", state.clients.length.toString(), { direction: "up", value: "2 onboarded", caption: "last month" }, "indigo", "shield")}
+      ${WeldUtil.renderMetricCard(
         "Average health",
         `${Math.round(state.clients.reduce((acc, client) => acc + client.healthScore, 0) / state.clients.length)}%`,
         { direction: "up", value: "+6 pts", caption: "quarter to date" },
         "emerald",
         "heart"
       )}
-      ${renderMetricCard(
+      ${WeldUtil.renderMetricCard(
         "Open cases",
         state.clients.reduce((acc, client) => acc + client.openCases, 0).toString(),
         { direction: "down", value: "-3", caption: "since Monday" },
@@ -8007,7 +4269,7 @@ function renderBadgeSpotlight(badgeInput) {
 
   const renderTile = badge => {
     if (!badge) return "";
-    const safeId = escapeHtml(String(badge.id ?? ""));
+    const safeId = WeldUtil.escapeHtml(String(badge.id ?? ""));
     const iconBackdrop =
       BADGE_ICON_BACKDROPS[badge.tone]?.background ||
       BADGE_ICON_BACKDROPS.violet?.background ||
@@ -8029,12 +4291,12 @@ function renderBadgeSpotlight(badgeInput) {
         role="listitem"
         tabindex="0"
         data-badge="${safeId}"
-        aria-label="${escapeHtml(ariaLabel)}">
+        aria-label="${WeldUtil.escapeHtml(ariaLabel)}">
         <span class="badge-spotlight-tile__icon" style="background:${iconBackdrop}; box-shadow:0 22px 44px ${iconShadow};">
-          ${renderIcon(badge.icon || "medal", "sm")}
+          ${WeldUtil.renderIcon(badge.icon || "medal", "sm")}
         </span>
-        <span class="badge-spotlight-tile__label">${escapeHtml(normalizedTitle)}</span>
-        <span class="badge-spotlight-tile__points" aria-label="${escapeHtml(
+        <span class="badge-spotlight-tile__label">${WeldUtil.escapeHtml(normalizedTitle)}</span>
+        <span class="badge-spotlight-tile__points" aria-label="${WeldUtil.escapeHtml(
           `${formatNumber(pointsValue)} points`
         )}">+${formatNumber(pointsValue)}</span>
       </div>
@@ -8042,7 +4304,7 @@ function renderBadgeSpotlight(badgeInput) {
   };
 
   const extraCount = extraBadges.length;
-  const extraPanelId = generateId("extra-badges");
+  const extraPanelId = WeldUtil.generateId("extra-badges");
   const extrasMarkup =
     extraCount > 0
       ? `
@@ -8058,7 +4320,7 @@ function renderBadgeSpotlight(badgeInput) {
           <ul class="badge-spotlight-extra__list">
             ${displayedExtras
               .map(badge => {
-                const safeId = escapeHtml(String(badge.id ?? ""));
+                const safeId = WeldUtil.escapeHtml(String(badge.id ?? ""));
                 const normalizedTitle =
                   typeof badge.title === "string" && badge.title.trim().length > 0
                     ? badge.title.trim()
@@ -8067,9 +4329,9 @@ function renderBadgeSpotlight(badgeInput) {
                 const pointsValue = Number.isFinite(rawPoints) ? rawPoints : 0;
                 return `
                   <li class="badge-spotlight-extra__item" data-badge="${safeId}">
-                    <span class="badge-spotlight-extra__icon">${renderIcon(badge.icon || "medal", "xs")}</span>
-                    <span class="badge-spotlight-extra__name">${escapeHtml(normalizedTitle)}</span>
-                    <span class="badge-spotlight-extra__points" aria-label="${escapeHtml(
+                    <span class="badge-spotlight-extra__icon">${WeldUtil.renderIcon(badge.icon || "medal", "xs")}</span>
+                    <span class="badge-spotlight-extra__name">${WeldUtil.escapeHtml(normalizedTitle)}</span>
+                    <span class="badge-spotlight-extra__points" aria-label="${WeldUtil.escapeHtml(
                       `${formatNumber(pointsValue)} points`
                     )}">+${formatNumber(pointsValue)}</span>
                   </li>
@@ -8237,236 +4499,7 @@ function setupBadgeShowcase(container) {
   }
 }
 
-function renderAddIn() {
-  const screen = state.meta.addinScreen;
-  const reporterSettings = state?.settings?.reporter || {};
-  const reasonPrompt =
-    typeof reporterSettings.reasonPrompt === "string" &&
-    reporterSettings.reasonPrompt.trim().length > 0
-      ? reporterSettings.reasonPrompt.trim()
-      : DEFAULT_REPORTER_PROMPT;
-  const emergencyLabel =
-    typeof reporterSettings.emergencyLabel === "string" &&
-    reporterSettings.emergencyLabel.trim().length > 0
-      ? reporterSettings.emergencyLabel.trim()
-      : DEFAULT_EMERGENCY_LABEL;
-  const reporterReasons =
-    Array.isArray(reporterSettings.reasons) && reporterSettings.reasons.length > 0
-      ? reporterSettings.reasons
-      : DEFAULT_REPORTER_REASONS;
-  const reasonsMarkup = reporterReasons
-    .map(reason => {
-      if (!reason) return "";
-      const reasonId =
-        typeof reason.id === "string" && reason.id.trim().length > 0
-          ? reason.id.trim()
-          : null;
-      const label =
-        typeof reason.label === "string" && reason.label.trim().length > 0
-          ? reason.label.trim()
-          : null;
-      if (!reasonId || !label) return "";
-      return `
-        <label>
-          <input type="checkbox" value="${escapeHtml(reasonId)}" />
-          <span>${escapeHtml(label)}</span>
-        </label>
-      `;
-    })
-    .filter(Boolean)
-    .join("");
-  const reportForm = `
-    <div class="addin-body">
-      <fieldset class="addin-field">
-        <legend>${escapeHtml(reasonPrompt)}</legend>
-        <div class="addin-checkbox-list">
-          ${reasonsMarkup}
-        </div>
-      </fieldset>
-      <label class="addin-emergency">
-        <input type="checkbox" value="clicked-link,opened-attachment,shared-credentials" />
-        <span class="addin-emergency__text">${escapeHtml(emergencyLabel)}</span>
-      </label>
-      <label class="addin-field addin-field--notes">
-        Another reason or anything else we should know?
-        <textarea rows="3" id="addin-notes" placeholder="Optional context for your security reviewers."></textarea>
-      </label>
-      <button class="addin-primary" id="addin-submit">Report</button>
-    </div>
-  `;
-
-  const reportAward = Number.isFinite(state.meta.lastReportPoints) ? state.meta.lastReportPoints : 0;
-  const badgeAward = Number.isFinite(state.meta.lastBadgePoints) ? state.meta.lastBadgePoints : 0;
-  const afterBalance = Number.isFinite(state.meta.lastBalanceAfter) ? state.meta.lastBalanceAfter : state.customer.currentPoints;
-  const fallbackTotal = reportAward + badgeAward;
-  const previousBalance = Number.isFinite(state.meta.lastBalanceBefore)
-    ? state.meta.lastBalanceBefore
-    : Math.max(afterBalance - fallbackTotal, 0);
-  let totalAwarded = Number.isFinite(state.meta.lastTotalAwarded)
-    ? state.meta.lastTotalAwarded
-    : afterBalance - previousBalance;
-  if (!Number.isFinite(totalAwarded) || totalAwarded <= 0) {
-    totalAwarded = Math.max(fallbackTotal, 0);
-  }
-  const tickerMarkup = renderPointsTicker(previousBalance, afterBalance, totalAwarded, 'data-points-ticker="total"');
-  const badgeBurstLabel =
-    Array.isArray(state.meta.lastBadgeIds) && state.meta.lastBadgeIds.length > 1 ? "Badges" : "Badge";
-  const burstsMarkup = renderPointsBursts([
-    { value: reportAward, variant: "report", label: "Report" },
-    { value: badgeAward, variant: "badge", label: badgeBurstLabel }
-  ]);
-  const auroraLayers = [
-    { angle: 12, hue: 258, delay: "0s", offsetX: -28, offsetY: -52, shape: "wave1" },
-    { angle: -18, hue: 210, delay: "0.08s", offsetX: 6, offsetY: -44, shape: "wave2" },
-    { angle: 28, hue: 42, delay: "0.15s", offsetX: -4, offsetY: 6, shape: "wave3" },
-    { angle: -6, hue: 320, delay: "0.22s", offsetX: 18, offsetY: -18, shape: "wave4" },
-    { angle: 34, hue: 168, delay: "0.3s", offsetX: -20, offsetY: -8, shape: "wave5" }
-  ];
-  const sparkles = [
-    { x: -92, y: -68, delay: "0.32s", size: 18 },
-    { x: -32, y: -8, delay: "0.45s", size: 14 },
-    { x: 38, y: -10, delay: "0.58s", size: 12 },
-    { x: 74, y: -44, delay: "0.72s", size: 16 }
-  ];
-  const auroraMarkup = auroraLayers
-    .map(
-      layer => `
-        <span class="points-aurora__ribbon points-aurora__ribbon--${layer.shape}" style="--aurora-angle:${layer.angle}deg;--aurora-hue:${layer.hue};--aurora-delay:${layer.delay};--aurora-offset-x:${layer.offsetX}px;--aurora-offset-y:${layer.offsetY}px;"></span>
-      `
-    )
-    .join("");
-  const sparklesMarkup = sparkles
-    .map(
-      sparkle => `
-        <span class="points-sparkle" style="--sparkle-x:${sparkle.x}px;--sparkle-y:${sparkle.y}px;--sparkle-delay:${sparkle.delay};--sparkle-size:${sparkle.size}px;"></span>
-      `
-    )
-    .join("");
-  const successView = `
-    <div class="addin-success">
-      <div class="points-celebration points-celebration--aurora">
-        <div class="points-celebration__fireworks" aria-hidden="true">
-          <div class="firework"></div>
-          <div class="firework"></div>
-          <div class="firework"></div>
-        </div>
-        <div class="points-celebration__halo"></div>
-        <div class="points-aurora" aria-hidden="true">
-          ${auroraMarkup}
-        </div>
-        <div class="points-celebration__bubble">
-          <span class="points-celebration__label">Great catch</span>
-          <div class="points-celebration__points">
-            <span class="points-celebration__star" aria-hidden="true">
-              <svg
-                class="badge"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 360 360"
-                preserveAspectRatio="xMidYMid meet"
-                focusable="false"
-              >
-                <circle class="outer" fill="#F9D535" stroke="#fff" stroke-width="8" stroke-linecap="round" cx="180" cy="180" r="157"></circle>
-                <circle class="inner" fill="#DFB828" stroke="#fff" stroke-width="8" cx="180" cy="180" r="108.3"></circle>
-                <path class="inline" d="M89.4 276.7c-26-24.2-42.2-58.8-42.2-97.1 0-22.6 5.6-43.8 15.5-62.4m234.7.1c9.9 18.6 15.4 39.7 15.4 62.2 0 38.3-16.2 72.8-42.1 97" stroke="#CAA61F" stroke-width="7" stroke-linecap="round" fill="none"></path>
-                <g class="star">
-                  <path fill="#F9D535" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="M180 107.8l16.9 52.1h54.8l-44.3 32.2 16.9 52.1-44.3-32.2-44.3 32.2 16.9-52.1-44.3-32.2h54.8z"></path>
-                  <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="180" cy="107.8" r="4.4"></circle>
-                  <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="223.7" cy="244.2" r="4.4"></circle>
-                  <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="135.5" cy="244.2" r="4.4"></circle>
-                  <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="108.3" cy="160.4" r="4.4"></circle>
-                  <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="251.7" cy="160.4" r="4.4"></circle>
-                </g>
-              </svg>
-            </span>
-            <span class="points-celebration__award">
-              <span class="points-celebration__award-value" data-celebration-award>+0</span>
-              <span class="points-celebration__award-unit">pts</span>
-            </span>
-            ${burstsMarkup}
-          </div>
-        </div>
-        <div class="points-sparkles" aria-hidden="true">
-          ${sparklesMarkup}
-        </div>
-      </div>
-      <div class="addin-success__badge" data-badge-showcase aria-live="polite"></div>
-      <p>The security team will review your report shortly. Your points are available immediately.</p>
-      <div class="addin-actions">
-        <button class="addin-cta addin-cta--primary" id="addin-view-rewards">
-          ${renderIcon("gift", "xs")}
-          <span>Rewards</span>
-        </button>
-      </div>
-    </div>
-  `;
-
-  const headerPointsDisplay =
-    screen === "success"
-      ? tickerMarkup
-      : `<span class="addin-points__value">${formatNumber(state.customer.currentPoints)}</span>`;
-  const showBackNav = screen === "success";
-  const backButtonMarkup = showBackNav
-    ? `<button type="button" class="addin-header__back" data-addin-back aria-label="Back to report form">
-        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
-          <path d="M12.94 4.44a1 1 0 0 1 0 1.41L9.29 9.5l3.65 3.65a1 1 0 1 1-1.41 1.41l-4.36-4.36a1 1 0 0 1 0-1.41l4.36-4.36a1 1 0 0 1 1.41 0z" fill="currentColor"/>
-        </svg>
-      </button>`
-    : "";
-
-  return `
-    <div class="addin-page">
-      <div class="addin-shell">
-        <header class="addin-header">
-          <div class="addin-header__top">
-            <div class="addin-header__title">
-              ${backButtonMarkup}
-              ${
-                showBackNav
-                  ? ""
-                  : `<div class="addin-logo">W</div>`
-              }
-            </div>
-            <div class="addin-points" aria-live="polite">
-              <span class="addin-points__star" aria-hidden="true">
-                <svg
-                  class="badge"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 360 360"
-                  preserveAspectRatio="xMidYMid meet"
-                  focusable="false"
-                >
-                  <circle class="outer" fill="#F9D535" stroke="#fff" stroke-width="8" stroke-linecap="round" cx="180" cy="180" r="157"></circle>
-                  <circle class="inner" fill="#DFB828" stroke="#fff" stroke-width="8" cx="180" cy="180" r="108.3"></circle>
-                  <path class="inline" d="M89.4 276.7c-26-24.2-42.2-58.8-42.2-97.1 0-22.6 5.6-43.8 15.5-62.4m234.7.1c9.9 18.6 15.4 39.7 15.4 62.2 0 38.3-16.2 72.8-42.1 97" stroke="#CAA61F" stroke-width="7" stroke-linecap="round" fill="none"></path>
-                  <g class="star">
-                    <path fill="#F9D535" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="M180 107.8l16.9 52.1h54.8l-44.3 32.2 16.9 52.1-44.3-32.2-44.3 32.2 16.9-52.1-44.3-32.2h54.8z"></path>
-                    <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="180" cy="107.8" r="4.4"></circle>
-                    <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="223.7" cy="244.2" r="4.4"></circle>
-                    <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="135.5" cy="244.2" r="4.4"></circle>
-                    <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="108.3" cy="160.4" r="4.4"></circle>
-                    <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="251.7" cy="160.4" r="4.4"></circle>
-                  </g>
-                </svg>
-              </span>
-              ${headerPointsDisplay}
-            </div>
-          </div>
-          <div class="addin-header__body">
-            <h1>Report with Weld</h1>
-            <p>Flag anything suspicious, earn recognition, and protect your team.</p>
-          </div>
-          <div class="addin-status">
-            <span>Signed in</span>
-            <strong>${state.customer.name}</strong>
-          </div>
-        </header>
-        ${screen === "report" ? reportForm : successView}
-      </div>
-    </div>
-  `;
-}
-
-function resolveActiveSettingsCategory() {
+ resolveActiveSettingsCategory() {
   const categories = SETTINGS_CATEGORIES || [];
   if (categories.length === 0) return null;
   const storedId = state?.meta?.settingsCategory;
@@ -8484,14 +4517,14 @@ function reporterReasonRowTemplate(reason, index) {
     typeof reason.id === "string" && reason.id.trim().length > 0
       ? reason.id.trim()
       : `reason-${index + 1}`;
-  const id = escapeHtml(baseId);
+  const id = WeldUtil.escapeHtml(baseId);
   const valueSource =
     typeof reason.label === "string"
       ? reason.label
       : typeof reason.description === "string"
       ? reason.description
       : "";
-  const value = escapeHtml(valueSource);
+  const value = WeldUtil.escapeHtml(valueSource);
   return `
     <div class="settings-reason" data-reason-row="${id}">
       <span class="settings-reason__index">${index + 1}</span>
@@ -8517,10 +4550,10 @@ function reporterReasonRowTemplate(reason, index) {
 }
 
 function renderSettingsPlaceholder(category) {
-  const label = escapeHtml(category?.label || "Settings");
+  const label = WeldUtil.escapeHtml(category?.label || "Settings");
   const description =
     typeof category?.description === "string" && category.description.trim().length > 0
-      ? escapeHtml(category.description)
+      ? WeldUtil.escapeHtml(category.description)
       : "Configuration options coming soon.";
   return `
     <section class="settings-panel__section settings-panel__section--placeholder">
@@ -8562,8 +4595,8 @@ function renderReporterSettingsContent() {
             id="reporter-reason-prompt"
             name="reasonPrompt"
             class="settings-form__input"
-            value="${escapeHtml(reasonPrompt)}"
-            placeholder="${escapeHtml(DEFAULT_REPORTER_PROMPT)}"
+            value="${WeldUtil.escapeHtml(reasonPrompt)}"
+            placeholder="${WeldUtil.escapeHtml(DEFAULT_REPORTER_PROMPT)}"
           />
         </div>
         <div class="settings-form__group">
@@ -8573,8 +4606,8 @@ function renderReporterSettingsContent() {
             class="settings-form__textarea"
             rows="2"
             data-autofocus
-            placeholder="${escapeHtml(DEFAULT_EMERGENCY_LABEL)}"
-          >${escapeHtml(emergencyLabel)}</textarea>
+            placeholder="${WeldUtil.escapeHtml(DEFAULT_EMERGENCY_LABEL)}"
+          >${WeldUtil.escapeHtml(emergencyLabel)}</textarea>
         </div>
         <div class="settings-form__group">
           <div class="settings-form__group-header">
@@ -8615,7 +4648,7 @@ function renderSettingsPanel() {
         .join(" ");
       const description =
         typeof category.description === "string" && category.description.trim().length > 0
-          ? escapeHtml(category.description)
+          ? WeldUtil.escapeHtml(category.description)
           : "";
       const disabledAttr = category.disabled ? " disabled" : "";
       const metaLabel = category.disabled ? '<span class="settings-nav__meta">Coming soon</span>' : "";
@@ -8623,10 +4656,10 @@ function renderSettingsPanel() {
         <button
           type="button"
           class="${classes}"
-          data-settings-category="${escapeHtml(category.id)}"
+          data-settings-category="${WeldUtil.escapeHtml(category.id)}"
           ${disabledAttr}
         >
-          <span class="settings-nav__label">${escapeHtml(category.label)}</span>
+          <span class="settings-nav__label">${WeldUtil.escapeHtml(category.label)}</span>
           ${description ? `<span class="settings-nav__description">${description}</span>` : ""}
           ${metaLabel}
         </button>
@@ -8691,13 +4724,13 @@ function renderContent() {
     case "customer-redemptions":
       return renderCustomerRedemptionsPage();
     case "client-dashboard":
-      return renderClientDashboard();
+      return "";
     case "client-reporting":
-      return renderClientReporting();
+      return "";
     case "client-rewards":
       return renderClientRewards();
     case "client-quests":
-      return renderClientQuests();
+      return "";
     case "weld-admin":
       return renderWeldAdmin();
     case "weld-labs":
@@ -8707,1054 +4740,376 @@ function renderContent() {
   }
 }
 
-function attachBadgeEvents(container) {
-  if (!container) return;
-
-  container.addEventListener("click", event => {
-    const statusButton = event.target.closest("[data-badge-status]");
-    if (statusButton) {
-      const rawValue = (statusButton.getAttribute("data-badge-status") || "").trim().toLowerCase();
-      const nextStatus = rawValue === "published" || rawValue === "unpublished" ? rawValue : null;
-      if (state.meta.badgeStatusFilter !== nextStatus) {
-        state.meta.badgeStatusFilter = nextStatus;
-        persist();
-        renderApp();
-      }
-      return;
-    }
-
-    const filterButton = event.target.closest("[data-badge-filter]");
-    if (filterButton) {
-      const value = (filterButton.getAttribute("data-badge-filter") || "").trim().toLowerCase();
-      const nextFilter = value.length > 0 ? value : null;
-      if (state.meta.badgeFilter !== nextFilter) {
-        state.meta.badgeFilter = nextFilter;
-        persist();
-        renderApp();
-      }
-      return;
-    }
-
-    const bulkButton = event.target.closest("[data-bulk-badge-action]");
-    if (bulkButton) {
-      const action = bulkButton.getAttribute("data-bulk-badge-action");
-      if (action === "publish") {
-        setAllBadgesPublication(true);
-      } else if (action === "unpublish") {
-        setAllBadgesPublication(false);
-      }
-      return;
-    }
-
-    const toggle = event.target.closest(".badge-publish-toggle");
-    if (!toggle) return;
-    const badgeId = toggle.getAttribute("data-badge");
-    const action = toggle.getAttribute("data-action");
-    if (!badgeId || !action) return;
-    setBadgePublication(badgeId, action === "publish");
-  });
-}
-
 function attachGlobalNav(container) {
-  const groups = Array.from(container.querySelectorAll(".global-nav__group"));
 
+  const groups = Array.from(container.querySelectorAll(".global-nav__group"));
+
   const closeGroups = () => {
+
     groups.forEach(group => {
-      group.classList.remove("global-nav__group--open");
+
+      group.classList.remove(".global-nav__group--open");
+
       const triggerEl = group.querySelector(".global-nav__trigger");
+
       if (triggerEl) triggerEl.setAttribute("aria-expanded", "false");
-    });
-  };
 
+    });
+
+  };
+
   groups.forEach(group => {
+
     const trigger = group.querySelector(".global-nav__trigger");
+
     if (!trigger) return;
+
     trigger.setAttribute("aria-expanded", "false");
+
     trigger.setAttribute("aria-haspopup", "true");
+
     const toggleGroup = event => {
+
       event.stopPropagation();
-      const isOpen = group.classList.contains("global-nav__group--open");
+
+      const isOpen = group.classList.contains(".global-nav__group--open");
+
       closeGroups();
+
       if (!isOpen) {
-        group.classList.add("global-nav__group--open");
+
+        group.classList.add(".global-nav__group--open");
+
         trigger.setAttribute("aria-expanded", "true");
-      }
-    };
 
+      }
+
+    };
+
     trigger.addEventListener("click", toggleGroup);
+
     trigger.addEventListener("keydown", event => {
+
       if (event.key !== "Enter" && event.key !== " ") return;
+
       event.preventDefault();
+
       toggleGroup(event);
-    });
-  });
 
+    });
+
+  });
+
   container.querySelectorAll(".global-nav [data-route]").forEach(button => {
+
     button.addEventListener("click", event => {
+
       event.stopPropagation();
+
       const route = button.getAttribute("data-route");
-      const role = button.getAttribute("data-role");
 
-      closeGroups();
-
+      const role = button.getAttribute("data-role");
+
+      closeGroups();
+
       if (route === "addin") {
+
         state.meta.addinScreen = "report";
-      }
 
+      }
+
       if (role) {
+
         setRole(role, route || role);
+
       } else if (route) {
+
         navigate(route);
+
       }
+
     });
+
   });
 
-  const resetButton = container.querySelector("#global-reset");
-  if (resetButton && resetButton.dataset.resetBound !== "true") {
-    resetButton.dataset.resetBound = "true";
-    resetButton.addEventListener("click", event => {
-      event.preventDefault();
-      event.stopPropagation();
-      closeGroups();
-      openDialog({
-        title: "Reset demo data?",
-        description: "This will return every journey to the default product narrative.",
-        confirmLabel: "Reset now",
-        cancelLabel: "Cancel",
-        tone: "critical",
-        onConfirm: close => {
-          resetDemo();
-          close();
-        }
-      });
-    });
-  }
-
-  container.addEventListener("focusout", event => {
-    if (!event.relatedTarget || !container.contains(event.relatedTarget)) {
-      closeGroups();
-    }
-  });
-
-  if (!window.__weldNavDismiss__) {
-    document.addEventListener("click", () => {
-      document.querySelectorAll(".global-nav__group").forEach(group => {
-        group.classList.remove("global-nav__group--open");
-        const triggerEl = group.querySelector(".global-nav__trigger");
-        if (triggerEl) triggerEl.setAttribute("aria-expanded", "false");
-      });
-    });
-    window.__weldNavDismiss__ = true;
-  }
-
-  if (!window.__weldNavEscape__) {
-    document.addEventListener("keydown", event => {
-      if (event.key !== "Escape") return;
-      document.querySelectorAll(".global-nav__group").forEach(group => {
-        group.classList.remove("global-nav__group--open");
-        const triggerEl = group.querySelector(".global-nav__trigger");
-        if (triggerEl) triggerEl.setAttribute("aria-expanded", "false");
-      });
-    });
-    window.__weldNavEscape__ = true;
-  }
-}
-
-function openSettings(category) {
-  if (typeof category === "string" && category.trim().length > 0) {
-    state.meta.settingsCategory = category.trim();
-  }
-  if (state.meta.settingsOpen) return;
-  state.meta.settingsOpen = true;
-  renderApp();
-}
-
-function closeSettings() {
-  if (!state.meta.settingsOpen) return;
-  state.meta.settingsOpen = false;
-  renderApp();
-}
-
-function bindSettingsToggle(container) {
-  if (!container) return;
-  const settingsButton = container.querySelector("#global-settings");
-  if (settingsButton && settingsButton.dataset.settingsToggleBound !== "true") {
-    settingsButton.dataset.settingsToggleBound = "true";
-    settingsButton.addEventListener("click", event => {
-      event.preventDefault();
-      openSettings();
-    });
-  }
-}
-
-function ensureSettingsRoot() {
-  let root = document.getElementById("settings-root");
-  if (!root) {
-    root = document.createElement("div");
-    root.id = "settings-root";
-    document.body.appendChild(root);
-  }
-  return root;
-}
-
-function ensureSettingsShortcuts() {
-  if (window.__weldSettingsEscape__) return;
-  document.addEventListener("keydown", event => {
-    if (event.key !== "Escape") return;
-    if (!state.meta.settingsOpen) return;
-    closeSettings();
-  });
-  window.__weldSettingsEscape__ = true;
-}
-
-function escapeSettingsSelector(value) {
-  if (!value) return "";
-  if (typeof CSS !== "undefined" && CSS && typeof CSS.escape === "function") {
-    return CSS.escape(value);
-  }
-  return String(value).replace(/([ #;?%&,.+*~':"!^$[\]()=>|/@])/g, "\\$1");
-}
-
-function bindSettingsShellEvents(root) {
-  if (!root) return;
-  const closeButton = root.querySelector("#settings-close");
-  if (closeButton) {
-    closeButton.addEventListener("click", event => {
-      event.preventDefault();
-      closeSettings();
-    });
-  }
-  root.querySelectorAll("[data-settings-dismiss]").forEach(element => {
-    element.addEventListener("click", () => closeSettings());
-  });
-
-  const activeCategory = resolveActiveSettingsCategory();
-  if (activeCategory && state.meta.settingsCategory !== activeCategory.id) {
-    state.meta.settingsCategory = activeCategory.id;
-    renderApp();
-    return;
-  }
-
-  root.querySelectorAll("[data-settings-category]").forEach(button => {
-    if (button.disabled) return;
-    button.addEventListener("click", event => {
-      event.preventDefault();
-      const category = button.getAttribute("data-settings-category");
-      if (!category || state.meta.settingsCategory === category) return;
-      state.meta.settingsCategory = category;
-      renderApp();
-    });
-  });
-
-  const reporterForm = root.querySelector("#reporter-settings-form");
-  if (reporterForm) {
-    const reasonsContainer = reporterForm.querySelector("[data-reasons-container]");
-    const promptField = reporterForm.querySelector("#reporter-reason-prompt");
-    const emergencyField = reporterForm.querySelector("#reporter-emergency-label");
-
-    const updateReasonIndices = () => {
-      if (!reasonsContainer) return;
-      Array.from(reasonsContainer.querySelectorAll(".settings-reason__index")).forEach((item, index) => {
-        item.textContent = String(index + 1);
-      });
-    };
-
-    reporterForm.addEventListener("click", event => {
-      const addButton = event.target.closest("[data-action='add-reason']");
-      if (addButton) {
-        event.preventDefault();
-        if (!reasonsContainer) return;
-        const newId = generateId("reason");
-        const rowMarkup = reporterReasonRowTemplate({ id: newId, label: "" }, reasonsContainer.children.length);
-        reasonsContainer.insertAdjacentHTML("beforeend", rowMarkup);
-        updateReasonIndices();
-        const selector = `[data-reason-id="${escapeSettingsSelector(newId)}"]`;
-        const newInput = reasonsContainer.querySelector(selector);
-        if (newInput) newInput.focus();
-        return;
-      }
-      const removeButton = event.target.closest("[data-action='remove-reason']");
-      if (removeButton) {
-        event.preventDefault();
-        if (!reasonsContainer) return;
-        const reasonId = removeButton.getAttribute("data-reason-id");
-        if (!reasonId) return;
-        const row = reasonsContainer.querySelector(
-          `[data-reason-row="${escapeSettingsSelector(reasonId)}"]`
-        );
-        if (row) {
-          row.remove();
-          updateReasonIndices();
-        }
-      }
-      const resetButton = event.target.closest("[data-action='reset-reporter-defaults']");
-      if (resetButton) {
-        event.preventDefault();
-        openDialog({
-          title: "Reset reporter settings?",
-          description: "This restores the default prompt, urgent label, and standard reasons for reporters.",
-          confirmLabel: "Reset settings",
-          cancelLabel: "Cancel",
-          tone: "danger",
-          onConfirm: close => {
-            close();
-            state.settings = state.settings || {};
-            state.settings.reporter = {
-              reasonPrompt: DEFAULT_REPORTER_PROMPT,
-              emergencyLabel: DEFAULT_EMERGENCY_LABEL,
-              reasons: DEFAULT_REPORTER_REASONS.map(reason => ({ ...reason }))
-            };
-            if (Array.isArray(state.messages)) {
-              const validIds = new Set(state.settings.reporter.reasons.map(reason => reason.id));
-              state.messages.forEach(message => {
-                if (!Array.isArray(message.reasons)) return;
-                message.reasons = message.reasons.filter(id => validIds.has(id));
-              });
-            }
-            persist();
-            renderApp();
-          }
-        });
-        return;
-      }
-    });
-
-    reporterForm.addEventListener("submit", event => {
-      event.preventDefault();
-      const reasonInputs = reasonsContainer
-        ? Array.from(reasonsContainer.querySelectorAll("[data-reason-input]"))
-        : [];
-      const reasons = [];
-      const seenIds = new Set();
-      reasonInputs.forEach(input => {
-        const text = (input.value || "").trim();
-        if (!text) return;
-        const currentId = input.getAttribute("data-reason-id");
-        let normalizedId = normalizeId(currentId, "reason");
-        if (!normalizedId) {
-          normalizedId = generateId("reason");
-          input.setAttribute("data-reason-id", normalizedId);
-        }
-        while (seenIds.has(normalizedId)) {
-          normalizedId = generateId("reason");
-          input.setAttribute("data-reason-id", normalizedId);
-        }
-        seenIds.add(normalizedId);
-        reasons.push({ id: normalizedId, label: text });
-      });
-      if (reasons.length === 0) {
-        openDialog({
-          title: "Add at least one reason",
-          description: "Reporters need at least one selectable reason.",
-          confirmLabel: "Close"
-        });
-        return;
-      }
-      const promptValue = promptField ? promptField.value.trim() : "";
-      const emergencyValue = emergencyField ? emergencyField.value.trim() : "";
-      if (!emergencyValue) {
-        openDialog({
-          title: "Add urgent label text",
-          description: "Describe what happens when reporters tick the urgent box.",
-          confirmLabel: "Close"
-        });
-        if (emergencyField) emergencyField.focus();
-        return;
-      }
-      state.settings = state.settings || {};
-      const existing = state.settings.reporter || {};
-      const nextPrompt = promptValue.length > 0 ? promptValue : DEFAULT_REPORTER_PROMPT;
-      state.settings.reporter = {
-        ...existing,
-        reasonPrompt: nextPrompt,
-        emergencyLabel: emergencyValue,
-        reasons
-      };
-      if (Array.isArray(state.messages)) {
-        const validIds = new Set(reasons.map(reason => reason.id));
-        state.messages.forEach(message => {
-          if (!Array.isArray(message.reasons)) return;
-          message.reasons = message.reasons.filter(id => validIds.has(id));
-        });
-      }
-      persist();
-      renderApp();
-    });
-  }
-}
-
-function syncSettingsShell() {
-  const root = ensureSettingsRoot();
-  if (!state.meta.settingsOpen) {
-    root.innerHTML = "";
-    return;
-  }
-  root.innerHTML = renderSettingsPanel();
-  bindSettingsShellEvents(root);
-  requestAnimationFrame(() => {
-    const panel = root.querySelector(".settings-panel");
-    if (!panel) return;
-    const focusTarget =
-      panel.querySelector("[data-autofocus]") || panel.querySelector("input, textarea, button, select");
-    if (focusTarget) {
-      focusTarget.focus();
-    } else {
-      panel.focus();
-    }
-  });
-}
-
-function initializeSettingsUI(container) {
-  bindSettingsToggle(container);
-  ensureSettingsShortcuts();
-  syncSettingsShell();
-}
-
-function attachLandingEvents(container) {
-  const handleRouteClick = element => {
-    const route = element.getAttribute("data-route");
-    const role = element.getAttribute("data-role");
-    if (!route) return;
-    if (route === "addin") {
-      state.meta.addinScreen = "report";
-    }
-    if (role) {
-      setRole(role, route);
-    } else {
-      navigate(route);
-    }
-  };
-
-  container.querySelectorAll(".journey-card[data-route]").forEach(btn => {
-    btn.addEventListener("click", () => handleRouteClick(btn));
-  });
-
-  container.querySelectorAll(".feature-card__action[data-route]").forEach(btn => {
-    btn.addEventListener("click", () => handleRouteClick(btn));
-  });
-
-  const landingBadge = container.querySelector("[data-landing-badge]");
-  if (landingBadge) {
-    const restartAnimation = () => {
-      const svg = landingBadge.querySelector("svg");
-      if (!svg) return;
-      const clone = svg.cloneNode(true);
-      svg.replaceWith(clone);
-    };
-    landingBadge.addEventListener("click", () => {
-      restartAnimation();
-    });
-    landingBadge.addEventListener("keydown", event => {
-      if (event.key !== "Enter" && event.key !== " ") return;
-      event.preventDefault();
-      restartAnimation();
-    });
-  }
-
-}
-
-function attachHeaderEvents(container) {
-  const brandBtn = container.querySelector("#brand-button");
-  if (brandBtn) {
-    brandBtn.addEventListener("click", () => navigate("landing"));
-  }
-}
-
-function attachCustomerEvents(container) {
-  const reportBtn = container.querySelector("#customer-report-button");
-  if (reportBtn) {
-    reportBtn.addEventListener("click", () => {
-      openSuspiciousActivityForm();
-    });
-  }
-  const historyBtn = container.querySelector("#customer-report-history-button");
-  if (historyBtn) {
-    historyBtn.addEventListener("click", () => {
-      state.meta.reportFilter = "other";
-      setRole("customer", "customer-reports");
-    });
-  }
-  container.querySelectorAll(".reward-card__cta").forEach(button => {
-    button.addEventListener("click", () => {
-      const card = button.closest(".reward-card");
-      if (!card) return;
-      const rewardId = Number(card.getAttribute("data-reward"));
-      const reward = rewardById(rewardId);
-      if (!reward) return;
-
-      const dialogContent = document.createElement("div");
-      const nameElement = document.createElement("strong");
-      nameElement.textContent = reward.name || "Reward";
-      dialogContent.appendChild(nameElement);
-      if (reward.description) {
-        const descriptionElement = document.createElement("p");
-        descriptionElement.textContent = reward.description;
-        dialogContent.appendChild(descriptionElement);
-      }
-      if (reward.provider) {
-        const providerElement = document.createElement("span");
-        providerElement.textContent = reward.provider;
-        dialogContent.appendChild(providerElement);
-      }
-
-      openDialog({
-        title: "Redeem this reward?",
-        description: `This will use ${reward.pointsCost} of your available points.`,
-        content: dialogContent,
-        confirmLabel: "Confirm redemption",
-        cancelLabel: "Cancel",
-        onConfirm: close => {
-          const result = redeemReward(rewardId);
-          close();
-          if (result.success) {
-            openDialog({
-              title: "Reward queued for fulfilment",
-              description: `${reward.name} has been added to your rewards queue.`,
-              confirmLabel: "Back to rewards",
-              onConfirm: closeDialog
-            });
-          } else {
-            openDialog({
-              title: "Unable to redeem",
-              description: result.reason || "Please try again.",
-              confirmLabel: "Close"
-            });
-          }
-        }
-      });
-    });
-  });
-  container.querySelectorAll(".points-card__chip-action").forEach(button => {
-    button.addEventListener("click", () => {
-      const scrollTarget = button.getAttribute("data-scroll");
-      if (scrollTarget) {
-        const target = document.querySelector(scrollTarget);
-        if (target) {
-          target.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-      }
-      const targetRoute = button.getAttribute("data-route");
-      if (targetRoute) {
-        const filter = button.getAttribute("data-report-filter");
-        if (filter) {
-          state.meta.reportFilter = filter === "other" ? "other" : null;
-        } else if (targetRoute === "customer-reports") {
-          state.meta.reportFilter = null;
-        }
-        setRole("customer", targetRoute);
-      }
-    });
-  });
-  container.querySelectorAll(".quest-card__cta").forEach(button => {
-    button.addEventListener("click", () => {
-      setRole("client", "client-quests");
-    });
-  });
-  container.querySelectorAll(".quest-card__config").forEach(button => {
-    button.addEventListener("click", event => {
-      event.preventDefault();
-      const questId = button.getAttribute("data-quest");
-      if (questId) {
-        openQuestConfig(questId);
-      }
-    });
-  });
-  container.querySelectorAll(".section-header__action[data-route]").forEach(button => {
-    button.addEventListener("click", () => {
-      const targetRoute = button.getAttribute("data-route");
-      const targetRole = button.getAttribute("data-role") || state.meta.role || "customer";
-      if (targetRoute) {
-        setRole(targetRole, targetRoute);
-      }
-    });
-  });
-  container.querySelectorAll("[data-recognition-filter]").forEach(button => {
-    button.addEventListener("click", () => {
-      const value = (button.getAttribute("data-recognition-filter") || "").trim().toLowerCase();
-      const valid = ["received", "given", "all"];
-      const nextFilter = valid.includes(value) ? value : "received";
-      if (state.meta.recognitionFilter !== nextFilter) {
-        state.meta.recognitionFilter = nextFilter;
-        persist();
-        renderApp();
-      }
-    });
-  });
-  const recognitionButton = container.querySelector(".recognition-board__note-button");
-  if (recognitionButton) {
-    recognitionButton.addEventListener("click", () => {
-      openRecognitionFormDialog();
-    });
-  }
-}
-
-function attachCustomerBadgesEvents(container) {
-  const back = container.querySelector("[data-action='back-to-hub']");
-  if (back) {
-    back.addEventListener("click", () => {
-      setRole("customer", "customer");
-    });
-  }
-}
-
-function attachCustomerReportsEvents(container) {
-  const back = container.querySelector("[data-action='back-to-hub']");
-  if (back) {
-    back.addEventListener("click", () => {
-      setRole("customer", "customer");
-    });
-  }
-}
-
-function attachCustomerRedemptionsEvents(container) {
-  const back = container.querySelector("[data-action='back-to-hub']");
-  if (back) {
-    back.addEventListener("click", () => {
-      setRole("customer", "customer");
-    });
-  }
-}
-
-function attachClientDashboardEvents(container) {
-  if (!container) return;
-  container.addEventListener("click", event => {
-    const bulkDepartment = event.target.closest("[data-bulk-department-action]");
-    if (bulkDepartment) {
-      const action = bulkDepartment.getAttribute("data-bulk-department-action");
-      if (action === "publish") {
-        setAllLeaderboardPublication(true);
-      } else if (action === "unpublish") {
-        setAllLeaderboardPublication(false);
-      }
-      return;
-    }
-
-    const departmentToggle = event.target.closest(".department-publish-toggle");
-    if (departmentToggle) {
-      const departmentId = departmentToggle.getAttribute("data-department");
-      const action = departmentToggle.getAttribute("data-action");
-      if (departmentId && action) {
-        setLeaderboardEntryPublication(departmentId, action === "publish");
-      }
-      return;
-    }
-
-    const bulkProgram = event.target.closest("[data-bulk-program-action]");
-    if (bulkProgram) {
-      const action = bulkProgram.getAttribute("data-bulk-program-action");
-      if (action === "publish") {
-        setAllEngagementProgramsPublication(true);
-      } else if (action === "unpublish") {
-        setAllEngagementProgramsPublication(false);
-      }
-      return;
-    }
-
-    const programToggle = event.target.closest(".program-publish-toggle");
-    if (programToggle) {
-      const programId = programToggle.getAttribute("data-program");
-      const action = programToggle.getAttribute("data-action");
-      if (programId && action) {
-        setEngagementProgramPublication(programId, action === "publish");
-      }
-      return;
-    }
-
-    const button = event.target.closest(".client-card .table-actions [data-route]");
-    if (!button) return;
-    event.preventDefault();
-    const route = button.getAttribute("data-route");
-    const role = button.getAttribute("data-role");
-    if (role) {
-      setRole(role, route || role);
-    } else if (route) {
-      navigate(route);
-    }
-  });
-}
-
-function attachClientRewardsEvents(container) {
-  container.addEventListener("click", event => {
-    const statusButton = event.target.closest("[data-reward-status]");
-    if (statusButton) {
-      const rawValue = (statusButton.getAttribute("data-reward-status") || "").trim().toLowerCase();
-      const nextStatus = rawValue === "published" || rawValue === "unpublished" ? rawValue : null;
-      if (state.meta.rewardStatusFilter !== nextStatus) {
-        state.meta.rewardStatusFilter = nextStatus;
-        persist();
-        renderApp();
-      }
-      return;
-    }
-
-    const filterButton = event.target.closest("[data-reward-filter]");
-    if (filterButton) {
-      const value = (filterButton.getAttribute("data-reward-filter") || "").trim().toLowerCase();
-      const nextFilter = value.length > 0 ? value : null;
-      if (state.meta.rewardFilter !== nextFilter) {
-        state.meta.rewardFilter = nextFilter;
-        persist();
-        renderApp();
-      }
-      return;
-    }
-
-    const bulkButton = event.target.closest("[data-bulk-reward-action]");
-    if (bulkButton) {
-      const action = bulkButton.getAttribute("data-bulk-reward-action");
-      if (action === "publish") {
-        setAllRewardsPublication(true);
-      } else if (action === "unpublish") {
-        setAllRewardsPublication(false);
-      }
-      return;
-    }
-
-    const configButton = event.target.closest(".reward-card__config");
-    if (configButton) {
-      event.preventDefault();
-      const idAttr = configButton.getAttribute("data-reward");
-      if (!idAttr) return;
-      const numericId = Number(idAttr);
-      if (Number.isFinite(numericId)) {
-        openRewardConfig(numericId);
-      } else {
-        openRewardConfig(idAttr);
-      }
-      return;
-    }
-
-    const button = event.target.closest(".reward-publish-toggle");
-    if (!button) return;
-    const rewardId = Number(button.getAttribute("data-reward"));
-    if (!Number.isFinite(rewardId)) return;
-    const action = button.getAttribute("data-action");
-    if (!action) return;
-    const nextPublished = action === "publish";
-    setRewardPublication(rewardId, nextPublished);
-  });
-}
-
-function attachClientQuestsEvents(container) {
-  container.addEventListener("click", event => {
-    const statusButton = event.target.closest("[data-quest-status]");
-    if (statusButton) {
-      const rawValue = (statusButton.getAttribute("data-quest-status") || "").trim().toLowerCase();
-      const nextStatus = rawValue === "published" || rawValue === "unpublished" ? rawValue : null;
-      if (state.meta.questStatusFilter !== nextStatus) {
-        state.meta.questStatusFilter = nextStatus;
-        persist();
-        renderApp();
-      }
-      return;
-    }
-
-    const filterButton = event.target.closest("[data-quest-filter]");
-    if (filterButton) {
-      const value = (filterButton.getAttribute("data-quest-filter") || "").trim().toLowerCase();
-      const nextFilter = value.length > 0 ? value : null;
-      if (state.meta.questFilter !== nextFilter) {
-        state.meta.questFilter = nextFilter;
-        persist();
-        renderApp();
-      }
-      return;
-    }
-
-    const bulkButton = event.target.closest("[data-bulk-quest-action]");
-    if (bulkButton) {
-      const action = bulkButton.getAttribute("data-bulk-quest-action");
-      if (action === "publish") {
-        setAllQuestsPublication(true);
-      } else if (action === "unpublish") {
-        setAllQuestsPublication(false);
-      }
-      return;
-    }
-
-    const configButton = event.target.closest(".quest-card__config");
-    if (configButton) {
-      const questId = configButton.getAttribute("data-quest");
-      if (questId) {
-        event.preventDefault();
-        openQuestConfig(questId);
-      }
-      return;
-    }
-
-    const button = event.target.closest(".quest-publish-toggle");
-    if (!button) return;
-    const questId = button.getAttribute("data-quest");
-    const action = button.getAttribute("data-action");
-    if (!questId || !action) return;
-    setQuestPublication(questId, action === "publish");
-  });
-}
-
-function attachWeldLabsEvents(container) {
-  if (!container) return;
-  container.addEventListener("click", event => {
-    const toggle = event.target.closest("[data-lab-toggle]");
-    if (toggle) {
-      const featureId = (toggle.getAttribute("data-lab-feature") || "").trim();
-      const clientIdRaw = (toggle.getAttribute("data-client") || "").trim();
-      if (!featureId || !clientIdRaw) {
-        return;
-      }
-      const numericClientId = Number(clientIdRaw);
-      const clientIdValue =
-        Number.isFinite(numericClientId) && clientIdRaw !== "" ? numericClientId : clientIdRaw;
-      const currentEnabled = toggle.getAttribute("data-enabled") === "true";
-      setLabFeatureAccess(featureId, clientIdValue, !currentEnabled);
-      return;
-    }
-    const bulk = event.target.closest("[data-lab-bulk]");
-    if (bulk) {
-      const featureId = (bulk.getAttribute("data-lab-feature") || "").trim();
-      const mode = (bulk.getAttribute("data-lab-bulk") || "").trim().toLowerCase();
-      if (!featureId || !mode) return;
-      if (mode === "enable") {
-        setLabFeatureAccessForAll(featureId, true);
-      } else if (mode === "disable") {
-        setLabFeatureAccessForAll(featureId, false);
-      }
-    }
-  });
-}
-
-function attachReportingEvents(container) {
-  const csvBtn = container.querySelector("#download-csv-button");
-  if (csvBtn) {
-    csvBtn.addEventListener("click", () => {
-      openDialog({
-        title: "CSV export ready",
-        description: "In the real product this downloads a CSV. For the demo, use this cue to talk through the audit trail.",
-        confirmLabel: "Got it"
-      });
-    });
-  }
-  container.querySelectorAll(".table-actions button").forEach(button => {
-    button.addEventListener("click", () => {
-      const action = button.getAttribute("data-action");
-      const messageId = Number(button.getAttribute("data-message"));
-      updateMessageStatus(messageId, action === "approve" ? MessageStatus.APPROVED : MessageStatus.REJECTED);
-    });
-  });
-}
-
-function attachAdminEvents(container) {
-  const triggerBtn = container.querySelector("#trigger-playbook");
-  if (triggerBtn) {
-    triggerBtn.addEventListener("click", () => {
-      openDialog({
-        title: "Playbook scheduled",
-        description: "Use this cue to explain how Weld orchestrates interventions across tenants.",
-        confirmLabel: "Nice"
-      });
-    });
-  }
-
-  container.querySelectorAll("[data-action='view-journey'], [data-action='share-insights']").forEach(button => {
-    button.addEventListener("click", () => {
-      const clientId = Number(button.getAttribute("data-client"));
-      const client = state.clients.find(c => c.id === clientId);
-      if (!client) return;
-      if (button.getAttribute("data-action") === "view-journey") {
-        openDialog({
-          title: `Switch to ${client.name}?`,
-          description: "For the demo, remind stakeholders each client gets a dedicated journey view with custom insights.",
-          confirmLabel: "Return",
-          onConfirm: closeDialog
-        });
-      } else {
-        openDialog({
-          title: "Insights shared",
-          description: `Customer Success receives a packaged summary for ${client.name}.`,
-          confirmLabel: "Great"
-        });
-      }
-    });
-  });
-}
-
-function attachAddInEvents(container) {
-  if (state.meta.addinScreen === "report") {
-    teardownBadgeShowcase();
-    const submitBtn = container.querySelector("#addin-submit");
-    const emergencyInputs = container.querySelectorAll('.addin-emergency input[type="checkbox"]');
-    if (emergencyInputs.length > 0) {
-      emergencyInputs.forEach(input => {
-        input.checked = false;
-      });
-    }
-    if (submitBtn) {
-      submitBtn.addEventListener("click", () => {
-        const notesInput = container.querySelector("#addin-notes");
-        const reasonCheckboxes = Array.from(
-          container.querySelectorAll('.addin-checkbox-list input[type="checkbox"]')
-        )
-          .filter(input => input.checked)
-          .map(input => input.value)
-          .map(value => (typeof value === "string" ? value.trim() : ""))
-          .filter(Boolean);
-        const notesValue = notesInput ? notesInput.value.trim() : "";
-
-        if (reasonCheckboxes.length === 0 && !notesValue) {
-          openDialog({
-            title: "Add a reason",
-            description: "Select a reason or share additional details so security can triage quickly.",
-            confirmLabel: "Close"
-          });
-          return;
-        }
-
-        const primaryReason = reasonById(reasonCheckboxes[0]);
-        const generatedSubject = primaryReason
-          ? `Suspicious email: ${primaryReason.label}`
-          : notesValue
-          ? `Suspicious email: ${notesValue.slice(0, 60)}`
-          : "Suspicious email reported";
-        const generatedMessageId = generateId("MSG").toUpperCase();
-
-        const emergencySelections = Array.from(container.querySelectorAll('.addin-emergency input[type="checkbox"]'))
-          .filter(input => input.checked)
-          .flatMap(input => input.value.split(","))
-          .map(item => item.trim())
-          .filter(Boolean);
-
-        reportMessage({
-          subject: generatedSubject,
-          messageId: generatedMessageId,
-          reasons: reasonCheckboxes,
-          reporterName: state.customer.name,
-          reporterEmail: state.customer.email,
-          notes: notesValue,
-          emergencyFlags: emergencySelections,
-          origin: "addin"
-        });
-      });
-    }
-  } else {
-    if (state.meta.addinScreen === "success") {
-      setupCelebrationReplay(container);
-      setupBadgeShowcase(container);
-      const backControl = container.querySelector("[data-addin-back]");
-      if (backControl && backControl.dataset.backBound !== "true") {
-        backControl.dataset.backBound = "true";
-        backControl.addEventListener("click", () => {
-          revertLastReportAward();
-        });
-      }
-    } else {
-      teardownBadgeShowcase();
-    }
-    const viewRewards = container.querySelector("#addin-view-rewards");
-    if (viewRewards) {
-      viewRewards.addEventListener("click", () => {
-        setRole("customer", "customer");
-      });
-    }
-  }
-}
-
-function ensureRouteSafety() {
-  const routeInfo = ROUTES[state.meta.route];
-  if (!routeInfo) {
-    state.meta.route = "landing";
-    state.meta.role = null;
-  } else if (routeInfo.requiresRole && state.meta.role !== routeInfo.requiresRole) {
-    state.meta.route = "landing";
-    state.meta.role = null;
-  }
-}
-
+}
+
 function renderApp() {
+
   ensureRouteSafety();
+
   const app = document.getElementById("app");
-  const route = state.meta.route;
 
+  const route = state.meta.route;
+
   if (route !== "addin") {
+
     teardownBadgeShowcase();
-  }
 
+  }
+
   if (route === "landing") {
+
     app.innerHTML = `
+
       <div class="page page--landing">
+
         ${renderHeader()}
+
         <div class="page__inner page__inner--single">
+
           <main class="layout-content" id="main-content">${renderLanding()}</main>
+
         </div>
+
       </div>
+
     `;
+
     attachHeaderEvents(app);
+
     attachGlobalNav(app);
+
     initializeSettingsUI(app);
+
     attachLandingEvents(app);
-    return;
-  }
 
+    return;
+
+  }
+
   if (route === "client-badges") {
+
     app.innerHTML = `
+
       <div class="page">
+
         ${renderHeader()}
+
         <div class="page__inner">
-          <main class="layout-content" id="main-content">${renderClientBadges()}</main>
+
+          <main class="layout-content" id="main-content"></main>
+
         </div>
+
       </div>
+
     `;
+
     attachHeaderEvents(app);
+
     attachGlobalNav(app);
+
     initializeSettingsUI(app);
+
     const mainContent = app.querySelector("#main-content");
-    if (mainContent) attachBadgeEvents(mainContent);
+
+    const badgesFeature = window.Weld && window.Weld.features && window.Weld.features.badges;
+
+    if (mainContent && badgesFeature && typeof badgesFeature.render === "function") {
+
+      badgesFeature.render(mainContent, state);
+
+    }
+
     return;
-  }
 
+  }
+
   if (route === "addin") {
+
     app.innerHTML = `
+
       <div class="page page--addin">
+
         ${renderHeader()}
+
         <div class="page__inner page__inner--single">
-          <main class="layout-content layout-content--flush" id="main-content">${renderAddIn()}</main>
+
+          <main class="layout-content layout-content--flush" id="main-content"></main>
+
         </div>
-    </div>
-  `;
 
-  attachHeaderEvents(app);
-  attachGlobalNav(app);
-  initializeSettingsUI(app);
-  const mainContent = app.querySelector("#main-content");
-  if (mainContent) attachAddInEvents(mainContent);
-  return;
-}
-
-  app.innerHTML = `
-    <div class="page">
-      ${renderHeader()}
-      <div class="page__inner">
-        <main class="layout-content" id="main-content">${renderContent()}</main>
       </div>
+
+    `;
+
+    attachHeaderEvents(app);
+
+    attachGlobalNav(app);
+
+    initializeSettingsUI(app);
+
+    const mainContent = app.querySelector("#main-content");
+
+    const reporterFeature = window.Weld && window.Weld.features && window.Weld.features.reporter;
+
+    if (mainContent && reporterFeature && typeof reporterFeature.render === "function") {
+
+      reporterFeature.render(mainContent, state);
+
+    }
+
+    return;
+
+  }
+
+  if (route === "client-dashboard") {
+
+    app.innerHTML = `
+
+      <div class="page">
+
+        ${renderHeader()}
+
+        <div class="page__inner">
+
+          <main class="layout-content" id="main-content"></main>
+
+        </div>
+
+      </div>
+
+    `;
+
+    attachHeaderEvents(app);
+
+    attachGlobalNav(app);
+
+    initializeSettingsUI(app);
+
+    const mainContent = app.querySelector("#main-content");
+
+    const orgHubFeature = window.Weld && window.Weld.features && window.Weld.features.orgHub;
+
+    if (mainContent && orgHubFeature && typeof orgHubFeature.render === "function") {
+
+      orgHubFeature.render(mainContent, state);
+
+    }
+
+    return;
+
+  }
+
+  if (route === "client-reporting") {
+
+    app.innerHTML = `
+
+      <div class="page">
+
+        ${renderHeader()}
+
+        <div class="page__inner">
+
+          <main class="layout-content" id="main-content"></main>
+
+        </div>
+
+      </div>
+
+    `;
+
+    attachHeaderEvents(app);
+
+    attachGlobalNav(app);
+
+    initializeSettingsUI(app);
+
+    const mainContent = app.querySelector("#main-content");
+
+    const dashboardFeature = window.Weld && window.Weld.features && window.Weld.features.dashboard;
+
+    if (mainContent && dashboardFeature && typeof dashboardFeature.render === "function") {
+
+      dashboardFeature.render(mainContent, state);
+
+    }
+
+    return;
+
+  }
+
+  if (route === "client-quests") {
+
+    app.innerHTML = `
+
+      <div class="page">
+
+        ${renderHeader()}
+
+        <div class="page__inner">
+
+          <main class="layout-content" id="main-content"></main>
+
+        </div>
+
+      </div>
+
+    `;
+
+    attachHeaderEvents(app);
+
+    attachGlobalNav(app);
+
+    initializeSettingsUI(app);
+
+    const mainContent = app.querySelector("#main-content");
+
+    const hubFeature = window.Weld && window.Weld.features && window.Weld.features.hub;
+
+    if (mainContent && hubFeature && typeof hubFeature.render === "function") {
+
+      hubFeature.render(mainContent, state);
+
+    }
+
+    return;
+
+  }
+
+  app.innerHTML = `
+
+    <div class="page">
+
+      ${renderHeader()}
+
+      <div class="page__inner">
+
+        <main class="layout-content" id="main-content">${renderContent()}</main>
+
+      </div>
+
     </div>
-  `;
 
+  `;
+
   attachHeaderEvents(app);
+
   attachGlobalNav(app);
-  initializeSettingsUI(app);
 
+  initializeSettingsUI(app);
+
   const mainContent = app.querySelector("#main-content");
-  if (!mainContent) return;
-  if (route === "customer") attachCustomerEvents(mainContent);
-  if (route === "customer-badges") attachCustomerBadgesEvents(mainContent);
-  if (route === "customer-reports") attachCustomerReportsEvents(mainContent);
-  if (route === "customer-redemptions") attachCustomerRedemptionsEvents(mainContent);
-  if (route === "client-dashboard") attachClientDashboardEvents(mainContent);
-  if (route === "client-reporting") attachReportingEvents(mainContent);
-  if (route === "client-rewards") attachClientRewardsEvents(mainContent);
-  if (route === "client-quests") attachClientQuestsEvents(mainContent);
-  if (route === "weld-labs") attachWeldLabsEvents(mainContent);
-  if (route === "weld-admin") attachAdminEvents(mainContent);
-}
 
+  if (!mainContent) return;
+
+  if (route === "customer") attachCustomerEvents(mainContent);
+
+  if (route === "customer-badges") attachCustomerBadgesEvents(mainContent);
+
+  if (route === "customer-reports") attachCustomerReportsEvents(mainContent);
+
+  if (route === "customer-redemptions") attachCustomerRedemptionsEvents(mainContent);
+
+  if (route === "client-rewards") attachClientRewardsEvents(mainContent);
+
+  if (route === "weld-labs") attachWeldLabsEvents(mainContent);
+
+  if (route === "weld-admin") attachAdminEvents(mainContent);
+
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   renderApp();
 });
@@ -9766,17 +5121,7 @@ window.addEventListener("hashchange", () => {
       state.meta.role = ROUTES[hashRoute].requiresRole;
     }
     state.meta.route = hashRoute;
-    persist();
+    WeldState.saveState(state);
     renderApp();
   }
 });
-
-
-
-
-
-
-
-
-
-
