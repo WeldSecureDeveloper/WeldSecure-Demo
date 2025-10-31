@@ -2649,7 +2649,7 @@ function renderCustomer() {
         if (isDouble) {
           tooltipParts.push("First quest completion this month delivered double points.");
         }
-        const tooltipText = tooltipParts.join(" · ");
+        const tooltipText = tooltipParts.join(" ï¿½ ");
         const sourceClasses = [
           "points-bonus__source",
           isDouble ? "points-bonus__source--boost" : ""
@@ -3256,7 +3256,7 @@ function renderCustomerReportsPage() {
         typeof message?.incidentLocation === "string" && message.incidentLocation.trim().length > 0;
       const activityMeta = activityLabel
         ? `<span class="detail-table__meta">${WeldUtil.escapeHtml(activityLabel)}${
-            hasLocation ? ` • ${WeldUtil.escapeHtml(message.incidentLocation.trim())}` : ""
+            hasLocation ? ` ï¿½ ${WeldUtil.escapeHtml(message.incidentLocation.trim())}` : ""
           }</span>`
         : hasLocation
         ? `<span class="detail-table__meta">Location: ${WeldUtil.escapeHtml(message.incidentLocation.trim())}</span>`
@@ -4499,7 +4499,7 @@ function setupBadgeShowcase(container) {
   }
 }
 
- resolveActiveSettingsCategory() {
+function resolveActiveSettingsCategory() {
   const categories = SETTINGS_CATEGORIES || [];
   if (categories.length === 0) return null;
   const storedId = state?.meta?.settingsCategory;
@@ -4507,6 +4507,311 @@ function setupBadgeShowcase(container) {
   if (matched) return matched;
   const fallback = categories.find(category => !category.disabled);
   return fallback || categories[0];
+}
+
+function openSettings(category) {
+  if (typeof category === "string" && category.trim().length > 0) {
+    state.meta.settingsCategory = category.trim();
+  }
+  if (state.meta.settingsOpen) return;
+  state.meta.settingsOpen = true;
+  WeldState.saveState(state);
+  renderApp();
+}
+
+function closeSettings() {
+  if (!state.meta.settingsOpen) return;
+  state.meta.settingsOpen = false;
+  WeldState.saveState(state);
+  renderApp();
+}
+
+function bindSettingsToggle(container) {
+  if (!container) return;
+  const settingsButton = container.querySelector("#global-settings");
+  if (settingsButton && settingsButton.dataset.settingsToggleBound !== "true") {
+    settingsButton.dataset.settingsToggleBound = "true";
+    settingsButton.addEventListener("click", event => {
+      event.preventDefault();
+      openSettings();
+    });
+  }
+}
+
+function ensureSettingsRoot() {
+  let root = document.getElementById("settings-root");
+  if (!root) {
+    root = document.createElement("div");
+    root.id = "settings-root";
+    document.body.appendChild(root);
+  }
+  return root;
+}
+
+function ensureSettingsShortcuts() {
+  if (window.__weldSettingsEscape__) return;
+  document.addEventListener("keydown", event => {
+    if (event.key !== "Escape") return;
+    if (!state.meta.settingsOpen) return;
+    closeSettings();
+  });
+  window.__weldSettingsEscape__ = true;
+}
+
+function escapeSettingsSelector(value) {
+  if (!value) return "";
+  if (typeof CSS !== "undefined" && CSS && typeof CSS.escape === "function") {
+    return CSS.escape(value);
+  }
+  return String(value).replace(/([ #;?%&,.+*~':"!^$[\]()=>|/@])/g, "\\$1");
+}
+
+function bindSettingsShellEvents(root) {
+  if (!root) return;
+  const closeButton = root.querySelector("#settings-close");
+  if (closeButton) {
+    closeButton.addEventListener("click", event => {
+      event.preventDefault();
+      closeSettings();
+    });
+  }
+  root.querySelectorAll("[data-settings-dismiss]").forEach(element => {
+    element.addEventListener("click", () => closeSettings());
+  });
+
+  const activeCategory = resolveActiveSettingsCategory();
+  if (activeCategory && state.meta.settingsCategory !== activeCategory.id) {
+    state.meta.settingsCategory = activeCategory.id;
+    WeldState.saveState(state);
+    renderApp();
+    return;
+  }
+
+  root.querySelectorAll("[data-settings-category]").forEach(button => {
+    if (button.disabled) return;
+    button.addEventListener("click", event => {
+      event.preventDefault();
+      const category = button.getAttribute("data-settings-category");
+      if (!category || state.meta.settingsCategory === category) return;
+      state.meta.settingsCategory = category;
+      WeldState.saveState(state);
+      renderApp();
+    });
+  });
+
+  const reporterForm = root.querySelector("#reporter-settings-form");
+  if (reporterForm) {
+    const reasonsContainer = reporterForm.querySelector("[data-reasons-container]");
+    const promptField = reporterForm.querySelector("#reporter-reason-prompt");
+    const emergencyField = reporterForm.querySelector("#reporter-emergency-label");
+
+    const updateReasonIndices = () => {
+      if (!reasonsContainer) return;
+      Array.from(reasonsContainer.querySelectorAll(".settings-reason__index")).forEach((item, index) => {
+        item.textContent = String(index + 1);
+      });
+    };
+
+    reporterForm.addEventListener("click", event => {
+      const addButton = event.target.closest("[data-action='add-reason']");
+      if (addButton) {
+        event.preventDefault();
+        if (!reasonsContainer) return;
+        const newId = WeldUtil.generateId("reason");
+        const rowMarkup = reporterReasonRowTemplate({ id: newId, label: "" }, reasonsContainer.children.length);
+        reasonsContainer.insertAdjacentHTML("beforeend", rowMarkup);
+        updateReasonIndices();
+        const selector = `[data-reason-id="${escapeSettingsSelector(newId)}"]`;
+        const newInput = reasonsContainer.querySelector(selector);
+        if (newInput) newInput.focus();
+        return;
+      }
+      const removeButton = event.target.closest("[data-action='remove-reason']");
+      if (removeButton) {
+        event.preventDefault();
+        if (!reasonsContainer) return;
+        const reasonId = removeButton.getAttribute("data-reason-id");
+        if (!reasonId) return;
+        const row = reasonsContainer.querySelector(
+          `[data-reason-row="${escapeSettingsSelector(reasonId)}"]`
+        );
+        if (row) {
+          row.remove();
+          updateReasonIndices();
+        }
+      }
+      const resetButton = event.target.closest("[data-action='reset-reporter-defaults']");
+      if (resetButton) {
+        event.preventDefault();
+        openDialog({
+          title: "Reset reporter settings?",
+          description: "This restores the default prompt, urgent label, and standard reasons for reporters.",
+          confirmLabel: "Reset settings",
+          cancelLabel: "Cancel",
+          tone: "danger",
+          onConfirm: close => {
+            close();
+            state.settings = state.settings || {};
+            state.settings.reporter = {
+              reasonPrompt: DEFAULT_REPORTER_PROMPT,
+              emergencyLabel: DEFAULT_EMERGENCY_LABEL,
+              reasons: DEFAULT_REPORTER_REASONS.map(reason => ({ ...reason }))
+            };
+            if (Array.isArray(state.messages)) {
+              const validIds = new Set(state.settings.reporter.reasons.map(reason => reason.id));
+              state.messages.forEach(message => {
+                if (!Array.isArray(message.reasons)) return;
+                message.reasons = message.reasons.filter(id => validIds.has(id));
+              });
+            }
+            WeldState.saveState(state);
+            renderApp();
+          }
+        });
+        return;
+      }
+    });
+
+    reporterForm.addEventListener("submit", event => {
+      event.preventDefault();
+      const reasonInputs = reasonsContainer ? Array.from(reasonsContainer.querySelectorAll("[data-reason-input]")) : [];
+      const reasons = [];
+      const seenIds = new Set();
+      reasonInputs.forEach(input => {
+        const text = (input.value || "").trim();
+        if (!text) return;
+        const currentId = input.getAttribute("data-reason-id");
+        let normalizedId = WeldUtil.normalizeId(currentId, "reason");
+        if (!normalizedId) {
+          normalizedId = WeldUtil.generateId("reason");
+          input.setAttribute("data-reason-id", normalizedId);
+        }
+        while (seenIds.has(normalizedId)) {
+          normalizedId = WeldUtil.generateId("reason");
+          input.setAttribute("data-reason-id", normalizedId);
+        }
+        seenIds.add(normalizedId);
+        reasons.push({ id: normalizedId, label: text });
+      });
+      if (reasons.length === 0) {
+        openDialog({
+          title: "Add at least one reason",
+          description: "Reporters need at least one selectable reason.",
+          confirmLabel: "Close"
+        });
+        return;
+      }
+      const promptValue = promptField ? promptField.value.trim() : "";
+      const emergencyValue = emergencyField ? emergencyField.value.trim() : "";
+      if (!emergencyValue) {
+        openDialog({
+          title: "Add urgent label text",
+          description: "Describe what happens when reporters tick the urgent box.",
+          confirmLabel: "Close"
+        });
+        if (emergencyField) emergencyField.focus();
+        return;
+      }
+      state.settings = state.settings || {};
+      const existing = state.settings.reporter || {};
+      const nextPrompt = promptValue.length > 0 ? promptValue : DEFAULT_REPORTER_PROMPT;
+      state.settings.reporter = {
+        ...existing,
+        reasonPrompt: nextPrompt,
+        emergencyLabel: emergencyValue,
+        reasons
+      };
+      if (Array.isArray(state.messages)) {
+        const validIds = new Set(reasons.map(reason => reason.id));
+        state.messages.forEach(message => {
+          if (!Array.isArray(message.reasons)) return;
+          message.reasons = message.reasons.filter(id => validIds.has(id));
+        });
+      }
+      WeldState.saveState(state);
+      renderApp();
+    });
+  }
+}
+
+function syncSettingsShell() {
+  const root = ensureSettingsRoot();
+  if (!state.meta.settingsOpen) {
+    root.innerHTML = "";
+    return;
+  }
+  root.innerHTML = renderSettingsPanel();
+  bindSettingsShellEvents(root);
+  requestAnimationFrame(() => {
+    const panel = root.querySelector(".settings-panel");
+    if (!panel) return;
+    const focusTarget =
+      panel.querySelector("[data-autofocus]") || panel.querySelector("input, textarea, button, select");
+    if (focusTarget) {
+      focusTarget.focus();
+    } else {
+      panel.focus();
+    }
+  });
+}
+
+function initializeSettingsUI(container) {
+  bindSettingsToggle(container);
+  ensureSettingsShortcuts();
+  syncSettingsShell();
+}
+
+function attachLandingEvents(container) {
+  if (!container) return;
+  const handleRouteClick = element => {
+    const route = element.getAttribute("data-route");
+    const role = element.getAttribute("data-role");
+    if (!route) return;
+    if (route === "addin") {
+      state.meta.addinScreen = "report";
+    }
+    if (role) {
+      setRole(role, route);
+    } else {
+      navigate(route);
+    }
+  };
+
+  container.querySelectorAll(".journey-card[data-route]").forEach(button => {
+    button.addEventListener("click", () => handleRouteClick(button));
+  });
+
+  container.querySelectorAll(".feature-card__action[data-route]").forEach(button => {
+    button.addEventListener("click", () => handleRouteClick(button));
+  });
+
+  const landingBadge = container.querySelector("[data-landing-badge]");
+  if (landingBadge) {
+    const restartAnimation = () => {
+      const svg = landingBadge.querySelector("svg");
+      if (!svg) return;
+      const clone = svg.cloneNode(true);
+      svg.replaceWith(clone);
+    };
+    landingBadge.addEventListener("click", () => {
+      restartAnimation();
+    });
+    landingBadge.addEventListener("keydown", event => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      restartAnimation();
+    });
+  }
+}
+
+function attachHeaderEvents(container) {
+  if (!container) return;
+  const brandBtn = container.querySelector("#brand-button");
+  if (brandBtn) {
+    brandBtn.addEventListener("click", () => {
+      navigate("landing");
+    });
+  }
 }
 
 function reporterReasonRowTemplate(reason, index) {
@@ -4748,7 +5053,7 @@ function attachGlobalNav(container) {
 
     groups.forEach(group => {
 
-      group.classList.remove(".global-nav__group--open");
+      group.classList.remove("global-nav__group--open");
 
       const triggerEl = group.querySelector(".global-nav__trigger");
 
@@ -4772,13 +5077,13 @@ function attachGlobalNav(container) {
 
       event.stopPropagation();
 
-      const isOpen = group.classList.contains(".global-nav__group--open");
+      const isOpen = group.classList.contains("global-nav__group--open");
 
       closeGroups();
 
       if (!isOpen) {
 
-        group.classList.add(".global-nav__group--open");
+        group.classList.add("global-nav__group--open");
 
         trigger.setAttribute("aria-expanded", "true");
 
@@ -4833,7 +5138,17 @@ function attachGlobalNav(container) {
   });
 
 }
-
+function ensureRouteSafety() {
+  const routeInfo = ROUTES[state.meta.route];
+  if (!routeInfo) {
+    state.meta.route = "landing";
+    state.meta.role = null;
+  } else if (routeInfo.requiresRole && state.meta.role !== routeInfo.requiresRole) {
+    state.meta.route = "landing";
+    state.meta.role = null;
+  }
+}
+
 function renderApp() {
 
   ensureRouteSafety();
@@ -5125,3 +5440,6 @@ window.addEventListener("hashchange", () => {
     renderApp();
   }
 });
+
+
+

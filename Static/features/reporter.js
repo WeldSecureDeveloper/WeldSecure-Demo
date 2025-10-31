@@ -41,33 +41,33 @@
             : null;
         if (!reasonId || !label) return "";
         return `
-        <label>
-          <input type="checkbox" value="${WeldUtil.escapeHtml(reasonId)}" />
-          <span>${WeldUtil.escapeHtml(label)}</span>
-        </label>
-      `;
+          <label>
+            <input type="checkbox" value="${WeldUtil.escapeHtml(reasonId)}" />
+            <span>${WeldUtil.escapeHtml(label)}</span>
+          </label>
+        `;
       })
       .filter(Boolean)
       .join("");
     const reportForm = `
-    <div class="addin-body">
-      <fieldset class="addin-field">
-        <legend>${WeldUtil.escapeHtml(reasonPrompt)}</legend>
-        <div class="addin-checkbox-list">
-          ${reasonsMarkup}
-        </div>
-      </fieldset>
-      <label class="addin-emergency">
-        <input type="checkbox" value="clicked-link,opened-attachment,shared-credentials" />
-        <span class="addin-emergency__text">${WeldUtil.escapeHtml(emergencyLabel)}</span>
-      </label>
-      <label class="addin-field addin-field--notes">
-        Another reason or anything else we should know?
-        <textarea rows="3" id="addin-notes" placeholder="Optional context for your security reviewers."></textarea>
-      </label>
-      <button class="addin-primary" id="addin-submit">Report</button>
-    </div>
-  `;
+      <div class="addin-body">
+        <fieldset class="addin-field">
+          <legend>${WeldUtil.escapeHtml(reasonPrompt)}</legend>
+          <div class="addin-checkbox-list">
+            ${reasonsMarkup}
+          </div>
+        </fieldset>
+        <label class="addin-emergency">
+          <input type="checkbox" value="clicked-link,opened-attachment,shared-credentials" />
+          <span class="addin-emergency__text">${WeldUtil.escapeHtml(emergencyLabel)}</span>
+        </label>
+        <label class="addin-field addin-field--notes">
+          Another reason or anything else we should know?
+          <textarea rows="3" id="addin-notes" placeholder="Optional context for your security reviewers."></textarea>
+        </label>
+        <button class="addin-primary" id="addin-submit">Report</button>
+      </div>
+    `;
 
     const reportAward = Number.isFinite(state.meta.lastReportPoints) ? state.meta.lastReportPoints : 0;
     const badgeAward = Number.isFinite(state.meta.lastBadgePoints) ? state.meta.lastBadgePoints : 0;
@@ -105,73 +105,33 @@
     const auroraMarkup = auroraLayers
       .map(
         layer => `
-        <span class="points-aurora__ribbon points-aurora__ribbon--${layer.shape}" style="--aurora-angle:${layer.angle}deg;--aurora-hue:${layer.hue};--aurora-delay:${layer.delay};--aurora-offset-x:${layer.offsetX}px;--aurora-offset-y:${layer.offsetY}px;"></span>
-      `
+          <span class="points-aurora__ribbon points-aurora__ribbon--${layer.shape}" style="--aurora-angle:${layer.angle}deg;--aurora-hue:${layer.hue};--aurora-delay:${layer.delay};--aurora-offset-x:${layer.offsetX}px;--aurora-offset-y:${layer.offsetY}px;"></span>
+        `
       )
       .join("");
     const sparklesMarkup = sparkles
       .map(
         sparkle => `
-        <span class="points-sparkle" style="--sparkle-x:${sparkle.x}px;--sparkle-y:${sparkle.y}px;--sparkle-delay:${sparkle.delay};--sparkle-size:${sparkle.size}px;"></span>
-      `
+          <span class="points-sparkle" style="--sparkle-x:${sparkle.x}px;--sparkle-y:${sparkle.y}px;--sparkle-delay:${sparkle.delay};--sparkle-size:${sparkle.size}px;"></span>
+        `
       )
       .join("");
     const successView = `
-    <div class="addin-success">
-      <div class="points-celebration points-celebration--aurora">
-        <div class="points-celebration__fireworks" aria-hidden="true">
-          <div class="firework"></div>
-          <div class="firework"></div>
-          <div class="firework"></div>
-        </div>
-        <div class="points-celebration__halo"></div>
-        <div class="points-aurora" aria-hidden="true">
-          ${auroraMarkup}
-        </div>
-        <div class="points-celebration__bubble">
-          <span class="points-celebration__label">Great catch</span>
-          <div class="points-celebration__points">
-            <span class="points-celebration__points-value">+${formatNumber(totalAwarded)}</span>
-            <span class="points-celebration__points-caption">total points earned</span>
+      <div class="addin-success">
+        <div class="points-celebration points-celebration--aurora">
+          <div class="points-celebration__fireworks" aria-hidden="true">
+            <div class="firework"></div>
+            <div class="firework"></div>
+            <div class="firework"></div>
           </div>
-        </div>
-        <div class="points-celebration__ticker">
-          ${tickerMarkup}
-        </div>
-        <div class="points-celebration__bursts">
-          ${burstsMarkup}
-        </div>
-        <div class="points-celebration__sparkles" aria-hidden="true">
-          ${sparklesMarkup}
-        </div>
-      </div>
-      <div class="addin-success__body">
-        <h1>Thanks for reporting.</h1>
-        <p>Security has everything they need. Keep sharing anything that feels suspicious — it keeps the team safe and earns you more recognition.</p>
-        <div class="addin-success__actions">
-          <button type="button" class="addin-primary" data-addin-action="another-report">Report another email</button>
-          <button type="button" class="addin-secondary" data-addin-action="view-rewards">View rewards</button>
-        </div>
-      </div>
-    </div>
-  `;
-    const screenMarkup = screen === "success" ? successView : reportForm;
-
-    return `
-    <div class="addin-page">
-      <div class="addin-shell">
-        <header class="addin-header">
-          <div class="addin-header__top">
-            <div class="addin-header__title">
-              ${screen === "success" ? `<button class="addin-header__back" data-addin-back aria-label="Back to add-in"><span aria-hidden="true">←</span></button>` : ""}
-              ${
-                screen === "success"
-                  ? ""
-                  : `<div class="addin-logo">W</div>`
-              }
-            </div>
-            <div class="addin-points" aria-live="polite">
-              <span class="addin-points__star" aria-hidden="true">
+          <div class="points-celebration__halo"></div>
+          <div class="points-aurora" aria-hidden="true">
+            ${auroraMarkup}
+          </div>
+          <div class="points-celebration__bubble">
+            <span class="points-celebration__label">Great catch</span>
+            <div class="points-celebration__points">
+              <span class="points-celebration__star" aria-hidden="true">
                 <svg
                   class="badge"
                   xmlns="http://www.w3.org/2000/svg"
@@ -182,20 +142,102 @@
                   <circle class="outer" fill="#F9D535" stroke="#fff" stroke-width="8" stroke-linecap="round" cx="180" cy="180" r="157"></circle>
                   <circle class="inner" fill="#DFB828" stroke="#fff" stroke-width="8" cx="180" cy="180" r="108.3"></circle>
                   <path class="inline" d="M89.4 276.7c-26-24.2-42.2-58.8-42.2-97.1 0-22.6 5.6-43.8 15.5-62.4m234.7.1c9.9 18.6 15.4 39.7 15.4 62.2 0 38.3-16.2 72.8-42.1 97" stroke="#CAA61F" stroke-width="7" stroke-linecap="round" fill="none"></path>
-                  <path class="inline" d="m261.5 276.5-40.1-14.4-24.3 32.5-11.6-38.8c-1-.3-20 3-20 2.2 0-.8 15.8-24.3 15.5-25.1l-23.9-33 40.8.7 14.1-38.9 13 38.7 41 .1-32.5 24.2z" fill="#fff3b0"></path>
+                  <g class="star">
+                    <path fill="#F9D535" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="M180 107.8l16.9 52.1h54.8l-44.3 32.2 16.9 52.1-44.3-32.2-44.3 32.2 16.9-52.1-44.3-32.2h54.8z"></path>
+                    <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="180" cy="107.8" r="4.4"></circle>
+                    <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="223.7" cy="244.2" r="4.4"></circle>
+                    <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="135.5" cy="244.2" r="4.4"></circle>
+                    <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="108.3" cy="160.4" r="4.4"></circle>
+                    <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="251.7" cy="160.4" r="4.4"></circle>
+                  </g>
                 </svg>
               </span>
-              <span class="addin-points__value">${formatNumber(afterBalance)} pts</span>
+              <span class="points-celebration__award">
+                <span class="points-celebration__award-value" data-celebration-award>+0</span>
+                <span class="points-celebration__award-unit">pts</span>
+              </span>
+              ${burstsMarkup}
             </div>
           </div>
-          <p class="addin-header__subtitle" id="addin-header-subtitle">Report suspicious email directly from Outlook. Security receives full context so they can take action quickly.</p>
-        </header>
-        <main class="addin-main" aria-describedby="addin-header-subtitle" data-addin-screen="${WeldUtil.escapeHtml(screen)}">
-          ${screenMarkup}
-        </main>
+          <div class="points-sparkles" aria-hidden="true">
+            ${sparklesMarkup}
+          </div>
+        </div>
+        <div class="addin-success__badge" data-badge-showcase aria-live="polite"></div>
+        <p>The security team will review your report shortly. Your points are available immediately.</p>
+        <div class="addin-actions">
+          <button class="addin-cta addin-cta--primary" id="addin-view-rewards">
+            ${WeldUtil.renderIcon("gift", "xs")}
+            <span>Rewards</span>
+          </button>
+        </div>
       </div>
-    </div>
-  `;
+    `;
+
+    const headerPointsDisplay =
+      screen === "success"
+        ? tickerMarkup
+        : `<span class="addin-points__value">${formatNumber(state.customer.currentPoints)}</span>`;
+    const showBackNav = screen === "success";
+    const backButtonMarkup = showBackNav
+      ? `<button type="button" class="addin-header__back" data-addin-back aria-label="Back to report form">
+          <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <path d="M12.94 4.44a1 1 0 0 1 0 1.41L9.29 9.5l3.65 3.65a1 1 0 1 1-1.41 1.41l-4.36-4.36a1 1 0 0 1 0-1.41l4.36-4.36a1 1 0 0 1 1.41 0z" fill="currentColor"/>
+          </svg>
+        </button>`
+      : "";
+
+    return `
+      <div class="addin-page">
+        <div class="addin-shell">
+          <header class="addin-header">
+            <div class="addin-header__top">
+              <div class="addin-header__title">
+                ${backButtonMarkup}
+                ${
+                  showBackNav
+                    ? ""
+                    : `<div class="addin-logo">W</div>`
+                }
+              </div>
+              <div class="addin-points" aria-live="polite">
+                <span class="addin-points__star" aria-hidden="true">
+                  <svg
+                    class="badge"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 360 360"
+                    preserveAspectRatio="xMidYMid meet"
+                    focusable="false"
+                  >
+                    <circle class="outer" fill="#F9D535" stroke="#fff" stroke-width="8" stroke-linecap="round" cx="180" cy="180" r="157"></circle>
+                    <circle class="inner" fill="#DFB828" stroke="#fff" stroke-width="8" cx="180" cy="180" r="108.3"></circle>
+                    <path class="inline" d="M89.4 276.7c-26-24.2-42.2-58.8-42.2-97.1 0-22.6 5.6-43.8 15.5-62.4m234.7.1c9.9 18.6 15.4 39.7 15.4 62.2 0 38.3-16.2 72.8-42.1 97" stroke="#CAA61F" stroke-width="7" stroke-linecap="round" fill="none"></path>
+                    <g class="star">
+                      <path fill="#F9D535" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="M180 107.8l16.9 52.1h54.8l-44.3 32.2 16.9 52.1-44.3-32.2-44.3 32.2 16.9-52.1-44.3-32.2h54.8z"></path>
+                      <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="180" cy="107.8" r="4.4"></circle>
+                      <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="223.7" cy="244.2" r="4.4"></circle>
+                      <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="135.5" cy="244.2" r="4.4"></circle>
+                      <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="108.3" cy="160.4" r="4.4"></circle>
+                      <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="251.7" cy="160.4" r="4.4"></circle>
+                    </g>
+                  </svg>
+                </span>
+                ${headerPointsDisplay}
+              </div>
+            </div>
+            <div class="addin-header__body">
+              <h1>Report with Weld</h1>
+              <p>Flag anything suspicious, earn recognition, and protect your team.</p>
+            </div>
+            <div class="addin-status">
+              <span>Signed in</span>
+              <strong>${WeldUtil.escapeHtml(state.customer.name)}</strong>
+            </div>
+          </header>
+          ${screen === "report" ? reportForm : successView}
+        </div>
+      </div>
+    `;
   }
 
   function attachAddInEvents(container) {
@@ -235,7 +277,7 @@
             : notesValue
             ? `Suspicious email: ${notesValue.slice(0, 60)}`
             : "Suspicious email reported";
-          const generatedMessageId = generateId("MSG").toUpperCase();
+          const generatedMessageId = WeldUtil.generateId("MSG").toUpperCase();
 
           const emergencySelections = Array.from(container.querySelectorAll('.addin-emergency input[type="checkbox"]'))
             .filter(input => input.checked)
@@ -278,3 +320,6 @@
     }
   }
 })();
+
+
+
