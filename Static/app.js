@@ -19,8 +19,10 @@ const BADGE_DRAFTS = new Set(window.AppData.BADGE_DRAFTS);
 const DEFAULT_QUESTS = window.AppData.DEFAULT_QUESTS;
 const DEPARTMENT_LEADERBOARD = window.AppData.DEPARTMENT_LEADERBOARD;
 const ENGAGEMENT_PROGRAMS = window.AppData.ENGAGEMENT_PROGRAMS;
-let state = WeldState.loadState();
-
+let state = WeldState.loadState();
+
+
+
 function initializeRoute() {
   const hashRoute = window.location.hash.replace("#", "");
   if (hashRoute && ROUTES[hashRoute]) {
@@ -35,8 +37,10 @@ function initializeRoute() {
   }
 }
 
-initializeRoute();
-
+initializeRoute();
+
+
+
 function navigate(route) {
   const nextRoute = ROUTES[route] ? route : "landing";
   state.meta.route = nextRoute;
@@ -88,6 +92,10 @@ function resetDemo() {
     }
   }
   renderApp();
+}
+
+function persist() {
+  WeldState.saveState(state);
 }
 
 function rewardById(id) {
@@ -4804,6 +4812,423 @@ function attachLandingEvents(container) {
   }
 }
 
+
+function attachCustomerEvents(container) {
+  const reportBtn = container.querySelector("#customer-report-button");
+  if (reportBtn) {
+    reportBtn.addEventListener("click", () => {
+      openSuspiciousActivityForm();
+    });
+  }
+  const historyBtn = container.querySelector("#customer-report-history-button");
+  if (historyBtn) {
+    historyBtn.addEventListener("click", () => {
+      state.meta.reportFilter = "other";
+      setRole("customer", "customer-reports");
+    });
+  }
+  container.querySelectorAll(".reward-card__cta").forEach(button => {
+    button.addEventListener("click", () => {
+      const card = button.closest(".reward-card");
+      if (!card) return;
+      const rewardId = Number(card.getAttribute("data-reward"));
+      const reward = rewardById(rewardId);
+      if (!reward) return;
+
+      const dialogContent = document.createElement("div");
+      const nameElement = document.createElement("strong");
+      nameElement.textContent = reward.name || "Reward";
+      dialogContent.appendChild(nameElement);
+      if (reward.description) {
+        const descriptionElement = document.createElement("p");
+        descriptionElement.textContent = reward.description;
+        dialogContent.appendChild(descriptionElement);
+      }
+      if (reward.provider) {
+        const providerElement = document.createElement("span");
+        providerElement.textContent = reward.provider;
+        dialogContent.appendChild(providerElement);
+      }
+
+      openDialog({
+        title: "Redeem this reward?",
+        description: `This will use ${reward.pointsCost} of your available points.`,
+        content: dialogContent,
+        confirmLabel: "Confirm redemption",
+        cancelLabel: "Cancel",
+        onConfirm: close => {
+          const result = redeemReward(rewardId);
+          close();
+          if (result.success) {
+            openDialog({
+              title: "Reward queued for fulfilment",
+              description: `${reward.name} has been added to your rewards queue.`,
+              confirmLabel: "Back to rewards",
+              onConfirm: closeDialog
+            });
+          } else {
+            openDialog({
+              title: "Unable to redeem",
+              description: result.reason || "Please try again.",
+              confirmLabel: "Close"
+            });
+          }
+        }
+      });
+    });
+  });
+  container.querySelectorAll(".points-card__chip-action").forEach(button => {
+    button.addEventListener("click", () => {
+      const scrollTarget = button.getAttribute("data-scroll");
+      if (scrollTarget) {
+        const target = document.querySelector(scrollTarget);
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }
+      const targetRoute = button.getAttribute("data-route");
+      if (targetRoute) {
+        const filter = button.getAttribute("data-report-filter");
+        if (filter) {
+          state.meta.reportFilter = filter === "other" ? "other" : null;
+        } else if (targetRoute === "customer-reports") {
+          state.meta.reportFilter = null;
+        }
+        setRole("customer", targetRoute);
+      }
+    });
+  });
+  container.querySelectorAll(".quest-card__cta").forEach(button => {
+    button.addEventListener("click", () => {
+      setRole("client", "client-quests");
+    });
+  });
+  container.querySelectorAll(".quest-card__config").forEach(button => {
+    button.addEventListener("click", event => {
+      event.preventDefault();
+      const questId = button.getAttribute("data-quest");
+      if (questId) {
+        openQuestConfig(questId);
+      }
+    });
+  });
+  container.querySelectorAll(".section-header__action[data-route]").forEach(button => {
+    button.addEventListener("click", () => {
+      const targetRoute = button.getAttribute("data-route");
+      const targetRole = button.getAttribute("data-role") || state.meta.role || "customer";
+      if (targetRoute) {
+        setRole(targetRole, targetRoute);
+      }
+    });
+  });
+  container.querySelectorAll("[data-recognition-filter]").forEach(button => {
+    button.addEventListener("click", () => {
+      const value = (button.getAttribute("data-recognition-filter") || "").trim().toLowerCase();
+      const valid = ["received", "given", "all"];
+      const nextFilter = valid.includes(value) ? value : "received";
+      if (state.meta.recognitionFilter !== nextFilter) {
+        state.meta.recognitionFilter = nextFilter;
+        persist();
+        renderApp();
+      }
+    });
+  });
+  const recognitionButton = container.querySelector(".recognition-board__note-button");
+  if (recognitionButton) {
+    recognitionButton.addEventListener("click", () => {
+      openRecognitionFormDialog();
+    });
+  }
+}
+
+function attachCustomerBadgesEvents(container) {
+  const back = container.querySelector("[data-action='back-to-hub']");
+  if (back) {
+    back.addEventListener("click", () => {
+      setRole("customer", "customer");
+    });
+  }
+}
+
+function attachCustomerReportsEvents(container) {
+  const back = container.querySelector("[data-action='back-to-hub']");
+  if (back) {
+    back.addEventListener("click", () => {
+      setRole("customer", "customer");
+    });
+  }
+}
+
+function attachCustomerRedemptionsEvents(container) {
+  const back = container.querySelector("[data-action='back-to-hub']");
+  if (back) {
+    back.addEventListener("click", () => {
+      setRole("customer", "customer");
+    });
+  }
+}
+
+function attachClientDashboardEvents(container) {
+  if (!container) return;
+  container.addEventListener("click", event => {
+    const bulkDepartment = event.target.closest("[data-bulk-department-action]");
+    if (bulkDepartment) {
+      const action = bulkDepartment.getAttribute("data-bulk-department-action");
+      if (action === "publish") {
+        setAllLeaderboardPublication(true);
+      } else if (action === "unpublish") {
+        setAllLeaderboardPublication(false);
+      }
+      return;
+    }
+
+    const departmentToggle = event.target.closest(".department-publish-toggle");
+    if (departmentToggle) {
+      const departmentId = departmentToggle.getAttribute("data-department");
+      const action = departmentToggle.getAttribute("data-action");
+      if (departmentId && action) {
+        setLeaderboardEntryPublication(departmentId, action === "publish");
+      }
+      return;
+    }
+
+    const bulkProgram = event.target.closest("[data-bulk-program-action]");
+    if (bulkProgram) {
+      const action = bulkProgram.getAttribute("data-bulk-program-action");
+      if (action === "publish") {
+        setAllEngagementProgramsPublication(true);
+      } else if (action === "unpublish") {
+        setAllEngagementProgramsPublication(false);
+      }
+      return;
+    }
+
+    const programToggle = event.target.closest(".program-publish-toggle");
+    if (programToggle) {
+      const programId = programToggle.getAttribute("data-program");
+      const action = programToggle.getAttribute("data-action");
+      if (programId && action) {
+        setEngagementProgramPublication(programId, action === "publish");
+      }
+      return;
+    }
+
+    const button = event.target.closest(".client-card .table-actions [data-route]");
+    if (!button) return;
+    event.preventDefault();
+    const route = button.getAttribute("data-route");
+    const role = button.getAttribute("data-role");
+    if (role) {
+      setRole(role, route || role);
+    } else if (route) {
+      navigate(route);
+    }
+  });
+}
+
+function attachReportingEvents(container) {
+  const csvBtn = container.querySelector("#download-csv-button");
+  if (csvBtn) {
+    csvBtn.addEventListener("click", () => {
+      openDialog({
+        title: "CSV export ready",
+        description: "In the real product this downloads a CSV. For the demo, use this cue to talk through the audit trail.",
+        confirmLabel: "Got it"
+      });
+    });
+  }
+  container.querySelectorAll(".table-actions button").forEach(button => {
+    button.addEventListener("click", () => {
+      const action = button.getAttribute("data-action");
+      const messageId = Number(button.getAttribute("data-message"));
+      updateMessageStatus(messageId, action === "approve" ? MessageStatus.APPROVED : MessageStatus.REJECTED);
+    });
+  });
+}
+
+function attachClientRewardsEvents(container) {
+  container.addEventListener("click", event => {
+    const statusButton = event.target.closest("[data-reward-status]");
+    if (statusButton) {
+      const rawValue = (statusButton.getAttribute("data-reward-status") || "").trim().toLowerCase();
+      const nextStatus = rawValue === "published" || rawValue === "unpublished" ? rawValue : null;
+      if (state.meta.rewardStatusFilter !== nextStatus) {
+        state.meta.rewardStatusFilter = nextStatus;
+        persist();
+        renderApp();
+      }
+      return;
+    }
+
+    const filterButton = event.target.closest("[data-reward-filter]");
+    if (filterButton) {
+      const value = (filterButton.getAttribute("data-reward-filter") || "").trim().toLowerCase();
+      const nextFilter = value.length > 0 ? value : null;
+      if (state.meta.rewardFilter !== nextFilter) {
+        state.meta.rewardFilter = nextFilter;
+        persist();
+        renderApp();
+      }
+      return;
+    }
+
+    const bulkButton = event.target.closest("[data-bulk-reward-action]");
+    if (bulkButton) {
+      const action = bulkButton.getAttribute("data-bulk-reward-action");
+      if (action === "publish") {
+        setAllRewardsPublication(true);
+      } else if (action === "unpublish") {
+        setAllRewardsPublication(false);
+      }
+      return;
+    }
+
+    const configButton = event.target.closest(".reward-card__config");
+    if (configButton) {
+      event.preventDefault();
+      const idAttr = configButton.getAttribute("data-reward");
+      if (!idAttr) return;
+      const numericId = Number(idAttr);
+      if (Number.isFinite(numericId)) {
+        openRewardConfig(numericId);
+      } else {
+        openRewardConfig(idAttr);
+      }
+      return;
+    }
+
+    const button = event.target.closest(".reward-publish-toggle");
+    if (!button) return;
+    const rewardId = Number(button.getAttribute("data-reward"));
+    if (!Number.isFinite(rewardId)) return;
+    const action = button.getAttribute("data-action");
+    if (!action) return;
+    const nextPublished = action === "publish";
+    setRewardPublication(rewardId, nextPublished);
+  });
+}
+
+function attachClientQuestsEvents(container) {
+  container.addEventListener("click", event => {
+    const statusButton = event.target.closest("[data-quest-status]");
+    if (statusButton) {
+      const rawValue = (statusButton.getAttribute("data-quest-status") || "").trim().toLowerCase();
+      const nextStatus = rawValue === "published" || rawValue === "unpublished" ? rawValue : null;
+      if (state.meta.questStatusFilter !== nextStatus) {
+        state.meta.questStatusFilter = nextStatus;
+        persist();
+        renderApp();
+      }
+      return;
+    }
+
+    const filterButton = event.target.closest("[data-quest-filter]");
+    if (filterButton) {
+      const value = (filterButton.getAttribute("data-quest-filter") || "").trim().toLowerCase();
+      const nextFilter = value.length > 0 ? value : null;
+      if (state.meta.questFilter !== nextFilter) {
+        state.meta.questFilter = nextFilter;
+        persist();
+        renderApp();
+      }
+      return;
+    }
+
+    const bulkButton = event.target.closest("[data-bulk-quest-action]");
+    if (bulkButton) {
+      const action = bulkButton.getAttribute("data-bulk-quest-action");
+      if (action === "publish") {
+        setAllQuestsPublication(true);
+      } else if (action === "unpublish") {
+        setAllQuestsPublication(false);
+      }
+      return;
+    }
+
+    const configButton = event.target.closest(".quest-card__config");
+    if (configButton) {
+      const questId = configButton.getAttribute("data-quest");
+      if (questId) {
+        event.preventDefault();
+        openQuestConfig(questId);
+      }
+      return;
+    }
+
+    const button = event.target.closest(".quest-publish-toggle");
+    if (!button) return;
+    const questId = button.getAttribute("data-quest");
+    const action = button.getAttribute("data-action");
+    if (!questId || !action) return;
+    setQuestPublication(questId, action === "publish");
+  });
+}
+
+function attachWeldLabsEvents(container) {
+  if (!container) return;
+  container.addEventListener("click", event => {
+    const toggle = event.target.closest("[data-lab-toggle]");
+    if (toggle) {
+      const featureId = (toggle.getAttribute("data-lab-feature") || "").trim();
+      const clientIdRaw = (toggle.getAttribute("data-client") || "").trim();
+      if (!featureId || !clientIdRaw) {
+        return;
+      }
+      const numericClientId = Number(clientIdRaw);
+      const clientIdValue =
+        Number.isFinite(numericClientId) && clientIdRaw !== "" ? numericClientId : clientIdRaw;
+      const currentEnabled = toggle.getAttribute("data-enabled") === "true";
+      setLabFeatureAccess(featureId, clientIdValue, !currentEnabled);
+      return;
+    }
+    const bulk = event.target.closest("[data-lab-bulk]");
+    if (bulk) {
+      const featureId = (bulk.getAttribute("data-lab-feature") || "").trim();
+      const mode = (bulk.getAttribute("data-lab-bulk") || "").trim().toLowerCase();
+      if (!featureId || !mode) return;
+      if (mode === "enable") {
+        setLabFeatureAccessForAll(featureId, true);
+      } else if (mode === "disable") {
+        setLabFeatureAccessForAll(featureId, false);
+      }
+    }
+  });
+}
+
+function attachAdminEvents(container) {
+  const triggerBtn = container.querySelector("#trigger-playbook");
+  if (triggerBtn) {
+    triggerBtn.addEventListener("click", () => {
+      openDialog({
+        title: "Playbook scheduled",
+        description: "Use this cue to explain how Weld orchestrates interventions across tenants.",
+        confirmLabel: "Nice"
+      });
+    });
+  }
+
+  container.querySelectorAll("[data-action='view-journey'], [data-action='share-insights']").forEach(button => {
+    button.addEventListener("click", () => {
+      const clientId = Number(button.getAttribute("data-client"));
+      const client = state.clients.find(c => c.id === clientId);
+      if (!client) return;
+      if (button.getAttribute("data-action") === "view-journey") {
+        openDialog({
+          title: `Switch to ${client.name}?`,
+          description: "For the demo, remind stakeholders each client gets a dedicated journey view with custom insights.",
+          confirmLabel: "Return",
+          onConfirm: closeDialog
+        });
+      } else {
+        openDialog({
+          title: "Insights shared",
+          description: `Customer Success receives a packaged summary for ${client.name}.`,
+          confirmLabel: "Great"
+        });
+      }
+    });
+  });
+}
 function attachHeaderEvents(container) {
   if (!container) return;
   const brandBtn = container.querySelector("#brand-button");
@@ -5047,8 +5472,10 @@ function renderContent() {
 
 function attachGlobalNav(container) {
 
-  const groups = Array.from(container.querySelectorAll(".global-nav__group"));
-
+  const groups = Array.from(container.querySelectorAll(".global-nav__group"));
+
+
+
   const closeGroups = () => {
 
     groups.forEach(group => {
@@ -5061,8 +5488,10 @@ function attachGlobalNav(container) {
 
     });
 
-  };
-
+  };
+
+
+
   groups.forEach(group => {
 
     const trigger = group.querySelector(".global-nav__trigger");
@@ -5089,8 +5518,10 @@ function attachGlobalNav(container) {
 
       }
 
-    };
-
+    };
+
+
+
     trigger.addEventListener("click", toggleGroup);
 
     trigger.addEventListener("keydown", event => {
@@ -5103,8 +5534,10 @@ function attachGlobalNav(container) {
 
     });
 
-  });
-
+  });
+
+
+
   container.querySelectorAll(".global-nav [data-route]").forEach(button => {
 
     button.addEventListener("click", event => {
@@ -5113,16 +5546,22 @@ function attachGlobalNav(container) {
 
       const route = button.getAttribute("data-route");
 
-      const role = button.getAttribute("data-role");
-
-      closeGroups();
-
+      const role = button.getAttribute("data-role");
+
+
+
+      closeGroups();
+
+
+
       if (route === "addin") {
 
         state.meta.addinScreen = "report";
 
-      }
-
+      }
+
+
+
       if (role) {
 
         setRole(role, route || role);
@@ -5137,8 +5576,10 @@ function attachGlobalNav(container) {
 
   });
 
-}
-function ensureRouteSafety() {
+}
+
+
+function ensureRouteSafety() {
   const routeInfo = ROUTES[state.meta.route];
   if (!routeInfo) {
     state.meta.route = "landing";
@@ -5155,14 +5596,18 @@ function renderApp() {
 
   const app = document.getElementById("app");
 
-  const route = state.meta.route;
-
+  const route = state.meta.route;
+
+
+
   if (route !== "addin") {
 
     teardownBadgeShowcase();
 
-  }
-
+  }
+
+
+
   if (route === "landing") {
 
     app.innerHTML = `
@@ -5191,8 +5636,10 @@ function renderApp() {
 
     return;
 
-  }
-
+  }
+
+
+
   if (route === "client-badges") {
 
     app.innerHTML = `
@@ -5229,8 +5676,10 @@ function renderApp() {
 
     return;
 
-  }
-
+  }
+
+
+
   if (route === "addin") {
 
     app.innerHTML = `
@@ -5267,8 +5716,10 @@ function renderApp() {
 
     return;
 
-  }
-
+  }
+
+
+
   if (route === "client-dashboard") {
 
     app.innerHTML = `
@@ -5305,8 +5756,10 @@ function renderApp() {
 
     return;
 
-  }
-
+  }
+
+
+
   if (route === "client-reporting") {
 
     app.innerHTML = `
@@ -5343,8 +5796,10 @@ function renderApp() {
 
     return;
 
-  }
-
+  }
+
+
+
   if (route === "client-quests") {
 
     app.innerHTML = `
@@ -5381,8 +5836,10 @@ function renderApp() {
 
     return;
 
-  }
-
+  }
+
+
+
   app.innerHTML = `
 
     <div class="page">
@@ -5397,14 +5854,18 @@ function renderApp() {
 
     </div>
 
-  `;
-
+  `;
+
+
+
   attachHeaderEvents(app);
 
   attachGlobalNav(app);
 
-  initializeSettingsUI(app);
-
+  initializeSettingsUI(app);
+
+
+
   const mainContent = app.querySelector("#main-content");
 
   if (!mainContent) return;
@@ -5423,8 +5884,10 @@ function renderApp() {
 
   if (route === "weld-admin") attachAdminEvents(mainContent);
 
-}
-
+}
+
+
+
 window.addEventListener("DOMContentLoaded", () => {
   renderApp();
 });
