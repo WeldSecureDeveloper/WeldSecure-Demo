@@ -20,7 +20,7 @@ smoke test in the browser to confirm parity.
 | 5     | Landing page & hero journeys                      | Done   | `Static/features/landing.js` + registry route replace the legacy branch in `app.js`.                 |
 | 6     | Customer persona pages                            | In progress | Customer routes now delegate to `Static/features/customer.js`; smoke tests pending.                  |
 | 7     | Client persona pages                              | In progress | Client dashboard/reporting/quests now use registry; rewards moved into a dedicated feature.         |
-| 8     | Admin & labs surfaces                             | Pending | Pending migration of admin/labs routes and removal of the final switch fallback.                    |
+| 8     | Admin & labs surfaces                             | In progress | Admin/labs flows now feature-driven; registry/services updated. Smoke tests still outstanding.      |
 | 9     | Post-migration hardening                          | Pending | Final regression sweep, doc tidy-up, and removal of obsolete globals.                               |
 
 ## Stage Details
@@ -81,10 +81,10 @@ smoke test in the browser to confirm parity.
 **Goal:** Extract admin and labs flows, then delete the legacy switch entirely.
 
 **Tasks**
-1. Move `renderWeldAdmin`, `renderWeldLabs`, and their event bindings into dedicated features.
-2. Register the remaining routes; ensure cross-cutting helpers live in utilities/services.
-3. Remove the final fallback switch from `app.js`, leaving registry-driven rendering only.
-4. Re-run the Stage 3 smoke checklist to confirm parity.
+- [x] Move `renderWeldAdmin`, `renderWeldLabs`, and their event bindings into dedicated features.
+- [x] Register the remaining routes; ensure cross-cutting helpers live in utilities/services.
+- [x] Remove the final fallback switch from `app.js`, leaving registry-driven rendering only.
+- [ ] Re-run the Stage 3 smoke checklist to confirm parity.
 
 ### Stage 9 - Post-migration hardening
 **Goal:** Clean up leftovers and document the final architecture.

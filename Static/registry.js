@@ -198,6 +198,22 @@
     }
   });
 
+  registerRoute('client-badges', {
+    pageClass: 'page',
+    innerClass: 'page__inner',
+    contentClass: 'layout-content',
+    contentId: 'main-content',
+    render() {
+      return '';
+    },
+    attach(container, state) {
+      const feature = window.Weld?.features?.badges;
+      if (feature && typeof feature.render === 'function') {
+        feature.render(container, state);
+      }
+    }
+  });
+
   registerRoute('client-quests', {
     pageClass: 'page',
     innerClass: 'page__inner',
@@ -238,6 +254,82 @@
       }
       if (typeof window.attachClientRewardsEvents === 'function') {
         window.attachClientRewardsEvents(container);
+      }
+    }
+  });
+
+  registerRoute('addin', {
+    pageClass: 'page page--addin',
+    innerClass: 'page__inner page__inner--single',
+    contentClass: 'layout-content layout-content--flush',
+    contentId: 'main-content',
+    render() {
+      return '';
+    },
+    attach(container, state) {
+      const feature = window.Weld?.features?.reporter;
+      if (feature && typeof feature.render === 'function') {
+        feature.render(container, state);
+      }
+    }
+  });
+
+  registerRoute('weld-labs', {
+    pageClass: 'page',
+    innerClass: 'page__inner',
+    contentClass: 'layout-content',
+    contentId: 'main-content',
+    render() {
+      const state = window.Weld?.state || window.state || {};
+      const feature = window.Weld?.features?.labs;
+      if (feature && typeof feature.template === 'function') {
+        return feature.template(state);
+      }
+      if (feature && typeof feature.render === 'function') {
+        const temp = document.createElement('div');
+        feature.render(temp, state);
+        return temp.innerHTML;
+      }
+      return '';
+    },
+    attach(container, state) {
+      const feature = window.Weld?.features?.labs;
+      if (feature && typeof feature.attach === 'function') {
+        feature.attach(container, state);
+        return;
+      }
+      if (feature && typeof feature.render === 'function') {
+        feature.render(container, state);
+      }
+    }
+  });
+
+  registerRoute('weld-admin', {
+    pageClass: 'page',
+    innerClass: 'page__inner',
+    contentClass: 'layout-content',
+    contentId: 'main-content',
+    render() {
+      const state = window.Weld?.state || window.state || {};
+      const feature = window.Weld?.features?.admin;
+      if (feature && typeof feature.template === 'function') {
+        return feature.template(state);
+      }
+      if (feature && typeof feature.render === 'function') {
+        const temp = document.createElement('div');
+        feature.render(temp, state);
+        return temp.innerHTML;
+      }
+      return '';
+    },
+    attach(container, state) {
+      const feature = window.Weld?.features?.admin;
+      if (feature && typeof feature.attach === 'function') {
+        feature.attach(container, state);
+        return;
+      }
+      if (feature && typeof feature.render === 'function') {
+        feature.render(container, state);
       }
     }
   });

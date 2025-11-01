@@ -1,6 +1,11 @@
 // util.js - tiny helpers; add more as you migrate
 (function () {
   const WeldUtil = window.WeldUtil || {};
+  const AppData = window.AppData || {};
+  const QUEST_DIFFICULTY_ORDER =
+    Array.isArray(AppData.QUEST_DIFFICULTY_ORDER) ? AppData.QUEST_DIFFICULTY_ORDER : [];
+  const ICONS = AppData.ICONS || {};
+  const METRIC_TONES = AppData.METRIC_TONES || {};
 
   Object.assign(WeldUtil, {
     clone(value) {
@@ -34,6 +39,40 @@
         return stringValue;
       }
       return WeldUtil.generateId(prefix);
+    },
+
+    normalizeLabFeatureId(value) {
+      if (Number.isFinite(value)) {
+        return String(value);
+      }
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        return trimmed.length > 0 ? trimmed : null;
+      }
+      return null;
+    },
+
+    normalizeLabClientId(value) {
+      if (Number.isFinite(value)) {
+        return Number(value);
+      }
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (!trimmed) return null;
+        const numeric = Number(trimmed);
+        return Number.isFinite(numeric) ? numeric : trimmed;
+      }
+      return null;
+    },
+
+    labClientKey(value) {
+      if (Number.isFinite(value)) {
+        return String(Number(value));
+      }
+      if (typeof value === "string") {
+        return value.trim();
+      }
+      return "";
     },
 
     questDifficultyRank(value) {

@@ -270,4 +270,122 @@
     saveState(state);
     renderShell();
   };
+
+  function normalizeLabFeatureIdSafe(value) {
+    if (WeldUtil && typeof WeldUtil.normalizeLabFeatureId === "function") {
+      return WeldUtil.normalizeLabFeatureId(value);
+    }
+    if (Number.isFinite(value)) return String(value);
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed : null;
+    }
+    return null;
+  }
+
+  function normalizeLabClientIdSafe(value) {
+    if (WeldUtil && typeof WeldUtil.normalizeLabClientId === "function") {
+      return WeldUtil.normalizeLabClientId(value);
+    }
+    if (Number.isFinite(value)) return Number(value);
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (!trimmed) return null;
+      const numeric = Number(trimmed);
+      return Number.isFinite(numeric) ? numeric : trimmed;
+    }
+    return null;
+  }
+
+  function labClientKeySafe(value) {
+    if (WeldUtil && typeof WeldUtil.labClientKey === "function") {
+      return WeldUtil.labClientKey(value);
+    }
+    if (Number.isFinite(value)) return String(Number(value));
+    if (typeof value === "string") return value.trim();
+    return "";
+  }
+
+  function findLabFeature(state, featureId) {
+    if (!state?.labs || !Array.isArray(state.labs.features)) return null;
+    const normalizedFeatureId = normalizeLabFeatureIdSafe(featureId);
+    if (!normalizedFeatureId) return null;
+    return state.labs.features.find(item => normalizeLabFeatureIdSafe(item?.id) === normalizedFeatureId) || null;
+  }
+
+  WeldServices.setLabFeatureAccess = function setLabFeatureAccess(featureId, clientIdValue, enabled, providedState) {
+    const state = resolveState(providedState);
+    if (!state) return;
+    const feature = findLabFeature(state, featureId);
+    if (!feature) return;
+    const normalizedClientId = normalizeLabClientIdSafe(clientIdValue);
+    if (normalizedClientId === null || normalizedClientId === undefined) return;
+    const shouldEnable = Boolean(enabled);
+    if (!Array.isArray(feature.enabledClientIds)) {
+      feature.enabledClientIds = [];
+    }
+    const targetKey = labClientKeySafe(normalizedClientId);
+    if (!targetKey) return;
+    const existingIndex = feature.enabledClientIds.findIndex(id => labClientKeySafe(id) === targetKey);
+    const alreadyEnabled = existingIndex !== -1;
+    if (shouldEnable && alreadyEnabled) return;
+    if (!shouldEnable && !alreadyEnabled) return;
+    if (shouldEnable) {
+      feature.enabledClientIds.push(normalizedClientId);
+    } else {
+      feature.enabledClientIds.splice(existingIndex, 1);
+    }
+    feature.enabledClientIds = feature.enabledClientIds
+      .map(id => {
+        if (Number.isFinite(id)) return Number(id);
+        if (typeof id === "string") return id.trim();
+        return id;
+      })
+      .filter((value, index, array) => {
+        const key = labClientKeySafe(value);
+        if (!key) return false;
+        return array.findIndex(candidate => labClientKeySafe(candidate) === key) === index;
+      });
+    syncGlobalState(state);
+    saveState(state);
+    renderShell();
+  };
+
+  WeldServices.setLabFeatureAccessForAll = function setLabFeatureAccessForAll(featureId, enabled, providedState) {
+    const state = resolveState(providedState);
+    if (!state) return;
+    const feature = findLabFeature(state, featureId);
+    if (!feature) return;
+    if (!Array.isArray(feature.enabledClientIds)) {
+      feature.enabledClientIds = [];
+    }
+    const shouldEnable = Boolean(enabled);
+    if (!shouldEnable) {
+      if (feature.enabledClientIds.length === 0) return;
+      feature.enabledClientIds = [];
+      syncGlobalState(state);
+      saveState(state);
+      renderShell();
+      return;
+    }
+    const clients = Array.isArray(state.clients) ? state.clients : [];
+    const targetIds = clients
+      .map(client => normalizeLabClientIdSafe(client?.id))
+      .filter(value => labClientKeySafe(value));
+    const existingKeys = new Set(feature.enabledClientIds.map(labClientKeySafe).filter(Boolean));
+    const targetKeys = new Set(targetIds.map(labClientKeySafe).filter(Boolean));
+    let changed = existingKeys.size !== targetKeys.size;
+    if (!changed) {
+      existingKeys.forEach(key => {
+        if (!targetKeys.has(key)) {
+          changed = true;
+        }
+      });
+    }
+    if (!changed) return;
+    feature.enabledClientIds = targetIds;
+    syncGlobalState(state);
+    saveState(state);
+    renderShell();
+  };
 })();
