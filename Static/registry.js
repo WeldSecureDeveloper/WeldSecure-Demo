@@ -165,4 +165,80 @@
       }
     }
   });
+
+  registerRoute('client-dashboard', {
+    pageClass: 'page',
+    innerClass: 'page__inner',
+    contentClass: 'layout-content',
+    contentId: 'main-content',
+    render() {
+      return '';
+    },
+    attach(container, state) {
+      const feature = window.Weld?.features?.orgHub;
+      if (feature && typeof feature.render === 'function') {
+        feature.render(container, state);
+      }
+    }
+  });
+
+  registerRoute('client-reporting', {
+    pageClass: 'page',
+    innerClass: 'page__inner',
+    contentClass: 'layout-content',
+    contentId: 'main-content',
+    render() {
+      return '';
+    },
+    attach(container, state) {
+      const feature = window.Weld?.features?.dashboard;
+      if (feature && typeof feature.render === 'function') {
+        feature.render(container, state);
+      }
+    }
+  });
+
+  registerRoute('client-quests', {
+    pageClass: 'page',
+    innerClass: 'page__inner',
+    contentClass: 'layout-content',
+    contentId: 'main-content',
+    render() {
+      return '';
+    },
+    attach(container, state) {
+      const feature = window.Weld?.features?.hub;
+      if (feature && typeof feature.render === 'function') {
+        feature.render(container, state);
+      }
+    }
+  });
+
+  registerRoute('client-rewards', {
+    pageClass: 'page',
+    innerClass: 'page__inner',
+    contentClass: 'layout-content',
+    contentId: 'main-content',
+    render() {
+      const state = window.Weld?.state || window.state || {};
+      const feature = window.Weld?.features?.client;
+      if (feature && typeof feature.templateRewards === 'function') {
+        return feature.templateRewards(state);
+      }
+      if (typeof window.renderClientRewards === 'function') {
+        return window.renderClientRewards();
+      }
+      return '';
+    },
+    attach(container, state) {
+      const feature = window.Weld?.features?.client;
+      if (feature && typeof feature.attachRewards === 'function') {
+        feature.attachRewards(container, state);
+        return;
+      }
+      if (typeof window.attachClientRewardsEvents === 'function') {
+        window.attachClientRewardsEvents(container);
+      }
+    }
+  });
 })();

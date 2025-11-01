@@ -19,7 +19,7 @@ smoke test in the browser to confirm parity.
 | 4     | Settings shell module                             | Done   | Settings overlay owns its markup/events in `Static/features/settings.js`; registry handles routing.  |
 | 5     | Landing page & hero journeys                      | Done   | `Static/features/landing.js` + registry route replace the legacy branch in `app.js`.                 |
 | 6     | Customer persona pages                            | In progress | Customer routes now delegate to `Static/features/customer.js`; smoke tests pending.                  |
-| 7     | Client persona pages                              | Pending | Pending extraction of client dashboards, quests, and rewards.                                       |
+| 7     | Client persona pages                              | In progress | Client dashboard/reporting/quests now use registry; rewards moved into a dedicated feature.         |
 | 8     | Admin & labs surfaces                             | Pending | Pending migration of admin/labs routes and removal of the final switch fallback.                    |
 | 9     | Post-migration hardening                          | Pending | Final regression sweep, doc tidy-up, and removal of obsolete globals.                               |
 
@@ -73,11 +73,10 @@ smoke test in the browser to confirm parity.
 **Goal:** Relocate client dashboards, reporting, quests, and rewards into feature modules.
 
 **Tasks**
-1. Extract client renderers (`renderClientDashboard`, `renderClientReporting`, `renderClientRewards`, `renderClientQuests`, etc.).
-2. Port dialog/insight handlers and badge showcases into feature-level attach hooks.
-3. Register client routes in the registry and remove the corresponding blocks from the switch.
-4. Smoke test the client experiences: insights dialogs, badge toggles, quest management, rewards catalogue.
-
+- [x] Route `client-dashboard`, `client-reporting`, and `client-quests` through `WeldRegistry` with existing feature renderers.
+- [x] Extract the rewards catalogue (`renderClientRewards` + publish filters) into `Static/features/client.js`.
+- [x] Remove legacy client branches/attach hooks from `app.js` and wire the new feature via `Static/registry.js`.
+- [ ] Smoke test the client journeys (dashboard, reporting, quest publishing, rewards filters/publish toggles).
 ### Stage 8 - Admin & labs surfaces
 **Goal:** Extract admin and labs flows, then delete the legacy switch entirely.
 
@@ -104,3 +103,4 @@ smoke test in the browser to confirm parity.
 * Smoke-test the affected routes in a browser before proceeding to the next stage.
 * Preserve the zero-build pipeline: no bundlers, no package installs, no network dependencies.
 * Document new globals or helpers here (or in the README) as they appear.
+
