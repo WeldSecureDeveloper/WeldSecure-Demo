@@ -509,4 +509,15 @@
     const state = getState(appState);
     syncSettingsShell(state);
   };
+
+  settingsFeature.render = function render(appState) {
+    const state = getState(appState);
+    ensureSettingsShortcuts();
+    syncSettingsShell(state);
+    return "";
+  };
+
+  settingsFeature.attach = function attach(container, appState) {
+    settingsFeature.init(container, appState);
+  };
 })();
