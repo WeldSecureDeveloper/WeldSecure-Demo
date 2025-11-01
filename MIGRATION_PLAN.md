@@ -18,7 +18,7 @@ smoke test in the browser to confirm parity.
 | 3     | Feature-first extractions (badges, reporter, hub) | Done   | Major persona views live in `Static/features/*.js`, registered on `window.Weld.features`.            |
 | 4     | Settings shell module                             | Done   | Settings overlay owns its markup/events in `Static/features/settings.js`; registry handles routing.  |
 | 5     | Landing page & hero journeys                      | Done   | `Static/features/landing.js` + registry route replace the legacy branch in `app.js`.                 |
-| 6     | Customer persona pages                            | Pending | Next: split customer hub, reports, badges, and redemptions into features.                            |
+| 6     | Customer persona pages                            | In progress | Customer routes now delegate to `Static/features/customer.js`; smoke tests pending.                  |
 | 7     | Client persona pages                              | Pending | Pending extraction of client dashboards, quests, and rewards.                                       |
 | 8     | Admin & labs surfaces                             | Pending | Pending migration of admin/labs routes and removal of the final switch fallback.                    |
 | 9     | Post-migration hardening                          | Pending | Final regression sweep, doc tidy-up, and removal of obsolete globals.                               |
@@ -64,12 +64,11 @@ smoke test in the browser to confirm parity.
 **Goal:** Move customer hub, badges, reports, and redemptions into feature modules, trimming the switch.
 
 **Tasks**
-1. Extract `renderCustomer`, `renderCustomerBadgesPage`, `renderCustomerReportsPage`, and `renderCustomerRedemptionsPage`.
-2. Move supporting event handlers (`attachCustomerEvents`, filters, redemption dialogs) into the feature.
-3. ✅ Registered the customer routes via `WeldRegistry` and added `Static/features/customer.js` as temporary delegates.
-4. Remove duplicated helpers from `app.js`; confirm `WeldServices` exposes any needed state mutations.
-5. Smoke test the entire customer persona journey (report submission, filters, redemptions, bonus meters).
-
+- [x] Extract `renderCustomer`, `renderCustomerBadgesPage`, `renderCustomerReportsPage`, and `renderCustomerRedemptionsPage`.
+- [x] Move supporting event handlers (`attachCustomerEvents`, filters, redemption dialogs) into the feature.
+- [x] Register the customer routes via `WeldRegistry` and add `Static/features/customer.js`.
+- [x] Remove duplicated helpers from `app.js`; confirm `WeldServices` exposes any needed state mutations.
+- [ ] Smoke test the entire customer persona journey (report submission, filters, redemptions, bonus meters).
 ### Stage 7 - Client persona pages
 **Goal:** Relocate client dashboards, reporting, quests, and rewards into feature modules.
 
@@ -105,5 +104,3 @@ smoke test in the browser to confirm parity.
 * Smoke-test the affected routes in a browser before proceeding to the next stage.
 * Preserve the zero-build pipeline: no bundlers, no package installs, no network dependencies.
 * Document new globals or helpers here (or in the README) as they appear.
-
-
