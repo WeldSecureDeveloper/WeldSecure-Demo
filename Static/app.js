@@ -5253,14 +5253,6 @@ function renderApp() {
 
   if (!mainContent) return;
 
-  if (route === "customer") attachCustomerEvents(mainContent);
-
-  if (route === "customer-badges") attachCustomerBadgesEvents(mainContent);
-
-  if (route === "customer-reports") attachCustomerReportsEvents(mainContent);
-
-  if (route === "customer-redemptions") attachCustomerRedemptionsEvents(mainContent);
-
   if (route === "client-rewards") attachClientRewardsEvents(mainContent);
 
   if (route === "weld-labs") attachWeldLabsEvents(mainContent);

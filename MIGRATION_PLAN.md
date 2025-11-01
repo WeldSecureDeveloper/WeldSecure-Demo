@@ -66,7 +66,7 @@ smoke test in the browser to confirm parity.
 **Tasks**
 1. Extract `renderCustomer`, `renderCustomerBadgesPage`, `renderCustomerReportsPage`, and `renderCustomerRedemptionsPage`.
 2. Move supporting event handlers (`attachCustomerEvents`, filters, redemption dialogs) into the feature.
-3. Register the customer routes via `WeldRegistry`; ensure shared helpers stay in `WeldUtil` or services.
+3. ✅ Registered the customer routes via `WeldRegistry` and added `Static/features/customer.js` as temporary delegates.
 4. Remove duplicated helpers from `app.js`; confirm `WeldServices` exposes any needed state mutations.
 5. Smoke test the entire customer persona journey (report submission, filters, redemptions, bonus meters).
 
