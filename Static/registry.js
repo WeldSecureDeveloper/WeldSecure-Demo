@@ -65,9 +65,6 @@
       if (feature && typeof feature.templateHub === 'function') {
         return feature.templateHub(state);
       }
-      if (typeof window.renderCustomer === 'function') {
-        return window.renderCustomer();
-      }
       return '';
     },
     attach(container, state) {
@@ -75,9 +72,6 @@
       if (feature && typeof feature.attachHub === 'function') {
         feature.attachHub(container, state);
         return;
-      }
-      if (typeof window.attachCustomerEvents === 'function') {
-        window.attachCustomerEvents(container);
       }
     }
   });
@@ -93,9 +87,6 @@
       if (feature && typeof feature.templateBadges === 'function') {
         return feature.templateBadges(state);
       }
-      if (typeof window.renderCustomerBadgesPage === 'function') {
-        return window.renderCustomerBadgesPage();
-      }
       return '';
     },
     attach(container, state) {
@@ -103,9 +94,6 @@
       if (feature && typeof feature.attachBadges === 'function') {
         feature.attachBadges(container, state);
         return;
-      }
-      if (typeof window.attachCustomerBadgesEvents === 'function') {
-        window.attachCustomerBadgesEvents(container);
       }
     }
   });
@@ -121,9 +109,6 @@
       if (feature && typeof feature.templateReports === 'function') {
         return feature.templateReports(state);
       }
-      if (typeof window.renderCustomerReportsPage === 'function') {
-        return window.renderCustomerReportsPage();
-      }
       return '';
     },
     attach(container, state) {
@@ -131,9 +116,6 @@
       if (feature && typeof feature.attachReports === 'function') {
         feature.attachReports(container, state);
         return;
-      }
-      if (typeof window.attachCustomerReportsEvents === 'function') {
-        window.attachCustomerReportsEvents(container);
       }
     }
   });
@@ -149,9 +131,6 @@
       if (feature && typeof feature.templateRedemptions === 'function') {
         return feature.templateRedemptions(state);
       }
-      if (typeof window.renderCustomerRedemptionsPage === 'function') {
-        return window.renderCustomerRedemptionsPage();
-      }
       return '';
     },
     attach(container, state) {
@@ -159,9 +138,6 @@
       if (feature && typeof feature.attachRedemptions === 'function') {
         feature.attachRedemptions(container, state);
         return;
-      }
-      if (typeof window.attachCustomerRedemptionsEvents === 'function') {
-        window.attachCustomerRedemptionsEvents(container);
       }
     }
   });
@@ -241,9 +217,6 @@
       if (feature && typeof feature.templateRewards === 'function') {
         return feature.templateRewards(state);
       }
-      if (typeof window.renderClientRewards === 'function') {
-        return window.renderClientRewards();
-      }
       return '';
     },
     attach(container, state) {
@@ -251,9 +224,6 @@
       if (feature && typeof feature.attachRewards === 'function') {
         feature.attachRewards(container, state);
         return;
-      }
-      if (typeof window.attachClientRewardsEvents === 'function') {
-        window.attachClientRewardsEvents(container);
       }
     }
   });

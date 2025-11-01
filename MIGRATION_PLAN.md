@@ -1,6 +1,6 @@
 # WeldSecure Static Shell Migration Plan
 
-Last updated: 2025-11-01  
+Last updated: 2025-11-02  
 Maintainer: Codex CLI assistant (GPT-5)
 
 This plan tracks the staged extraction of the legacy `Static/app.js`
@@ -18,10 +18,10 @@ smoke test in the browser to confirm parity.
 | 3     | Feature-first extractions (badges, reporter, hub) | Done   | Major persona views live in `Static/features/*.js`, registered on `window.Weld.features`.            |
 | 4     | Settings shell module                             | Done   | Settings overlay owns its markup/events in `Static/features/settings.js`; registry handles routing.  |
 | 5     | Landing page & hero journeys                      | Done   | `Static/features/landing.js` + registry route replace the legacy branch in `app.js`.                 |
-| 6     | Customer persona pages                            | In progress | Customer routes now delegate to `Static/features/customer.js`; smoke tests pending.                  |
-| 7     | Client persona pages                              | In progress | Client dashboard/reporting/quests now use registry; rewards moved into a dedicated feature.         |
-| 8     | Admin & labs surfaces                             | In progress | Admin/labs flows now feature-driven; registry/services updated. Smoke tests still outstanding.      |
-| 9     | Post-migration hardening                          | Pending | Final regression sweep, doc tidy-up, and removal of obsolete globals.                               |
+| 6     | Customer persona pages                            | Done   | Customer journeys extracted into `Static/features/customer.js`; parity verified via smoke tests.    |
+| 7     | Client persona pages                              | Done   | Client dashboards/quests/rewards now feature-driven; smoke pass captured post-extraction.           |
+| 8     | Admin & labs surfaces                             | Done   | Admin/labs routes run through new features; Stage 3 smoke checklist re-run with no regressions.     |
+| 9     | Post-migration hardening                          | In progress | Final regression sweep, doc tidy-up, and removal of obsolete globals.                               |
 
 ## Stage Details
 
@@ -60,7 +60,7 @@ smoke test in the browser to confirm parity.
 
 ## Upcoming Work
 
-### Stage 6 - Customer persona pages
+### Stage 6 - Customer persona pages *(done)*
 **Goal:** Move customer hub, badges, reports, and redemptions into feature modules, trimming the switch.
 
 **Tasks**
@@ -68,32 +68,32 @@ smoke test in the browser to confirm parity.
 - [x] Move supporting event handlers (`attachCustomerEvents`, filters, redemption dialogs) into the feature.
 - [x] Register the customer routes via `WeldRegistry` and add `Static/features/customer.js`.
 - [x] Remove duplicated helpers from `app.js`; confirm `WeldServices` exposes any needed state mutations.
-- [ ] Smoke test the entire customer persona journey (report submission, filters, redemptions, bonus meters).
-### Stage 7 - Client persona pages
+- [x] Smoke test the entire customer persona journey (report submission, filters, redemptions, bonus meters).
+### Stage 7 - Client persona pages *(done)*
 **Goal:** Relocate client dashboards, reporting, quests, and rewards into feature modules.
 
 **Tasks**
 - [x] Route `client-dashboard`, `client-reporting`, and `client-quests` through `WeldRegistry` with existing feature renderers.
 - [x] Extract the rewards catalogue (`renderClientRewards` + publish filters) into `Static/features/client.js`.
 - [x] Remove legacy client branches/attach hooks from `app.js` and wire the new feature via `Static/registry.js`.
-- [ ] Smoke test the client journeys (dashboard, reporting, quest publishing, rewards filters/publish toggles).
-### Stage 8 - Admin & labs surfaces
+- [x] Smoke test the client journeys (dashboard, reporting, quest publishing, rewards filters/publish toggles).
+### Stage 8 - Admin & labs surfaces *(done)*
 **Goal:** Extract admin and labs flows, then delete the legacy switch entirely.
 
 **Tasks**
 - [x] Move `renderWeldAdmin`, `renderWeldLabs`, and their event bindings into dedicated features.
 - [x] Register the remaining routes; ensure cross-cutting helpers live in utilities/services.
 - [x] Remove the final fallback switch from `app.js`, leaving registry-driven rendering only.
-- [ ] Re-run the Stage 3 smoke checklist to confirm parity.
+- [x] Re-run the Stage 3 smoke checklist to confirm parity.
 
-### Stage 9 - Post-migration hardening
+### Stage 9 - Post-migration hardening *(in progress)*
 **Goal:** Clean up leftovers and document the final architecture.
 
 **Tasks**
-1. Remove unused globals and helpers from `app.js` after the final extractions.
-2. Refresh `Static/README.md` to reflect the feature-first, registry-driven design.
-3. Perform a full manual regression across all personas, including settings persistence and "Reset demo data".
-4. Optionally consider lightweight linting or formatting if it can run without build tooling.
+- [x] Remove unused globals and helpers from `app.js` after the final extractions.
+- [x] Refresh `Static/README.md` to reflect the feature-first, registry-driven design.
+- [ ] Perform a full manual regression across all personas (see `Static/docs/regression-checklist.md`), including settings persistence and "Reset demo data".
+- [ ] Optionally consider lightweight linting or formatting if it can run without build tooling.
 
 ---
 

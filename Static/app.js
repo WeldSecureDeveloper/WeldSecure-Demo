@@ -2275,42 +2275,6 @@ function renderHubBadgeCard(badge) {
   `;
 }
 
-function renderCustomer() {
-  const feature = window.Weld?.features?.customer;
-  if (feature && typeof feature.templateHub === "function") {
-    return feature.templateHub(state);
-  }
-  return "";
-}
-function renderCustomerBadgesPage() {
-  const feature = window.Weld?.features?.customer;
-  if (feature && typeof feature.templateBadges === "function") {
-    return feature.templateBadges(state);
-  }
-  return "";
-}
-function renderCustomerReportsPage() {
-  const feature = window.Weld?.features?.customer;
-  if (feature && typeof feature.templateReports === "function") {
-    return feature.templateReports(state);
-  }
-  return "";
-}
-function renderCustomerRedemptionsPage() {
-  const feature = window.Weld?.features?.customer;
-  if (feature && typeof feature.templateRedemptions === "function") {
-    return feature.templateRedemptions(state);
-  }
-  return "";
-}
-function renderClientRewards() {
-  const feature = window.Weld?.features?.client;
-  if (feature && typeof feature.templateRewards === "function") {
-    return feature.templateRewards(state);
-  }
-  return "";
-}
-
 function formatCatalogueLabel(label) {
   if (typeof label !== "string") return "";
   const normalized = label.replace(/[_-]+/g, " ").trim();
@@ -2852,94 +2816,6 @@ function initializeSettingsUI(container) {
     settingsFeature.attach(container, state);
   }
 }
-
-
-function attachCustomerEvents(container) {
-  const feature = window.Weld?.features?.customer;
-  if (feature && typeof feature.attachHub === "function") {
-    feature.attachHub(container, state);
-  }
-}
-function attachCustomerBadgesEvents(container) {
-  const feature = window.Weld?.features?.customer;
-  if (feature && typeof feature.attachBadges === "function") {
-    feature.attachBadges(container, state);
-  }
-}
-function attachCustomerReportsEvents(container) {
-  const feature = window.Weld?.features?.customer;
-  if (feature && typeof feature.attachReports === "function") {
-    feature.attachReports(container, state);
-  }
-}
-function attachCustomerRedemptionsEvents(container) {
-  const feature = window.Weld?.features?.customer;
-  if (feature && typeof feature.attachRedemptions === "function") {
-    feature.attachRedemptions(container, state);
-  }
-}
-function attachClientRewardsEvents(container) {
-  const feature = window.Weld?.features?.client;
-  if (feature && typeof feature.attachRewards === "function") {
-    feature.attachRewards(container, state);
-  }
-}
-
-function attachClientQuestsEvents(container) {
-  container.addEventListener("click", event => {
-    const statusButton = event.target.closest("[data-quest-status]");
-    if (statusButton) {
-      const rawValue = (statusButton.getAttribute("data-quest-status") || "").trim().toLowerCase();
-      const nextStatus = rawValue === "published" || rawValue === "unpublished" ? rawValue : null;
-      if (state.meta.questStatusFilter !== nextStatus) {
-        state.meta.questStatusFilter = nextStatus;
-        persist();
-        renderApp();
-      }
-      return;
-    }
-
-    const filterButton = event.target.closest("[data-quest-filter]");
-    if (filterButton) {
-      const value = (filterButton.getAttribute("data-quest-filter") || "").trim().toLowerCase();
-      const nextFilter = value.length > 0 ? value : null;
-      if (state.meta.questFilter !== nextFilter) {
-        state.meta.questFilter = nextFilter;
-        persist();
-        renderApp();
-      }
-      return;
-    }
-
-    const bulkButton = event.target.closest("[data-bulk-quest-action]");
-    if (bulkButton) {
-      const action = bulkButton.getAttribute("data-bulk-quest-action");
-      if (action === "publish") {
-        setAllQuestsPublication(true);
-      } else if (action === "unpublish") {
-        setAllQuestsPublication(false);
-      }
-      return;
-    }
-
-    const configButton = event.target.closest(".quest-card__config");
-    if (configButton) {
-      const questId = configButton.getAttribute("data-quest");
-      if (questId) {
-        event.preventDefault();
-        openQuestConfig(questId);
-      }
-      return;
-    }
-
-    const button = event.target.closest(".quest-publish-toggle");
-    if (!button) return;
-    const questId = button.getAttribute("data-quest");
-    const action = button.getAttribute("data-action");
-    if (!questId || !action) return;
-    setQuestPublication(questId, action === "publish");
-  });
-}
 function attachHeaderEvents(container) {
   if (!container) return;
   const brandBtn = container.querySelector("#brand-button");
@@ -3149,6 +3025,7 @@ window.addEventListener("hashchange", () => {
     renderApp();
   }
 });
+
 
 
 
