@@ -172,8 +172,6 @@
         typeof badge.category === "string" && badge.category.trim().length > 0 ? badge.category.trim() : "Badge";
       const categoryLabel = formatCatalogueLabel(rawCategory);
       const pointsValue = Number(badge.points) || 0;
-      const statusLabel = badge.published ? "Published" : "Draft";
-      const statusClass = badge.published ? "gem-badge-card__status--published" : "gem-badge-card__status--draft";
       const ariaLabel = `${badge.title} badge, ${difficultyLabel} difficulty, worth ${formatNumber(pointsValue)} points.`;
       const tags = [];
       if (rawCategory && rawCategory.toLowerCase() !== "badge") {
@@ -196,7 +194,6 @@
             )}</p>`
           : "";
       const toggleTitleParts = [];
-      if (badge.published) toggleTitleParts.push("Published");
       if (difficultyLabel) toggleTitleParts.push(difficultyLabel);
       if (rawCategory && rawCategory.toLowerCase() !== "badge") toggleTitleParts.push(categoryLabel);
       if (badge.points) toggleTitleParts.push(`${formatNumber(pointsValue)} pts`);
@@ -210,7 +207,6 @@
           iconShadow
         )};">
         <header class="gem-badge__header">
-          <span class="gem-badge__status ${statusClass}">${WeldUtil.escapeHtml(statusLabel)}</span>
           ${tagsMarkup}
         </header>
         <div class="gem-badge__body">
@@ -226,7 +222,10 @@
           </div>
         </div>
         <footer class="gem-badge__footer">
-          <span class="gem-badge__points">${formatNumber(pointsValue)} pts</span>
+          <span class="gem-badge__points">
+            <strong>${formatNumber(pointsValue)}</strong>
+            <span>pts</span>
+          </span>
           <button
             type="button"
             class="button-pill ${actionTone} badge-publish-toggle"

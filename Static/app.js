@@ -1554,14 +1554,20 @@ function openDialog({
 
   function handleBackdrop(event) {
     if (event.target === event.currentTarget) {
-      if (onCancel) onCancel();
+      if (onCancel) {
+        onCancel(close);
+        return;
+      }
       close();
     }
   }
 
   function handleKey(event) {
     if (event.key === "Escape") {
-      if (onCancel) onCancel();
+      if (onCancel) {
+        onCancel(close);
+        return;
+      }
       close();
     }
   }
@@ -1598,7 +1604,7 @@ function openDialog({
 
   if (cancelButton) {
     cancelButton.addEventListener("click", () => {
-      if (onCancel) onCancel();
+      if (onCancel) onCancel(close);
       close();
     });
   }
@@ -2912,43 +2918,79 @@ function attachGlobalNav(container) {
 
 
   container.querySelectorAll(".global-nav [data-route]").forEach(button => {
-
     button.addEventListener("click", event => {
-
       event.stopPropagation();
-
       const route = button.getAttribute("data-route");
-
       const role = button.getAttribute("data-role");
-
-
 
       closeGroups();
 
-
-
       if (route === "addin") {
-
         state.meta.addinScreen = "report";
-
       }
-
-
 
       if (role) {
-
         setRole(role, route || role);
-
       } else if (route) {
-
         navigate(route);
-
       }
-
     });
-
   });
 
+  const resetButton = container.querySelector("#global-reset");
+  if (resetButton) {
+    resetButton.addEventListener("click", event => {
+      event.preventDefault();
+      event.stopPropagation();
+      closeGroups();
+      const runReset = () => {
+        if (typeof resetDemo === "function") {
+          resetDemo();
+        }
+      };
+      if (typeof openDialog === "function") {
+        openDialog({
+          title: "Reset demo data?",
+          description: "This clears persona progress and restores the default walkthrough.",
+          confirmLabel: "Reset demo data",
+          cancelLabel: "Keep current state",
+          tone: "critical",
+          onConfirm: runReset
+        });
+      } else {
+        runReset();
+      }
+    });
+  }
+
+  const settingsToggle = container.querySelector("[data-settings-toggle]");
+  if (settingsToggle) {
+    settingsToggle.addEventListener("click", event => {
+      event.preventDefault();
+      event.stopPropagation();
+      closeGroups();
+      const settingsOpen = Boolean(state?.meta?.settingsOpen);
+      if (settingsOpen) {
+        if (typeof closeSettings === "function") {
+          closeSettings();
+        }
+      } else if (typeof openSettings === "function") {
+        openSettings();
+      }
+    });
+  }
+
+  const outsideHandler = event => {
+    if (!container.contains(event.target)) {
+      closeGroups();
+    }
+  };
+
+  if (window.__weldGlobalNavOutside__) {
+    document.removeEventListener("click", window.__weldGlobalNavOutside__);
+  }
+  document.addEventListener("click", outsideHandler);
+  window.__weldGlobalNavOutside__ = outsideHandler;
 }
 
 

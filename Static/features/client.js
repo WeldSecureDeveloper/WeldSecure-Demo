@@ -4,6 +4,13 @@
   const features = window.Weld.features || (window.Weld.features = {});
   const clientFeature = features.client || (features.client = {});
   const WeldUtil = window.WeldUtil || {};
+  const AppData = window.AppData || {};
+  const CONFIG_ICON =
+    (AppData.ICONS && AppData.ICONS.settings) ||
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.427-1.756 3.002-1.756 3.429 0a1.724 1.724 0 002.586 1.066c1.544-.89 3.31.876 2.42 2.42a1.724 1.724 0 001.065 2.572c1.756.426 1.756 3.002 0 3.429a1.724 1.724 0 00-1.066 2.586c.89 1.544-.876 3.31-2.42 2.42a1.724 1.724 0 00-2.586 1.065c-.426 1.756-3.002 1.756-3.429 0a1.724 1.724 0 00-2.586-1.066c-1.544.89-3.31-.876-2.42-2.42a1.724 1.724 0 00-1.065-2.586c-1.756-.426-1.756-3.002 0-3.429a1.724 1.724 0 001.066-2.586c-.89-1.544.876-3.31 2.42-2.42a1.724 1.724 0 002.586-1.065z"/>
+      <circle cx="12" cy="12" r="3" />
+    </svg>`;
 
   const formatNumberSafe = value => {
     if (typeof window.formatNumber === "function") {
@@ -141,7 +148,7 @@
             const categoryLabel = formatCatalogueLabelSafe(reward.category || "Reward");
             const providerLabel = reward.provider ? reward.provider : "WeldSecure";
             const rewardLabel = reward.name ? WeldUtil.escapeHtml(reward.name) : "Reward";
-            const configButton = `<button type="button" class="reward-card__config" data-reward="${id}" title="Configure ${rewardLabel}" aria-label="Configure ${rewardLabel}"><span class="reward-card__config-cog" aria-hidden="true">?</span></button>`;
+            const configButton = `<button type="button" class="reward-card__config" data-reward="${id}" title="Configure ${rewardLabel}" aria-label="Configure ${rewardLabel}"><span class="reward-card__config-cog" aria-hidden="true">${CONFIG_ICON}</span></button>`;
             return `
             <article class="reward-card reward-card--catalogue ${isPublished ? "reward-card--published" : "reward-card--draft"}" data-reward="${id}">
               ${configButton}
