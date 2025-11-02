@@ -369,13 +369,13 @@ function buildOtherActivityForm() {
     let reasons = [];
     switch (type) {
       case "vishing":
-        reasons = ["reason-suspicious-call"];
+        reasons = ["reason-urgent-tone", "reason-looks-like-phishing"];
         break;
       case "smishing":
-        reasons = ["reason-suspicious-text"];
+        reasons = ["reason-spoofing-senior", "reason-urgent-tone"];
         break;
       case "quishing":
-        reasons = ["reason-suspicious-qr"];
+        reasons = ["reason-unexpected-attachment", "reason-looks-like-phishing"];
         break;
       default:
         reasons = ["reason-looks-like-phishing"];
@@ -651,7 +651,7 @@ function getDemoOtherActivityReports() {
       subject: "Caller posing as IT support about device settings",
       reportedAt: toIso(offsets[0]),
       status: MessageStatus.APPROVED,
-      reasons: ["reason-suspicious-call", "reason-urgent-tone"],
+      reasons: ["reason-urgent-tone", "reason-looks-like-phishing"],
       pointsOnMessage: 20,
       pointsOnApproval: 80,
       additionalNotes:
@@ -663,7 +663,7 @@ function getDemoOtherActivityReports() {
       subject: "WhatsApp message pretending to be our CFO",
       reportedAt: toIso(offsets[1]),
       status: MessageStatus.PENDING,
-      reasons: ["reason-suspicious-text", "reason-spoofing-senior"],
+      reasons: ["reason-spoofing-senior", "reason-urgent-tone"],
       pointsOnMessage: 20,
       pointsOnApproval: 80,
       additionalNotes:
@@ -675,7 +675,7 @@ function getDemoOtherActivityReports() {
       subject: "Unfamiliar QR code posted at the car park entrance",
       reportedAt: toIso(offsets[2]),
       status: MessageStatus.APPROVED,
-      reasons: ["reason-suspicious-qr", "reason-unexpected-attachment"],
+      reasons: ["reason-unexpected-attachment", "reason-looks-like-phishing"],
       pointsOnMessage: 20,
       pointsOnApproval: 80,
       additionalNotes:

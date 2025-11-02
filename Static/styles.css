@@ -4693,7 +4693,8 @@ button {
 }
 .addin-shell {
   width: 340px;
-  min-height: 640px;
+  min-height: var(--addin-shell-height, 640px);
+  height: var(--addin-shell-height, 640px);
   border-radius: 28px;
   background: #f8fafc;
   box-shadow: 0 40px 120px rgba(0, 0, 0, 0.5);

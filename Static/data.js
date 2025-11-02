@@ -80,11 +80,7 @@ Object.assign(window.AppData, {
   { id: "reason-looks-like-phishing", label: "Looks like a phishing attempt" },
   { id: "reason-unexpected-attachment", label: "Unexpected attachment or link" },
   { id: "reason-urgent-tone", label: "Urgent language / suspicious tone" },
-  { id: "reason-spoofing-senior", label: "Sender spoofing a senior colleague" },
-  { id: "reason-personal-data", label: "Personal data request" },
-  { id: "reason-suspicious-call", label: "Suspicious phone call or vishing attempt" },
-  { id: "reason-suspicious-text", label: "Suspicious SMS or messaging (smishing)" },
-  { id: "reason-suspicious-qr", label: "Suspicious QR code or physical prompt" }
+  { id: "reason-spoofing-senior", label: "Sender spoofing a senior colleague" }
 ],
   ICONS: {
   medal: `

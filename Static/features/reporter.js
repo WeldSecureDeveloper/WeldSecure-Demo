@@ -1,12 +1,15 @@
 (function () {
   if (!window.Weld) return;
 
+  const DEFAULT_ADDIN_SHELL_HEIGHT = 760;
+  const MIN_ADDIN_SHELL_HEIGHT = 640;
   const features = window.Weld.features || (window.Weld.features = {});
 
   features.reporter = {
     render(container) {
       if (!container) return;
       container.innerHTML = renderAddIn();
+      applyAddInShellSizing(container);
       attachAddInEvents(container);
     },
   };
@@ -318,6 +321,53 @@
         });
       }
     }
+  }
+
+  function applyAddInShellSizing(container) {
+    if (!container) return;
+    const shell = container.querySelector(".addin-shell");
+    if (!shell) return;
+
+    const meta = state?.meta || (state.meta = {});
+    const storedHeight = Number(meta.addinShellHeight);
+    const commitHeight = value => {
+      const next = Math.max(MIN_ADDIN_SHELL_HEIGHT, Math.ceil(value));
+      if (meta.addinShellHeight === next) {
+        return next;
+      }
+      meta.addinShellHeight = next;
+      if (typeof persist === "function") {
+        persist();
+      } else if (typeof WeldState !== "undefined" && WeldState && typeof WeldState.saveState === "function") {
+        WeldState.saveState(state);
+      }
+      return next;
+    };
+    let activeHeight =
+      Number.isFinite(storedHeight) && storedHeight > 0
+        ? Math.max(MIN_ADDIN_SHELL_HEIGHT, Math.ceil(storedHeight))
+        : DEFAULT_ADDIN_SHELL_HEIGHT;
+
+    shell.style.setProperty("--addin-shell-height", `${activeHeight}px`);
+
+    if (!Number.isFinite(storedHeight) || storedHeight <= 0) {
+      activeHeight = commitHeight(activeHeight);
+    }
+
+    requestAnimationFrame(() => {
+      const measured = Math.ceil(shell.scrollHeight);
+      if (!Number.isFinite(measured) || measured <= 0) {
+        return;
+      }
+
+      const sanitized = Math.max(MIN_ADDIN_SHELL_HEIGHT, measured);
+      if (sanitized <= activeHeight) {
+        return;
+      }
+
+      shell.style.setProperty("--addin-shell-height", `${sanitized}px`);
+      commitHeight(sanitized);
+    });
   }
 })();
 

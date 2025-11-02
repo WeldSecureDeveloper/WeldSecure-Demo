@@ -1,4 +1,4 @@
-// state.js - state init & persistence helpers (namespaced)
+ï»¿// state.js - state init & persistence helpers (namespaced)
 (function () {
   const appData = window.AppData || {};
   const STORAGE_KEY = appData.STORAGE_KEY || 'WeldDemoState';
@@ -33,6 +33,7 @@
         role: null,
         route: "landing",
         addinScreen: "report",
+        addinShellHeight: 760,
         lastReportedSubject: null,
         lastReportPoints: null,
         lastBalanceBefore: null,
@@ -117,7 +118,7 @@
           id: "will-adams",
           name: "Will Adams",
           email: "will.adams@example.com",
-          title: "Risk Champion — Finance",
+          title: "Risk Champion â€” Finance",
           location: "Birmingham",
           specialty: "Executive impersonation",
           avatarTone: "amber"
@@ -161,7 +162,7 @@
           id: "rec-1002",
           senderEmail: "will.adams@example.com",
           senderName: "Will Adams",
-          senderTitle: "Risk Champion — Finance",
+          senderTitle: "Risk Champion â€” Finance",
           recipientEmail: "rachel.summers@example.com",
           recipientName: "Rachel Summers",
           recipientTitle: "Operations Lead",
@@ -183,7 +184,7 @@
           points: 25,
           focus: "Awareness champion",
           message:
-            "Rachel’s town hall walkthrough on spotting bogus invoices gave every squad a playbook to challenge risky requests.",
+            "Rachelâ€™s town hall walkthrough on spotting bogus invoices gave every squad a playbook to challenge risky requests.",
           channel: "Town hall shout-out",
           createdAt: "2025-10-04T17:20:00Z"
         },
@@ -376,7 +377,7 @@
           clientId: 101,
           reportedAt: "2025-10-07T08:45:00Z",
           status: MessageStatus.APPROVED,
-          reasons: ["reason-suspicious-call", "reason-urgent-tone"],
+          reasons: ["reason-urgent-tone", "reason-looks-like-phishing"],
           pointsOnMessage: 20,
           pointsOnApproval: 80,
           additionalNotes:
@@ -391,7 +392,7 @@
           clientId: 101,
           reportedAt: "2025-10-02T17:12:00Z",
           status: MessageStatus.PENDING,
-          reasons: ["reason-suspicious-text", "reason-spoofing-senior"],
+          reasons: ["reason-spoofing-senior", "reason-urgent-tone"],
           pointsOnMessage: 20,
           pointsOnApproval: 80,
           additionalNotes:
@@ -406,11 +407,11 @@
           clientId: 101,
           reportedAt: "2025-09-26T11:06:00Z",
           status: MessageStatus.APPROVED,
-          reasons: ["reason-suspicious-qr", "reason-unexpected-attachment"],
+          reasons: ["reason-unexpected-attachment", "reason-looks-like-phishing"],
           pointsOnMessage: 20,
           pointsOnApproval: 80,
           additionalNotes:
-            "Sticker looked unofficial and led to a fake login page when scanned — removed it and reported facilities."
+            "Sticker looked unofficial and led to a fake login page when scanned â€” removed it and reported facilities."
         }
       ],
       clients: [
@@ -1222,4 +1223,5 @@
 
   window.WeldState = { initialState, loadState, saveState, storageAvailable, STORAGE_KEY };
 })();
+
 
