@@ -1,4 +1,4 @@
-const ROLE_LABELS = window.AppData.ROLE_LABELS;
+﻿const ROLE_LABELS = window.AppData.ROLE_LABELS;
 const ROUTES = window.AppData.ROUTES;
 const MessageStatus = window.AppData.MessageStatus;
 const NAV_GROUPS = window.AppData.NAV_GROUPS;
@@ -24,207 +24,166 @@ if (window.Weld) {
 }
 
 const WeldServices = window.WeldServices || {};
-const serviceMap = {
-  navigate: WeldServices.navigate,
-  setRole: WeldServices.setRole,
-  resetDemo: WeldServices.resetDemo,
-  persist: WeldServices.persist,
-  completeQuest: WeldServices.completeQuest,
-  redeemReward: WeldServices.redeemReward,
-  openSettings: WeldServices.openSettings,
-  closeSettings: WeldServices.closeSettings
-};
 
-Object.keys(serviceMap).forEach(key => {
-  if (typeof serviceMap[key] === "function") {
-    window[key] = serviceMap[key];
+function invokeService(name, args = []) {
+  const service = WeldServices[name];
+  if (typeof service === "function") {
+    return service(...args);
   }
-});
-
-
-
-function initializeRoute() {
-  const hashRoute = window.location.hash.replace("#", "");
-  if (hashRoute && ROUTES[hashRoute]) {
-    state.meta.route = hashRoute;
-    state.meta.role = ROUTES[hashRoute].requiresRole || null;
-    if (hashRoute === "addin") {
-      state.meta.addinScreen = "report";
-    }
-  } else {
-    state.meta.route = "landing";
-    state.meta.role = null;
-  }
+  console.warn(`WeldServices.${name} is unavailable. Ensure services/stateServices.js is loaded.`);
+  return undefined;
 }
 
-initializeRoute();
-
-
-
 function navigate(route) {
-  if (window.WeldServices && typeof window.WeldServices.navigate === "function") {
-    return window.WeldServices.navigate(route, state);
-  }
-  const nextRoute = ROUTES[route] ? route : "landing";
-  state.meta.route = nextRoute;
-  if (nextRoute === "landing") {
-    state.meta.role = null;
-  }
-  if (nextRoute !== "customer-reports") {
-    state.meta.reportFilter = null;
-  }
-  WeldState.saveState(state);
-  renderApp();
+  return invokeService("navigate", [route, state]);
 }
 
 function setRole(role, route) {
-  if (window.WeldServices && typeof window.WeldServices.setRole === "function") {
-    return window.WeldServices.setRole(role, route, state);
-  }
-  state.meta.role = role;
-  if (route) {
-    if (route !== "customer-reports") {
-      state.meta.reportFilter = null;
-    }
-    state.meta.route = route;
-  }
-  WeldState.saveState(state);
-  renderApp();
+  return invokeService("setRole", [role, route, state]);
 }
 
 function resetDemo() {
-  if (window.WeldServices && typeof window.WeldServices.resetDemo === "function") {
-    return window.WeldServices.resetDemo(state);
-  }
-  const defaultState = WeldState.initialState();
-  state.meta = WeldUtil.clone(defaultState.meta);
-  state.customer = WeldUtil.clone(defaultState.customer);
-  state.rewards = WeldUtil.clone(defaultState.rewards);
-  state.quests = WeldUtil.clone(defaultState.quests);
-  state.badges = WeldUtil.clone(defaultState.badges);
-  state.rewardRedemptions = WeldUtil.clone(defaultState.rewardRedemptions);
-  state.settings = WeldUtil.clone(defaultState.settings);
-  state.messages = WeldUtil.clone(defaultState.messages);
-  state.clients = WeldUtil.clone(defaultState.clients);
-  state.departmentLeaderboard = WeldUtil.clone(defaultState.departmentLeaderboard);
-  state.engagementPrograms = WeldUtil.clone(defaultState.engagementPrograms);
-  state.labs = WeldUtil.clone(defaultState.labs);
-  WeldState.saveState(state);
-  if (window.location.hash) {
-    if (window.history && window.history.replaceState) {
-      window.history.replaceState(null, "", window.location.pathname + window.location.search);
-    } else {
-      window.location.hash = "";
-    }
-  }
-  renderApp();
+  return invokeService("resetDemo", [state]);
 }
 
 function persist() {
-  if (window.WeldServices && typeof window.WeldServices.persist === "function") {
-    return window.WeldServices.persist(state);
-  }
-  WeldState.saveState(state);
+  return invokeService("persist", [state]);
 }
+
+function completeQuest(questId, options = {}) {
+  return invokeService("completeQuest", [questId, options, state]);
+}
+
+function redeemReward(rewardId) {
+  return invokeService("redeemReward", [rewardId, state]);
+}
+
+function openSettings(category) {
+  return invokeService("openSettings", [category, state]);
+}
+
+function closeSettings() {
+  return invokeService("closeSettings", [state]);
+}
+
+const serviceWrappers = {
+  navigate,
+  setRole,
+  resetDemo,
+  persist,
+  completeQuest,
+  redeemReward,
+  openSettings,
+  closeSettings
+};
+
+Object.entries(serviceWrappers).forEach(([key, fn]) => {
+  window[key] = fn;
+});
 
 function rewardById(id) {
-  const target = id;
-  return state.rewards.find(item => {
-    if (item?.id === target) return true;
-    return String(item?.id) === String(target);
-  });
-}
-
-function questById(id) {
-  if (!Array.isArray(state.quests)) return null;
-  const targetId = String(id);
+  const rewards = Array.isArray(state.rewards) ? state.rewards : [];
+  const target = String(id);
   return (
-    state.quests.find(item => {
-      return String(item.id) === targetId;
+    rewards.find(item => {
+      const candidate = item?.id;
+      return candidate !== undefined && candidate !== null && String(candidate) === target;
     }) || null
   );
 }
 
-function completeQuest(questId, options = {}) {
-  if (window.WeldServices && typeof window.WeldServices.completeQuest === "function") {
-    return window.WeldServices.completeQuest(questId, options, state);
-  }
-  const quest = questById(questId);
-  if (!quest) {
-    return { success: false, reason: "Quest not found." };
-  }
-  const providedDate = options.completedAt ? new Date(options.completedAt) : new Date();
-  const completedDate = Number.isNaN(providedDate.getTime()) ? new Date() : providedDate;
-  const completedAt = completedDate.toISOString();
-  if (!Array.isArray(state.customer.questCompletions)) {
-    state.customer.questCompletions = [];
-  }
-  const hasCompletionThisMonth = state.customer.questCompletions.some(entry => {
-    if (!entry || typeof entry.completedAt !== "string") return false;
-    const parsed = new Date(entry.completedAt);
-    if (Number.isNaN(parsed.getTime())) return false;
-    return (
-      parsed.getFullYear() === completedDate.getFullYear() &&
-      parsed.getMonth() === completedDate.getMonth()
-    );
-  });
-  const basePointsRaw = Number(quest.points);
-  const basePoints = Number.isFinite(basePointsRaw) ? basePointsRaw : 0;
-  const doubled = !hasCompletionThisMonth && basePoints > 0;
-  const multiplier = doubled ? 2 : 1;
-  const awardedPoints = basePoints * multiplier;
-  if (awardedPoints > 0) {
-    state.customer.currentPoints += awardedPoints;
-  }
-  state.customer.questCompletions.unshift({
-    id: WeldUtil.generateId("quest-completion"),
-    questId: quest.id,
-    completedAt,
-    pointsAwarded: awardedPoints,
-    basePoints,
-    doubled
-  });
-  if (state.customer.questCompletions.length > 50) {
-    state.customer.questCompletions.length = 50;
-  }
-  const bonus = state.customer.bonusPoints;
-  if (bonus && typeof bonus === "object") {
-    const currentEarned = Number(bonus.earnedThisWeek);
-    const updatedEarned = (Number.isFinite(currentEarned) ? currentEarned : 0) + awardedPoints;
-    bonus.earnedThisWeek = Math.max(0, updatedEarned);
-    if (!Array.isArray(bonus.breakdown)) {
-      bonus.breakdown = [];
-    }
-    let questSource = bonus.breakdown.find(entry => {
-      if (!entry || entry.id === undefined || entry.id === null) return false;
-      return String(entry.id).trim().toLowerCase() === "quests";
-    });
-    if (!questSource) {
-      questSource = {
-        id: "quests",
-        label: "Quests completed",
-        description: "Quest completions recorded this week.",
-        points: 0
-      };
-      bonus.breakdown.push(questSource);
-    }
-    const existingPoints = Number(questSource.points);
-    const newPoints = (Number.isFinite(existingPoints) ? existingPoints : 0) + awardedPoints;
-    questSource.points = newPoints;
-    if (doubled) {
-      questSource.firstOfMonthDouble = true;
-      if (
-        typeof questSource.description !== "string" ||
-        questSource.description.trim().length === 0
-      ) {
-        questSource.description = "First quest completion this month triggered double points.";
-      }
-    }
-  }
-  WeldState.saveState(state);
-  renderApp();
-  return { success: true, awardedPoints, doubled, completedAt };
+function questById(id) {
+  const quests = Array.isArray(state.quests) ? state.quests : [];
+  const target = String(id);
+  return (
+    quests.find(item => {
+      const candidate = item?.id;
+      return candidate !== undefined && candidate !== null && String(candidate) === target;
+    }) || null
+  );
 }
+
+window.rewardById = rewardById;
+window.questById = questById;
+
+let cachedAppShell = null;
+
+function getAppShell() {
+  if (cachedAppShell) return cachedAppShell;
+  try {
+    const modules = window.WeldModules;
+    if (!modules || typeof modules.use !== "function") {
+      console.warn("WeldModules unavailable; app shell components not loaded.");
+      cachedAppShell = null;
+      return cachedAppShell;
+    }
+    cachedAppShell = modules.use("components/appShell");
+  } catch (error) {
+    console.warn("Failed to load components/appShell module:", error);
+    cachedAppShell = null;
+  }
+  return cachedAppShell;
+}
+
+function renderBadgeSpotlight(badgeInput) {
+  const shell = getAppShell();
+  if (shell && typeof shell.renderBadgeSpotlight === "function") {
+    return shell.renderBadgeSpotlight(badgeInput, state);
+  }
+  return "";
+}
+
+function teardownBadgeShowcase() {
+  const shell = getAppShell();
+  if (shell && typeof shell.teardownBadgeShowcase === "function") {
+    shell.teardownBadgeShowcase();
+  }
+}
+
+function setupBadgeShowcase(container) {
+  const shell = getAppShell();
+  if (shell && typeof shell.setupBadgeShowcase === "function") {
+    shell.setupBadgeShowcase(container, state);
+  }
+}
+
+function renderGlobalNav(activeRoute) {
+  const shell = getAppShell();
+  if (shell && typeof shell.renderGlobalNav === "function") {
+    return shell.renderGlobalNav(activeRoute);
+  }
+  return "";
+}
+
+function attachHeaderEvents(container) {
+  const shell = getAppShell();
+  if (shell && typeof shell.attachHeaderEvents === "function") {
+    shell.attachHeaderEvents(container, state);
+  }
+}
+
+function attachGlobalNav(container) {
+  const shell = getAppShell();
+  if (shell && typeof shell.attachGlobalNav === "function") {
+    shell.attachGlobalNav(container, state);
+  }
+}
+
+function initializeSettingsUI(container) {
+  const shell = getAppShell();
+  if (shell && typeof shell.initializeSettingsUI === "function") {
+    shell.initializeSettingsUI(container, state);
+  }
+}
+
+function renderHeader() {
+  const shell = getAppShell();
+  if (shell && typeof shell.renderHeader === "function") {
+    return shell.renderHeader(state);
+  }
+  return "";
+}
+
 
 function getBadges() {
   if (Array.isArray(state.badges) && state.badges.length > 0) {
@@ -3051,29 +3010,5 @@ function renderApp() {
     routeConfig.attach(attachTarget, state);
   }
 }
-
-window.addEventListener("DOMContentLoaded", () => {
-  renderApp();
-});
-
-window.addEventListener("hashchange", () => {
-  const hashRoute = window.location.hash.replace("#", "");
-  if (hashRoute && ROUTES[hashRoute]) {
-    if (ROUTES[hashRoute].requiresRole) {
-      state.meta.role = ROUTES[hashRoute].requiresRole;
-    }
-    state.meta.route = hashRoute;
-    WeldState.saveState(state);
-    renderApp();
-  }
-});
-
-
-
-
-
-
-
-
 
 
