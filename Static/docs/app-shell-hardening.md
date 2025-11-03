@@ -17,7 +17,7 @@ needs to be. This plan tracks the work required to finish the hardening pass.
 - ✅ WeldServices now owns navigation, quest completion, redemption, and persistence logic; application glue wraps service calls only.
 - ✅ `renderApp` consumes shared shell helpers from `components/appShell.js`, and duplicate DOM/bootstrap listeners were removed from `app.js`.
 - ✅ `registry.js` now iterates a data-driven route map, eliminating the manual `registerRoute` repetition.
-- ⏳ Customer persona logic now lives under `Static/features/customer/modules.js`, consumed via the loader, but route-level files (hub/badges/reports/redemptions) still need breaking out for finer-grained edits.
+- ✅ Customer persona logic now lives in loader-scoped modules (`features/customer/{shared,hub,badges,reports,redemptions}.js`) consumed by `features/customer.js`.
 
 ## Workstreams
 

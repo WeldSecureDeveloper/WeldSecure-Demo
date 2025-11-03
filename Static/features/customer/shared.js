@@ -12,8 +12,10 @@
       typeof window.formatNumber === "function"
         ? window.formatNumber
         : value => (Number.isFinite(Number(value)) ? Number(value) : 0);
+
     const formatDateTime =
       typeof window.formatDateTime === "function" ? window.formatDateTime : value => value || "";
+
     const relativeTime =
       typeof window.relativeTime === "function" ? window.relativeTime : value => value || "";
 
