@@ -42,4 +42,9 @@ Use this guide during Stage 9 hardening to confirm the modular shell still mirro
 - After completing the above, reload the page to ensure `localStorage` persisted recent changes.
 - Use “Reset demo data” and confirm every persona returns to baseline content without console errors.
 
+## Module Loader Sanity
+- Hard refresh the page and ensure no `WeldModules` warnings/errors appear in the console.
+- Navigate through customer hub/badges/reports/redemptions to confirm loader-proxied features render as expected.
+- Toggle settings overlay and global navigation to verify shared shell initialises only once per load.
+
 Document any regressions in `MIGRATION_PLAN.md` under Stage 9 before proceeding with optional linting or additional refactors.

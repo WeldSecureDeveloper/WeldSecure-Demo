@@ -21,7 +21,7 @@ smoke test in the browser to confirm parity.
 | 6     | Customer persona pages                            | Done   | Customer journeys extracted into `Static/features/customer.js`; parity verified via smoke tests.    |
 | 7     | Client persona pages                              | Done   | Client dashboards/quests/rewards now feature-driven; smoke pass captured post-extraction.           |
 | 8     | Admin & labs surfaces                             | Done   | Admin/labs routes run through new features; Stage 3 smoke checklist re-run with no regressions.     |
-| 9     | Post-migration hardening                          | In progress | Final regression sweep, doc tidy-up, and removal of obsolete globals.                               |
+| 9     | Post-migration hardening                          | In progress | Loader in place, customer persona awaiting module split, regression sweep still pending.           |
 
 ## Stage Details
 
@@ -94,6 +94,7 @@ smoke test in the browser to confirm parity.
 - [x] Refresh `Static/README.md` to reflect the feature-first, registry-driven design.
 - [ ] Perform a full manual regression across all personas (see `Static/docs/regression-checklist.md`), including settings persistence and "Reset demo data".
 - [ ] Optionally consider lightweight linting or formatting if it can run without build tooling.
+- [ ] Split `features/customer` into route-scoped loader modules (`hub`, `badges`, `reports`, `redemptions`) and update registry wiring.
 
 ---
 
