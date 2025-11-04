@@ -5051,6 +5051,16 @@ button {
 [data-badge-showcase]:empty {
   display: none;
 }
+.badge-spotlight {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.badge-spotlight__primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.1rem;
+}
 .badge-spotlight-row {
   display: flex;
   justify-content: center;
