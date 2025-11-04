@@ -107,8 +107,8 @@ button {
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 999px;
   box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   width: 100%;
   max-width: 1440px;
   position: relative;
@@ -523,10 +523,6 @@ button {
 }
 .landing {
   width: 100%;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
   gap: 3.5rem;
 }
 .landing__hero {
@@ -3220,8 +3216,8 @@ button {
   border-radius: 0.9rem;
   padding: 1.3rem 1.5rem;
   box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
@@ -3667,7 +3663,7 @@ button {
   height: 26px;
   border-radius: 999px;
   background: rgba(15, 23, 42, 0.18);
-  filter: blur(12px);
+  filter: none;
   opacity: 0.7;
 }
 
@@ -5540,14 +5536,14 @@ button {
   visibility: hidden;
   opacity: 0;
   transform: translateY(-12px);
-  transition: opacity 260ms ease, transform 260ms ease;
+  transition: none;
   animation: none;
 }
 .points-burst--active {
   visibility: visible;
   opacity: 1;
   transform: translateY(0);
-  animation: none;
+  animation: points-burst-pop var(--burst-duration, 2s) ease-out forwards;
 }
 .points-burst__value {
   font-size: 0.88rem;
@@ -5746,6 +5742,29 @@ button {
   }
 }
 
+@keyframes points-burst-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.8);
+  }
+  25% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.05);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  85% {
+    opacity: 0.88;
+    transform: translateY(-2px) scale(0.94);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.6);
+  }
+}
+
 @keyframes sparkle-flicker {
   0% {
     opacity: 0;
@@ -5879,7 +5898,7 @@ button {
   height: 180px;
   bottom: 20px;
   background: radial-gradient(circle, rgba(123, 97, 255, 0.35), rgba(123, 97, 255, 0));
-  filter: blur(2px);
+  filter: none;
 }
 .points-celebration--aurora .points-celebration__bubble {
   box-shadow: 0 22px 44px rgba(94, 77, 255, 0.28);
@@ -5938,8 +5957,8 @@ button {
   position: absolute;
   inset: 0;
   background: rgba(15, 23, 42, 0.45);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   opacity: 0;
   transition: opacity 0.28s ease;
 }
