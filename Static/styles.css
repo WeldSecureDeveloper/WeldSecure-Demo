@@ -5456,8 +5456,13 @@ button {
 }
 .points-celebration__award {
   display: inline-flex;
-  align-items: baseline;
-  gap: 0.25rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.16);
+  min-width: 7.5rem;
   font-weight: 700;
   color: #ffffff;
   text-shadow:
@@ -5467,6 +5472,10 @@ button {
 .points-celebration__award-value {
   font-size: 1.32rem;
   letter-spacing: 0.04em;
+  font-feature-settings: "tnum" 1;
+  font-variant-numeric: tabular-nums;
+  min-width: 5ch;
+  text-align: right;
 }
 .points-celebration__award-unit {
   font-size: 0.72rem;
