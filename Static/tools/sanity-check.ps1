@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$StaticRoot = (Split-Path -Parent $PSScriptRoot)
 )
 
@@ -37,9 +37,6 @@ foreach ($name in $delegatedFunctions) {
 }
 
 $docPaths = @(
-    'docs\regression-checklist.md',
-    'docs\app-shell-hardening.md',
-    'docs\codex-execution-plan.md'
 ) | ForEach-Object { Join-Path $StaticRoot $_ }
 
 foreach ($doc in $docPaths) {
