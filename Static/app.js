@@ -2119,13 +2119,13 @@ function renderHubBadgeCard(badge) {
       : null;
   const tags = [];
   if (normalizedCategory && normalizedCategory !== "Badge") {
-    tags.push(`<span class="catalogue-card__tag gem-badge-card__tag">${WeldUtil.escapeHtml(normalizedCategory)}</span>`);
+    tags.push(`<span class="catalogue-card__tag catalogue-badge-card__tag">${WeldUtil.escapeHtml(normalizedCategory)}</span>`);
   }
   if (difficultyLabel) {
-    tags.push(`<span class="catalogue-card__tag gem-badge-card__tag">${WeldUtil.escapeHtml(difficultyLabel)}</span>`);
+    tags.push(`<span class="catalogue-card__tag catalogue-badge-card__tag">${WeldUtil.escapeHtml(difficultyLabel)}</span>`);
   }
   const tagsMarkup = tags.length
-    ? `<div class="gem-badge-card__tags catalogue-card__tags">${tags.join("")}</div>`
+    ? `<div class="catalogue-badge-card__tags catalogue-card__tags">${tags.join("")}</div>`
     : "";
   const pointsValue = Number(badge.points) || 0;
   const toggleTitle = difficultyLabel
@@ -2135,36 +2135,36 @@ function renderHubBadgeCard(badge) {
 
   return `
     <article
-      class="gem-badge gem-badge--hub"
+      class="catalogue-badge catalogue-badge--hub"
       data-badge="${safeDataId}"
       style="--badge-tone:${WeldUtil.escapeHtml(tone)};--badge-icon-tone:${WeldUtil.escapeHtml(iconBackdrop)};--badge-icon-shadow:${WeldUtil.escapeHtml(
         iconShadow
       )};">
       <button
         type="button"
-        class="gem-badge__trigger"
+        class="catalogue-badge__trigger"
         aria-haspopup="true"
         aria-label="${WeldUtil.escapeHtml(badge.title)} badge details"
         aria-controls="${cardId}"
         title="${WeldUtil.escapeHtml(toggleTitle)}">
-        <span class="gem-badge__icon" style="background:${iconBackdrop}; box-shadow:0 18px 32px ${iconShadow};">
+        <span class="catalogue-badge__icon" style="background:${iconBackdrop}; box-shadow:0 18px 32px ${iconShadow};">
           ${WeldUtil.renderIcon(badge.icon || "medal", "sm")}
         </span>
       </button>
-      <span class="gem-badge__label">${WeldUtil.escapeHtml(badge.title)}</span>
-      <div id="${cardId}" class="gem-badge-card gem-badge-card--hub" role="group" aria-label="${WeldUtil.escapeHtml(ariaLabel)}">
-        <span class="gem-badge-card__halo"></span>
-        <span class="gem-badge-card__orb gem-badge-card__orb--one"></span>
-        <span class="gem-badge-card__orb gem-badge-card__orb--two"></span>
-        <div class="gem-badge-card__main">
-          <h3 class="gem-badge-card__title">${WeldUtil.escapeHtml(badge.title)}</h3>
+      <span class="catalogue-badge__label">${WeldUtil.escapeHtml(badge.title)}</span>
+      <div id="${cardId}" class="catalogue-badge-card catalogue-badge-card--hub" role="group" aria-label="${WeldUtil.escapeHtml(ariaLabel)}">
+        <span class="catalogue-badge-card__halo"></span>
+        <span class="catalogue-badge-card__orb catalogue-badge-card__orb--one"></span>
+        <span class="catalogue-badge-card__orb catalogue-badge-card__orb--two"></span>
+        <div class="catalogue-badge-card__main">
+          <h3 class="catalogue-badge-card__title">${WeldUtil.escapeHtml(badge.title)}</h3>
           ${tagsMarkup}
-          <p class="gem-badge-card__description">${WeldUtil.escapeHtml(badge.description)}</p>
+          <p class="catalogue-badge-card__description">${WeldUtil.escapeHtml(badge.description)}</p>
         </div>
-        <footer class="gem-badge-card__footer">
-          <span class="gem-badge-card__points">
-            <span class="gem-badge-card__points-value">+${formatNumber(pointsValue)}</span>
-            <span class="gem-badge-card__points-unit">pts</span>
+        <footer class="catalogue-badge-card__footer">
+          <span class="catalogue-badge-card__points">
+            <span class="catalogue-badge-card__points-value">+${formatNumber(pointsValue)}</span>
+            <span class="catalogue-badge-card__points-unit">pts</span>
           </span>
         </footer>
       </div>
@@ -2536,5 +2536,6 @@ function renderApp() {
     routeConfig.attach(attachTarget, state);
   }
 }
+
 
 

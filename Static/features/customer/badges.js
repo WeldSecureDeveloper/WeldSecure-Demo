@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   const modules = window.WeldModules;
   if (!modules || typeof modules.define !== "function") return;
   if (modules.has && modules.has("features/customer/badges")) return;
@@ -24,7 +24,7 @@
       const badgeLabel = badgeCount === 1 ? "badge" : "badges";
       const badgeGrid = badgeCount
         ? `
-          <div class="gem-badge-grid gem-badge-grid--hub customer-badge-grid" role="list" aria-label="All published badges">
+          <div class="catalogue-badge-grid catalogue-badge-grid--hub customer-badge-grid" role="list" aria-label="All published badges">
             ${publishedBadges
               .map(
                 badge => `
@@ -90,3 +90,4 @@
     };
   });
 })();
+

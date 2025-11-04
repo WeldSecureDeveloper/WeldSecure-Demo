@@ -1,4 +1,4 @@
-.gem-badge__header {
+﻿.catalogue-badge__header {
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;
@@ -10,7 +10,7 @@
   color: rgba(15, 23, 42, 0.62);
 }
 
-.gem-badge__points {
+.catalogue-badge__points {
   display: inline-flex;
   align-items: baseline;
   gap: 0.35rem;
@@ -24,14 +24,15 @@
   font-size: 0.82rem;
 }
 
-.gem-badge__points strong {
+.catalogue-badge__points strong {
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.1em;
 }
 
-.gem-badge__points span {
+.catalogue-badge__points span {
   font-size: 0.64rem;
   font-weight: 600;
   opacity: 0.85;
 }
+

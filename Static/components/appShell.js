@@ -332,9 +332,15 @@
       if (!container) return;
       const brandBtn = container.querySelector("#brand-button");
       if (brandBtn) {
-        brandBtn.addEventListener("click", () => {
+        brandBtn.addEventListener("click", event => {
+          event.preventDefault();
+          event.stopPropagation();
           if (typeof navigate === "function") {
             navigate("landing");
+            return;
+          }
+          if (typeof setRole === "function") {
+            setRole(null, "landing");
           }
         });
       }

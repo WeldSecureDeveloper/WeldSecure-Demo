@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   if (!window.Weld) return;
 
   const features = window.Weld.features || (window.Weld.features = {});
@@ -176,20 +176,20 @@
       const tags = [];
       if (rawCategory && rawCategory.toLowerCase() !== "badge") {
         tags.push(
-          `<span class="catalogue-card__tag gem-badge-card__tag">${WeldUtil.escapeHtml(categoryLabel)}</span>`
+          `<span class="catalogue-card__tag catalogue-badge-card__tag">${WeldUtil.escapeHtml(categoryLabel)}</span>`
         );
       }
       if (difficultyLabel) {
         tags.push(
-          `<span class="catalogue-card__tag gem-badge-card__tag">${WeldUtil.escapeHtml(difficultyLabel)}</span>`
+          `<span class="catalogue-card__tag catalogue-badge-card__tag">${WeldUtil.escapeHtml(difficultyLabel)}</span>`
         );
       }
       const tagsMarkup = tags.length
-        ? `<div class="gem-badge-card__tags catalogue-card__tags">${tags.join("")}</div>`
+        ? `<div class="catalogue-badge-card__tags catalogue-card__tags">${tags.join("")}</div>`
         : "";
       const bonusMarkup =
         badge.bonus && badge.bonusDetail
-          ? `<p class="gem-badge-card__bonus"><strong>${WeldUtil.escapeHtml(badge.bonus)}</strong> ${WeldUtil.escapeHtml(
+          ? `<p class="catalogue-badge-card__bonus"><strong>${WeldUtil.escapeHtml(badge.bonus)}</strong> ${WeldUtil.escapeHtml(
               badge.bonusDetail
             )}</p>`
           : "";
@@ -201,28 +201,28 @@
 
       return `
       <article
-        class="gem-badge ${badge.published ? "gem-badge--published" : "gem-badge--draft"}"
+        class="catalogue-badge ${badge.published ? "catalogue-badge--published" : "catalogue-badge--draft"}"
         data-badge="${id}"
         style="--badge-tone:${WeldUtil.escapeHtml(tone)};--badge-icon-tone:${WeldUtil.escapeHtml(iconBackdrop)};--badge-icon-shadow:${WeldUtil.escapeHtml(
           iconShadow
         )};">
-        <header class="gem-badge__header">
+        <header class="catalogue-badge__header">
           ${tagsMarkup}
         </header>
-        <div class="gem-badge__body">
-          <div class="gem-badge__figure">
-            <span class="gem-badge__icon" style="background:${iconBackdrop}; box-shadow:0 22px 44px ${iconShadow};">
+        <div class="catalogue-badge__body">
+          <div class="catalogue-badge__figure">
+            <span class="catalogue-badge__icon" style="background:${iconBackdrop}; box-shadow:0 22px 44px ${iconShadow};">
               ${WeldUtil.renderIcon(badge.icon || "medal", "sm")}
             </span>
           </div>
-          <div class="gem-badge__copy">
+          <div class="catalogue-badge__copy">
             <h3>${WeldUtil.escapeHtml(badge.title || "Badge")}</h3>
             <p>${WeldUtil.escapeHtml(badge.description || "")}</p>
             ${bonusMarkup}
           </div>
         </div>
-        <footer class="gem-badge__footer">
-          <span class="gem-badge__points">
+        <footer class="catalogue-badge__footer">
+          <span class="catalogue-badge__points">
             <strong>${formatNumber(pointsValue)}</strong>
             <span>pts</span>
           </span>
@@ -249,12 +249,12 @@
             const count = group.badges.length;
             const countLabel = `${formatNumber(count)} badge${count === 1 ? "" : "s"}`;
             return `
-              <section class="gem-badge-group" data-badge-category="${WeldUtil.escapeHtml(group.key)}">
-                <header class="gem-badge-group__header">
+              <section class="catalogue-badge-group" data-badge-category="${WeldUtil.escapeHtml(group.key)}">
+                <header class="catalogue-badge-group__header">
                   <h3>${WeldUtil.escapeHtml(group.label)}</h3>
                   <span class="detail-table__meta">${WeldUtil.escapeHtml(countLabel)}</span>
                 </header>
-                <div class="gem-badge-grid gem-badge-group__grid client-badges__grid">
+                <div class="catalogue-badge-grid catalogue-badge-group__grid client-badges__grid">
                   ${group.badges
                     .map(badge => {
                       const markup = renderBadgeCard(badge, badgeIndex);
@@ -338,7 +338,7 @@
       ${filterMarkup}
       ${summaryMarkup}
     </div>
-    <section class="gem-badge-grid client-badges__grid">
+    <section class="catalogue-badge-grid client-badges__grid">
       ${gridMarkup}
     </section>
   `;
@@ -417,3 +417,4 @@
     });
   }
 })();
+
