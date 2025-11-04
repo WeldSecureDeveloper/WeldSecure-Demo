@@ -1,6 +1,6 @@
 # WeldSecure Static Demo - Regression Checklist
 
-Use this guide during Stage 9 hardening to confirm the modular shell still mirrors the original behaviour. Work top-to-bottom; reset demo data between personas when helpful.
+Use this guide during Stage 9 hardening to confirm the modular shell still mirrors the original behaviour. Work top-to-bottom; reset demo data between personas when helpful. Tick each item as you verify it.
 
 ## Preparation
 - Launch `Static/index.html` in a modern desktop browser.

@@ -68,9 +68,16 @@ Goal: finish the modularisation work paused in Stage 9 by deleting stray monolit
 
 **Validation:** Ensure the script is idempotent and does not require external installs; record verification output.
 
+### 3.3 Optional Linting Exploration
+
+- [ ] Assess lightweight linting/formatting that keeps the "no build tooling" promise (e.g., Prettier via `npx` without install, or a browser-based ESLint run).
+  - _Idea_: leverage `npx --yes prettier --check "Static/**/*.{js,css,md}"` when network access is available; this respects the zero-install rule.
+- [ ] Decide whether to add a wrapper script (PowerShell or batch) for repeatable execution.
+
 ## Final Validation & Hand-off
 
 - [ ] Perform full regression sweep using `Static/docs/regression-checklist.md`; tick items off in the checklist file if appropriate.
+  - _Blocked_: Requires a real browser to exercise flows. Run through the checklist locally, then mark results directly in the doc or report back here.
 - [ ] Update `MIGRATION_PLAN.md` Stage 9 progress to reflect completed items.
 - [ ] Summarise remaining risks or follow-up ideas at the bottom of this plan, then leave the file checked in for future Codex sessions.
 
