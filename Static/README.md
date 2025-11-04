@@ -55,5 +55,9 @@ Static/
 
 Reload `Static/index.html` after changes to see the updates. Use "Reset demo data" in the header to snap back to the canonical story whenever needed.
 
+## Validation helpers
+- Run `pwsh ./Static/tools/sanity-check.ps1` to confirm shell delegates remain unique and documentation stays ASCII-only. The script exits non-zero if duplicates or high-byte characters are detected.
+- Pair this check with the manual regression checklist in `Static/docs/regression-checklist.md` before sharing builds.
+
 ## Ongoing work
 The staged migration is in its hardening phase. Check `MIGRATION_PLAN.md` for remaining Stage 9 tasks (documentation polish, regression sweeps, and optional linting). Contributions should stay build-free and continue to lean on the registry + feature module architecture.

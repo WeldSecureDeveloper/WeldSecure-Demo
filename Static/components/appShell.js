@@ -355,9 +355,10 @@
       const groups = Array.from(globalNav.querySelectorAll(".global-nav__group"));
       const closeGroups = () => {
         groups.forEach(group => {
-          const menu = group.querySelector(".global-nav__menu");
-          if (menu) {
-            menu.classList.remove("global-nav__menu--open");
+          group.classList.remove("global-nav__group--open");
+          const triggerEl = group.querySelector(".global-nav__trigger");
+          if (triggerEl) {
+            triggerEl.setAttribute("aria-expanded", "false");
           }
         });
       };
@@ -367,13 +368,28 @@
         const menu = group.querySelector(".global-nav__menu");
         if (!trigger || !menu) return;
 
-        trigger.addEventListener("click", event => {
-          event.preventDefault();
-          const isOpen = menu.classList.contains("global-nav__menu--open");
+        trigger.setAttribute("aria-expanded", "false");
+        trigger.setAttribute("aria-haspopup", "true");
+
+        const toggleGroup = event => {
+          event.stopPropagation();
+          const isOpen = group.classList.contains("global-nav__group--open");
           closeGroups();
           if (!isOpen) {
-            menu.classList.add("global-nav__menu--open");
+            group.classList.add("global-nav__group--open");
+            trigger.setAttribute("aria-expanded", "true");
           }
+        };
+
+        trigger.addEventListener("click", event => {
+          event.preventDefault();
+          toggleGroup(event);
+        });
+
+        trigger.addEventListener("keydown", event => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          toggleGroup(event);
         });
 
         menu.querySelectorAll(".global-nav__item").forEach(item => {

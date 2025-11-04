@@ -92,6 +92,7 @@ smoke test in the browser to confirm parity.
 **Tasks**
 - [x] Remove unused globals and helpers from `app.js` after the final extractions.
 - [x] Refresh `Static/README.md` to reflect the feature-first, registry-driven design.
+- [x] Introduce a lightweight validation harness (`Static/tools/sanity-check.ps1`) and document how to run it.
 - [ ] Perform a full manual regression across all personas (see `Static/docs/regression-checklist.md`), including settings persistence and "Reset demo data".
 - [ ] Optionally consider lightweight linting or formatting if it can run without build tooling.
 - [x] Split `features/customer` into route-scoped loader modules (`hub`, `badges`, `reports`, `redemptions`) and update registry wiring.
