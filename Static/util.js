@@ -4,7 +4,8 @@
   const AppData = window.AppData || {};
   const QUEST_DIFFICULTY_ORDER =
     Array.isArray(AppData.QUEST_DIFFICULTY_ORDER) ? AppData.QUEST_DIFFICULTY_ORDER : [];
-  const ICONS = AppData.ICONS || {};
+  const ICON_PATHS = AppData.ICON_PATHS || {};
+  const INLINE_ICONS = AppData.ICONS || {};
   const METRIC_TONES = AppData.METRIC_TONES || {};
 
   Object.assign(WeldUtil, {
@@ -93,11 +94,18 @@
     },
 
     renderIcon(name, size = "md") {
-      const svg = ICONS[name];
-      if (!svg) return "";
+      if (!name) return "";
       const sizes = ["xs", "sm", "md", "lg"];
       const sizeClass = sizes.includes(size) ? size : "md";
-      return `<span class="icon-token icon-token--${sizeClass}" data-icon="${name}" aria-hidden="true">${svg.trim()}</span>`;
+      const safeName = WeldUtil.escapeHtml(String(name));
+      const path = ICON_PATHS[name];
+      if (typeof path === "string" && path.trim().length > 0) {
+        const safePath = WeldUtil.escapeHtml(path.trim());
+        return `<span class="icon-token icon-token--${sizeClass}" data-icon="${safeName}" aria-hidden="true"><img src="${safePath}" alt="" loading="lazy" decoding="async" /></span>`;
+      }
+      const svg = INLINE_ICONS[name];
+      if (!svg) return "";
+      return `<span class="icon-token icon-token--${sizeClass}" data-icon="${safeName}" aria-hidden="true">${svg.trim()}</span>`;
     },
 
     renderMetricCard(label, value, trend, toneKey = "indigo", icon = "medal") {

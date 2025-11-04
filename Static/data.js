@@ -82,282 +82,40 @@ Object.assign(window.AppData, {
   { id: "reason-urgent-tone", label: "Urgent language / suspicious tone" },
   { id: "reason-spoofing-senior", label: "Sender spoofing a senior colleague" }
 ],
-  ICONS: {
-  medal: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <circle cx="32" cy="32" r="20" fill="#fbbf24" />
-      <circle cx="32" cy="32" r="14" fill="#fde68a" />
-      <polygon fill="#fef3c7" points="32 18 35.8 27.6 46 28.6 38.4 34.8 41 44 32 38.6 23 44 25.6 34.8 18 28.6 28.2 27.6" />
-      <path fill="#6366f1" opacity="0.65" d="M24 9h16l-2 8h-12z" />
-    </svg>
-  `,
-  outlook: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <defs>
-        <linearGradient id="outlookGradient" x1="12" y1="52" x2="52" y2="12" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stop-color="#0078d4" />
-          <stop offset="1" stop-color="#5a5df0" />
-        </linearGradient>
-      </defs>
-      <rect x="12" y="14" width="28" height="36" rx="6" fill="url(#outlookGradient)" />
-      <path d="M20 18h24l12 12-12 12H20z" fill="#0b1f4b" opacity="0.2" />
-      <rect x="24" y="24" width="16" height="16" rx="4" fill="#fff" />
-      <path fill="#0f4c81" d="M34 38h-4l-4-6 4-6h4l4 6z" />
-      <circle cx="32" cy="32" r="4" fill="#0f172a" opacity="0.1" />
-    </svg>
-  `,
-  hourglass: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <rect x="22" y="16" width="20" height="6" rx="3" fill="#38bdf8" />
-      <rect x="22" y="42" width="20" height="6" rx="3" fill="#0ea5e9" />
-      <path fill="#22d3ee" d="M24 22h16c0 4.6-3.4 8.2-8 11 4.6 2.8 8 6.4 8 11H24c0-4.6 3.4-8.2 8-11-4.6-2.8-8-6.4-8-11z" />
-      <path fill="#0ea5e9" d="M26 26h12c0 2.4-2.2 4.2-6 5.6-3.8-1.4-6-3.2-6-5.6z" />
-      <path fill="#14b8a6" d="M26 38c0-2.4 2.2-4.2 6-5.6 3.8 1.4 6 3.2 6 5.6H26z" />
-    </svg>
-  `,
-  gift: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <rect x="10" y="26" width="44" height="26" rx="8" fill="#f97316"/>
-      <rect x="10" y="18" width="44" height="12" rx="6" fill="#fb7185"/>
-      <rect x="28" y="18" width="8" height="34" fill="#fde047"/>
-      <rect x="10" y="32" width="44" height="6" fill="#fde047" opacity="0.85"/>
-      <path fill="#fbbf24" d="M24 18c-3 0-5.5-2.4-5.5-5.4 0-2.2 1.5-3.6 3.7-3.6 3 0 6.8 3 8.8 5.6L32 18h-8z"/>
-      <path fill="#fbbf24" d="M40 18c3 0 5.5-2.4 5.5-5.4 0-2.2-1.5-3.6-3.7-3.6-3 0-6.8 3-8.8 5.6L32 18h8z"/>
-    </svg>
-  `,
-  settings: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.427-1.756 3.002-1.756 3.429 0a1.724 1.724 0 002.586 1.066c1.544-.89 3.31.876 2.42 2.42a1.724 1.724 0 001.065 2.572c1.756.426 1.756 3.002 0 3.429a1.724 1.724 0 00-1.066 2.586c.89 1.544-.876 3.31-2.42 2.42a1.724 1.724 0 00-2.586 1.065c-.426 1.756-3.002 1.756-3.429 0a1.724 1.724 0 00-2.586-1.066c-1.544.89-3.31-.876-2.42-2.42a1.724 1.724 0 00-1.065-2.586c-1.756-.426-1.756-3.002 0-3.429a1.724 1.724 0 001.066-2.586c-.89-1.544.876-3.31 2.42-2.42a1.724 1.724 0 002.586-1.065z"/>
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  `,
-  target: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <circle cx="32" cy="32" r="24" fill="#dbeafe"/>
-      <circle cx="32" cy="32" r="16" fill="#60a5fa"/>
-      <circle cx="32" cy="32" r="8" fill="#1e3a8a"/>
-      <circle cx="32" cy="32" r="4" fill="#f8fafc"/>
-      <path fill="#f97316" d="M32 8h4v10l6-6 2.8 2.8-6 6H48v4H32z"/>
-    </svg>
-  `,
-  trophy: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#fbbf24" d="M18 10h28v10c0 9.4-7.4 17-16 17s-16-7.6-16-17z"/>
-      <path fill="#f59e0b" d="M18 10h6v11c0 6.6 3.8 11 8 11s8-4.4 8-11V10h6v10c0 9.4-7.4 17-16 17s-16-7.6-16-17z"/>
-      <path fill="#f97316" d="M20 8h24v4H20z"/>
-      <path fill="#fde68a" d="M30 38h4v6h-4z"/>
-      <path fill="#f97316" d="M24 44h16v6H24z"/>
-      <path fill="#7c2d12" opacity="0.16" d="M22 50h20v4H22z"/>
-      <path fill="#fef3c7" d="M24 22l4 1 4-6 4 6 4-1-4 10h-8z"/>
-    </svg>
-  `,
-  diamond: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <polygon fill="#bfdbfe" points="12 22 24 10 40 10 52 22 32 54"/>
-      <polygon fill="#60a5fa" points="24 10 32 26 40 10"/>
-      <polygon fill="#1d4ed8" points="12 22 32 26 24 10"/>
-      <polygon fill="#2563eb" points="52 22 32 26 40 10"/>
-      <polygon fill="#93c5fd" points="18 22 32 46 12 22"/>
-      <polygon fill="#3b82f6" points="46 22 32 46 52 22"/>
-    </svg>
-  `,
-  heart: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#f472b6" d="M32 54s-18-11.4-24-21C3.6 26 6 16 14 13c4.6-1.6 9.8 0 12.8 3.8L32 22l5.2-5.2C40.2 13 45.4 11.4 50 13c8 3 10.4 13 6 20-6 9.6-24 21-24 21z"/>
-      <path fill="#fbcfe8" d="M32 47s-13.6-8.8-18.4-16.2C10.4 25.4 12.2 18.6 18 16.6c3.4-1.2 7.2 0 9.4 2.8L32 24l4.6-4.6c2.2-2.8 6-4 9.4-2.8 5.8 2 7.6 8.8 4.4 14.2C45.6 38.2 32 47 32 47z"/>
-    </svg>
-  `,
-  shield: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#4f46e5" d="M32 6l20 8v16c0 12.4-8.8 23.6-20 28-11.2-4.4-20-15.6-20-28V14z"/>
-      <path fill="#312e81" d="M32 12l14 5.6V30c0 8.8-5.8 17.2-14 21-8.2-3.8-14-12.2-14-21V17.6z"/>
-      <path fill="#60a5fa" d="M32 18l10 4v8c0 6-3.6 11.8-10 15-6.4-3.2-10-9-10-15v-8z"/>
-      <path fill="#bfdbfe" d="M30 32l2-10 2 10h10l-8 6 3 10-7-5.2-7 5.2 3-10-8-6z"/>
-    </svg>
-  `,
-  rocket: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#4c1d95" d="M32 6c10 6 16 18 16 28 0 5.6-1.6 10.8-4.4 15.6L32 54l-11.6-4.4C17.6 44.8 16 39.6 16 34 16 24 22 12 32 6z"/>
-      <circle cx="32" cy="26" r="8" fill="#f0f9ff"/>
-      <circle cx="32" cy="26" r="4" fill="#38bdf8"/>
-      <path fill="#fb923c" d="M20 48l4 12 8-6 8 6 4-12-12-4z"/>
-      <path fill="#f97316" d="M32 44l-12 4 4-8h16l4 8z"/>
-    </svg>
-  `,
-  crown: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#facc15" d="M12 44h40l-4 10H16z"/>
-      <path fill="#fde68a" d="M12 20l10 12 10-16 10 16 10-12 4 24H8z"/>
-      <circle cx="12" cy="18" r="4" fill="#f97316"/>
-      <circle cx="52" cy="18" r="4" fill="#f97316"/>
-      <circle cx="32" cy="14" r="4" fill="#f97316"/>
-    </svg>
-  `,
-  megaphone: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#7c3aed" d="M10 26h8l20-14v40L18 38h-8z"/>
-      <path fill="#a855f7" d="M38 12 54 8v48l-16-4V12z"/>
-      <path fill="#fef9c3" d="M18 38h6l4 10c1.2 3-0.6 6-3.6 6H20z"/>
-      <circle cx="50" cy="18" r="3" fill="#fde68a"/>
-      <circle cx="50" cy="46" r="3" fill="#fde68a"/>
-    </svg>
-  `,
-  globe: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <circle cx="32" cy="32" r="22" fill="#1e3a8a"/>
-      <path fill="#38bdf8" d="M18 20c6 0 8-6 14-6s10 4 10 8 4 6 8 6-2 16-10 16-12-4-18-4-8-4-8-8 0-12 4-12z"/>
-      <path fill="#0ea5e9" d="M24 44c4 0 6 4 10 4s8-2 8-6 4-4 6-4c0 6-6 14-14 16-10-2-16-10-16-10s2 0 6 0z"/>
-      <circle cx="32" cy="32" r="22" fill="none" stroke="#38bdf8" stroke-width="2"/>
-    </svg>
-  `,
-  spark: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <polygon fill="#fde047" points="32 6 36 24 54 28 38 36 44 54 32 44 20 54 26 36 10 28 28 24"/>
-      <polygon fill="#f97316" points="32 12 35 24 46 26 36 32 40 44 32 38 24 44 28 32 18 26 29 24"/>
-    </svg>
-  `,
-  book: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#0ea5e9" d="M12 12h20c4 0 8 4 8 8v32H20c-4 0-8-4-8-8V12z"/>
-      <path fill="#38bdf8" d="M32 12h20v32c0 4-4 8-8 8h-20V20c0-4 4-8 8-8z"/>
-      <path fill="#f8fafc" d="M18 18h12v4H18zm24 0h10v4H42z"/>
-      <path fill="#fef3c7" d="M18 28h12v4H18zm24 0h10v4H42z"/>
-    </svg>
-  `,
-  clipboard: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <rect x="14" y="12" width="36" height="44" rx="6" fill="#f1f5f9"/>
-      <rect x="22" y="8" width="20" height="8" rx="3" fill="#6366f1"/>
-      <rect x="18" y="20" width="28" height="4" rx="2" fill="#94a3b8"/>
-      <rect x="18" y="28" width="28" height="4" rx="2" fill="#94a3b8"/>
-      <rect x="18" y="36" width="20" height="4" rx="2" fill="#22c55e"/>
-      <path fill="#22c55e" d="M42 36h4v12h-4z"/>
-    </svg>
-  `,
-  mountain: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <rect width="64" height="20" y="44" fill="#0f172a"/>
-      <path fill="#1e3a8a" d="M6 44 26 16l10 12z"/>
-      <path fill="#3b82f6" d="M26 16 46 44H6z"/>
-      <path fill="#f8fafc" d="M32 18 58 44H22z"/>
-      <path fill="#22d3ee" d="M32 18 46 36h-8z"/>
-    </svg>
-  `,
-  lightbulb: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#fde047" d="M20 26c0-8.8 7.2-16 16-16s16 7.2 16 16c0 5.6-2.8 10.6-7.4 13.6-2.2 1.4-4.6 2.8-4.6 6.4v2H32v-2c0-3.6-2.4-5-4.6-6.4C22.8 36.6 20 31.6 20 26z"/>
-      <rect x="26" y="48" width="12" height="6" rx="2" fill="#f97316"/>
-      <rect x="24" y="54" width="16" height="4" rx="2" fill="#475569"/>
-      <path fill="#fde68a" d="M28 28h16c0 4-4 8-8 8s-8-4-8-8z"/>
-    </svg>
-  `,
-  ribbon: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <circle cx="32" cy="26" r="14" fill="#ec4899"/>
-      <circle cx="32" cy="26" r="8" fill="#fdf2f8"/>
-      <path fill="#db2777" d="M24 36 18 58l14-10 14 10-6-22z"/>
-      <path fill="#fdf2f8" d="M32 18a8 8 0 0 0-8 8h4a4 4 0 0 1 4-4z"/>
-    </svg>
-  `,
-  chart: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <rect x="12" y="8" width="40" height="48" rx="6" fill="#0f172a"/>
-      <rect x="18" y="38" width="8" height="10" fill="#38bdf8"/>
-      <rect x="28" y="30" width="8" height="18" fill="#f97316"/>
-      <rect x="38" y="22" width="8" height="26" fill="#22c55e"/>
-      <path fill="#94a3b8" d="M18 46h32v2H18z"/>
-    </svg>
-  `,
-  handshake: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#f97316" d="M10 24h14l10 12-8 10H12c-1.6 0-2.8-1.2-2.8-2.8z"/>
-      <path fill="#facc15" d="M54 24H40l-10 12 8 10h14c1.6 0 2.8-1.2 2.8-2.8z"/>
-      <path fill="#fef3c7" d="M28 36h8l6 8c1 1.2.2 3-1.4 3H23.4c-1.6 0-2.4-1.8-1.4-3z"/>
-      <path fill="#f59e0b" d="M36 24h-8l-6 6h8z"/>
-    </svg>
-  `,
-  star: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <circle cx="32" cy="32" r="22" fill="#0f172a"/>
-      <path fill="#facc15" d="M32 12 37.6 26H52l-11.2 8 4.2 14L32 38l-12.8 10 4.2-14L12 26h14.4z"/>
-      <circle cx="32" cy="32" r="6" fill="#fef9c3"/>
-    </svg>
-  `,
-  compass: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <circle cx="32" cy="32" r="24" fill="#0f172a"/>
-      <circle cx="32" cy="32" r="20" fill="#111827"/>
-      <polygon fill="#38bdf8" points="32 14 38 32 32 32 26 32"/>
-      <polygon fill="#f97316" points="32 50 26 32 32 32 38 32"/>
-      <circle cx="32" cy="32" r="4" fill="#fefefe"/>
-    </svg>
-  `,
-  laurel: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <circle cx="32" cy="30" r="14" fill="#22c55e"/>
-      <path fill="#14532d" d="M18 18c-4 4-6 10-6 14 4 0 10-2 14-6-4-4-6-10-8-8z"/>
-      <path fill="#14532d" d="M46 18c4 4 6 10 6 14-4 0-10-2-14-6 4-4 6-10 8-8z"/>
-      <path fill="#14532d" d="M22 46c-4-2-6-6-8-10 4 0 8 2 12 6-2 2-2 4-4 4z"/>
-      <path fill="#14532d" d="M42 46c4-2 6-6 8-10-4 0-8 2-12 6 2 2 2 4 4 4z"/>
-      <rect x="26" y="40" width="12" height="12" rx="3" fill="#0f172a"/>
-    </svg>
-  `,
-  puzzle: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#2563eb" d="M12 18h16v12h-2c-2.2 0-4 1.8-4 4s1.8 4 4 4h2v16H12z"/>
-      <path fill="#3b82f6" d="M36 18h16v16h-2c-2.2 0-4 1.8-4 4s1.8 4 4 4h2v16H36z"/>
-      <path fill="#60a5fa" d="M28 30h8v4h-8z"/>
-      <path fill="#93c5fd" d="M28 42h8v4h-8z"/>
-    </svg>
-  `,
-  badge: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#3730a3" d="M32 8 46 16l4 16-4 16-14 8-14-8-4-16 4-16z"/>
-      <path fill="#4f46e5" d="M32 14 42 20l3 12-3 12-10 6-10-6-3-12 3-12z"/>
-      <circle cx="32" cy="32" r="8" fill="#facc15"/>
-      <path fill="#fef9c3" d="M32 26 34.5 30.5 39 32l-4.5 1.5L32 38l-1.5-4.5L26 32l4.5-1.5z"/>
-    </svg>
-  `,
-  flame: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#f97316" d="M24 30c0-12 12-20 12-26 8 6 14 16 14 24 0 6.6-3.2 12.6-8.4 16.4C39.2 46.8 36 50 36 54H28c0-4-3.2-7.2-5.6-9.6C25.2 40.6 24 35.4 24 30z"/>
-      <path fill="#facc15" d="M28 34c0-6 6-10 6-14 4 4 8 8 8 12 0 4-2 7.6-5.2 9.8C36 44 34.4 46 34.4 48h-4.8c0-2-1.2-4-2.4-4.2C29.6 41.6 28 38 28 34z"/>
-    </svg>
-  `,
-  network: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <circle cx="18" cy="20" r="6" fill="#38bdf8"/>
-      <circle cx="46" cy="20" r="6" fill="#f97316"/>
-      <circle cx="32" cy="44" r="8" fill="#6366f1"/>
-      <path fill="none" stroke="#0f172a" stroke-width="3" d="M18 20 32 44 46 20"/>
-      <path fill="none" stroke="#0f172a" stroke-width="3" d="M18 20h28"/>
-    </svg>
-  `,
-  gear: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <circle cx="32" cy="32" r="10" fill="#fef3c7"/>
-      <circle cx="32" cy="32" r="6" fill="#f97316"/>
-      <path fill="#0ea5e9" d="M32 10 39 12l3 8-4 4 4 4-3 8-7 2-7-2-3-8 4-4-4-4 3-8z"/>
-      <path fill="#38bdf8" d="M32 16 36 18l2 4-3 2 3 2-2 4-4 2-4-2-2-4 3-2-3-2 2-4z"/>
-    </svg>
-  `,
-  whistle: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <rect x="12" y="24" width="30" height="16" rx="8" fill="#3b82f6"/>
-      <circle cx="40" cy="32" r="12" fill="#0f172a"/>
-      <circle cx="40" cy="32" r="6" fill="#60a5fa"/>
-      <path fill="#1d4ed8" d="M42 24h10l4 8-4 8H42z"/>
-      <path fill="#bfdbfe" d="M46 28h6l2 4-2 4h-6l2-4z"/>
-    </svg>
-  `,
-  plane: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-      <path fill="#0ea5e9" d="M10 34 54 14l-12 24 12 4-12 10-8-8-4 8-6-6 4-12z"/>
-      <path fill="#38bdf8" d="M28 36 42 20l6 2-8 16 8 4-6 6z"/>
-      <path fill="#f8fafc" d="M24 38 30 40 26 50l-2-2z"/>
-    </svg>
-  `
-},
+  ICON_PATHS: {
+    medal: "svg/medal.svg",
+    outlook: "svg/outlook.svg",
+    hourglass: "svg/hourglass.svg",
+    gift: "svg/gift.svg",
+    settings: "svg/settings.svg",
+    target: "svg/target.svg",
+    trophy: "svg/trophy.svg",
+    diamond: "svg/diamond.svg",
+    heart: "svg/heart.svg",
+    shield: "svg/shield.svg",
+    rocket: "svg/rocket.svg",
+    crown: "svg/crown.svg",
+    megaphone: "svg/megaphone.svg",
+    globe: "svg/globe.svg",
+    spark: "svg/spark.svg",
+    book: "svg/book.svg",
+    clipboard: "svg/clipboard.svg",
+    mountain: "svg/mountain.svg",
+    lightbulb: "svg/lightbulb.svg",
+    ribbon: "svg/ribbon.svg",
+    chart: "svg/chart.svg",
+    handshake: "svg/handshake.svg",
+    star: "svg/star.svg",
+    compass: "svg/compass.svg",
+    laurel: "svg/laurel.svg",
+    puzzle: "svg/puzzle.svg",
+    badge: "svg/badge.svg",
+    flame: "svg/flame.svg",
+    network: "svg/network.svg",
+    gear: "svg/gear.svg",
+    whistle: "svg/whistle.svg",
+    plane: "svg/plane.svg"
+  },
   METRIC_TONES: {
   indigo: { bg: "linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(129, 140, 248, 0.28))", color: "#312e81" },
   emerald: { bg: "linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(52, 211, 153, 0.28))", color: "#065f46" },

@@ -10,13 +10,13 @@
 
 ## Workstream 1 – Icon Asset Extraction
 1. **Inventory**  
-   - Enumerate keys in `Static/data.js:AppData.ICONS`.
+- Enumerate keys in `Static/data.js:AppData.ICON_PATHS`.
    - Note which icons are used outside `WeldUtil.renderIcon` (search for `` `medal` `` style references).
 2. **Create asset directory**  
    - Add `Static/svg/` with one file per icon (e.g. `Static/svg/medal.svg`).  
    - Strip template literal wrappers; ensure SVGs have explicit `width`/`height` or rely on CSS sizing.
 3. **Expose icon paths**  
-   - Replace `AppData.ICONS` blob with a lightweight manifest, e.g. `AppData.ICON_PATHS = { medal: "svg/medal.svg" }`.
+- Replace `AppData.ICONS` blob with a lightweight manifest, e.g. `AppData.ICON_PATHS = { medal: "svg/medal.svg" }`.
    - Keep legacy structure behind a feature flag until refactor completes (`ICON_SPRITE_VERSION = 2`).
 4. **Update render helpers**  
    - Rewrite `WeldUtil.renderIcon` to return an `<img>` (or `<object>`) pointing at the path, preserving `icon-token` classes.  
@@ -75,4 +75,3 @@
 - [ ] Confirm all icons load without console errors when run from `file://`.
 - [ ] Run `pwsh ./Static/tools/sanity-check.ps1`.
 - [ ] Update `Static/docs/fix-log.md` with verification notes once workstreams land.
-

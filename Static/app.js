@@ -3,7 +3,6 @@ const ROUTES = window.AppData.ROUTES;
 const MessageStatus = window.AppData.MessageStatus;
 const NAV_GROUPS = window.AppData.NAV_GROUPS;
 const QUEST_DIFFICULTY_ORDER = window.AppData.QUEST_DIFFICULTY_ORDER;
-const ICONS = window.AppData.ICONS;
 const METRIC_TONES = window.AppData.METRIC_TONES;
 const BADGE_TONES = window.AppData.BADGE_TONES;
 const BADGE_ICON_BACKDROPS = window.AppData.BADGE_ICON_BACKDROPS;
