@@ -10,3 +10,5 @@
 - Catalogue badges: consistent publish/unpublish footer alignment after layout flex adjustments.
 - Reporter bursts: bubble animation without blur, matching new static award pill.
 - Badge navigation chip: center-right positioning beside primary badge tile.
+- Security dashboard/customer reports: shared renderer with consistent chips/points and reliable approve/reject actions.
+- Global nav & settings: gradient hovers now sourced from `--surface-gradient-accent` token to simplify restyling.
