@@ -30,12 +30,12 @@
 
 ## Workstream 2 – Separate Demo Payload From Logic
 1. **Split datasets**  
-   - Move large objects from `Static/state.js` (team members, recognitions, rewards, quests, etc.) into JSON files under `Static/data/state/`.
-2. **Inline JSON for local launch**  
-   - Add `<script type="application/json" id="weld-initial-state" src="…">` is not supported—copy JSON into `Static/index.html` inside a `<script type="application/json" id="weld-initial-state">…</script>` tag.  
-   - Alternatively create `Static/data/state/initialState.js` that assigns `window.WeldInitialState`. (Stay consistent: choose one and document it.)
+   - Move large objects from `Static/state.js` (team members, recognitions, rewards, quests, etc.) into `Static/data/state/defaultState.js` that assigns `window.WeldInitialState = { … }`.
+2. **Script plumbing**  
+   - Load `data/state/defaultState.js` from `Static/index.html` immediately after `data.js` so consumers remain synchronous and file:// compatible.  
+   - Document the global in the file header (`/* global window */`) and expose a `version` property for quick regression checks.
 3. **Loader shim**  
-   - In `Static/state.js`, replace literal data with a loader that reads from `window.WeldInitialState` or parses the JSON script tag.  
+   - In `Static/state.js`, replace literal data with a loader that reads from `window.WeldInitialState`, cloning it when building `initialState()`.  
    - Keep a defensive fallback to the old inline data until migration is complete for safety.
 4. **Services alignment**  
    - Ensure `services/stateServices.js` still clones the initial state from the new source.  
