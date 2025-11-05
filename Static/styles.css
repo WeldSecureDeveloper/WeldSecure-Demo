@@ -20,6 +20,7 @@
   --btn-ring-color: rgba(56, 189, 248, 0.42);
   --btn-light-border: rgba(15, 23, 42, 0.08);
   --btn-dark-border: rgba(248, 250, 252, 0.32);
+  --surface-gradient-accent: linear-gradient(135deg, #4f46e5, #0ea5e9);
 }
 *,
 *::before,
@@ -131,7 +132,7 @@ button {
 }
 .global-nav__brand:hover,
 .global-nav__brand:focus-visible {
-  background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+  background: var(--surface-gradient-accent);
   color: #fff;
   box-shadow: 0 16px 32px rgba(79, 70, 229, 0.25);
 }
@@ -178,7 +179,7 @@ button {
 }
 .global-nav__icon-button:hover,
 .global-nav__icon-button:focus-visible {
-  background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+  background: var(--surface-gradient-accent);
   color: #fff;
   box-shadow: 0 16px 32px rgba(79, 70, 229, 0.25);
 }
@@ -212,7 +213,7 @@ button {
 .global-nav__group--open .global-nav__trigger,
 .global-nav__group--active .global-nav__trigger,
 .global-nav__trigger:hover {
-  background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+  background: var(--surface-gradient-accent);
   color: #fff;
   box-shadow: 0 16px 32px rgba(79, 70, 229, 0.25);
 }
@@ -277,7 +278,7 @@ button {
   outline-offset: 2px;
 }
 .global-nav__item--active {
-  background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+  background: var(--surface-gradient-accent);
   color: #fff;
   box-shadow: 0 10px 22px rgba(79, 70, 229, 0.25);
 }
@@ -289,7 +290,7 @@ button {
   color: #1d4ed8;
 }
 .global-nav__menu .global-nav__item--active {
-  background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+  background: var(--surface-gradient-accent);
   color: #fff;
   box-shadow: 0 10px 22px rgba(79, 70, 229, 0.25);
 }
@@ -6136,7 +6137,7 @@ button {
 }
 .settings-panel__close:hover,
 .settings-panel__close:focus-visible {
-  background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+  background: var(--surface-gradient-accent);
   color: #fff;
 }
 .settings-panel__close:focus-visible {
@@ -6176,7 +6177,7 @@ button {
   color: #312e81;
 }
 .settings-nav__item--active {
-  background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+  background: var(--surface-gradient-accent);
   color: #fff;
   box-shadow: 0 18px 34px rgba(79, 70, 229, 0.25);
 }
@@ -6311,7 +6312,7 @@ button {
   width: 32px;
   height: 32px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+  background: var(--surface-gradient-accent);
   color: #fff;
   display: inline-flex;
   align-items: center;
