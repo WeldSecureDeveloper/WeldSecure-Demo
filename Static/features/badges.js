@@ -166,6 +166,8 @@
         badgeIconBackdrops[toneKey]?.background || badgeIconBackdrops.violet?.background || "linear-gradient(135deg, #c7d2fe, #818cf8)";
       const iconShadow =
         badgeIconBackdrops[toneKey]?.shadow || badgeIconBackdrops.violet?.shadow || "rgba(79, 70, 229, 0.32)";
+      const descriptionText =
+        typeof badge.description === "string" && badge.description.trim().length > 0 ? badge.description.trim() : "";
       const difficultyLabel =
         typeof badge.difficulty === "string" && badge.difficulty.trim().length > 0 ? badge.difficulty.trim() : "Skilled";
       const rawCategory =
@@ -187,9 +189,12 @@
       const tagsMarkup = tags.length
         ? `<div class="catalogue-badge-card__tags catalogue-card__tags">${tags.join("")}</div>`
         : "";
+      const descriptionMarkup = descriptionText.length
+        ? `<p class="catalogue-badge__description">${WeldUtil.escapeHtml(descriptionText)}</p>`
+        : "";
       const bonusMarkup =
         badge.bonus && badge.bonusDetail
-          ? `<p class="catalogue-badge-card__bonus"><strong>${WeldUtil.escapeHtml(badge.bonus)}</strong> ${WeldUtil.escapeHtml(
+          ? `<p class="catalogue-badge__bonus"><strong>${WeldUtil.escapeHtml(badge.bonus)}</strong> ${WeldUtil.escapeHtml(
               badge.bonusDetail
             )}</p>`
           : "";
@@ -217,9 +222,9 @@
           </div>
           <div class="catalogue-badge__copy">
             <h3>${WeldUtil.escapeHtml(badge.title || "Badge")}</h3>
-            <p>${WeldUtil.escapeHtml(badge.description || "")}</p>
-            ${bonusMarkup}
           </div>
+          ${descriptionMarkup}
+          ${bonusMarkup}
         </div>
         <footer class="catalogue-badge__footer">
           <span class="catalogue-badge__points">

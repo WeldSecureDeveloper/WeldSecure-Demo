@@ -2610,7 +2610,7 @@ button {
   width: 100%;
   max-width: 280px;
   justify-self: start;
-  padding: 1.4rem 1.45rem;
+  padding: 1.6rem;
   border-radius: 24px;
   border: 1px solid var(--color-border-soft);
   background: var(--color-bg-surface-alt);
@@ -2635,23 +2635,45 @@ button {
 }
 
 .client-badges__grid .catalogue-badge__body {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
+  display: grid;
+  grid-template-columns: minmax(64px, auto) 1fr;
+  column-gap: 1rem;
+  row-gap: 0.85rem;
+  align-items: start;
   flex: 1;
 }
 
 .client-badges__grid .catalogue-badge__figure {
   flex-shrink: 0;
+  grid-column: 1;
+  grid-row: 1;
+  align-self: start;
 }
 
 .client-badges__grid .catalogue-badge__copy {
-  flex: 1;
+  grid-column: 2;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  min-height: 140px;
-  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.client-badges__grid .catalogue-badge__copy h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.25;
+  color: var(--color-text-primary);
+}
+
+.client-badges__grid .catalogue-badge__description,
+.client-badges__grid .catalogue-badge__bonus {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.65;
+}
+
+.client-badges__grid .catalogue-badge__bonus strong {
+  color: var(--color-text-strong);
 }
 
 .client-badges__grid .catalogue-badge__footer {

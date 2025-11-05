@@ -500,6 +500,8 @@ function renderCustomerHub(state) {
     { id: "zero-day-zeal", achievedAt: "2025-03-02T09:10:00Z" },
     { id: "automation-ally", achievedAt: "2025-02-21T16:30:00Z" },
     { id: "bullseye-breaker", achievedAt: "2025-02-12T08:15:00Z" },
+    { id: "golden-signal", achievedAt: "2025-02-28T08:40:00Z" },
+    { id: "signal-sculptor", achievedAt: "2025-02-05T13:20:00Z" },
     { id: "hub-hopper", achievedAt: "2025-03-18T12:05:00Z", highlight: "recent" }
   ];
   const demoBadges = demoBadgeAchievements
@@ -534,11 +536,11 @@ function renderCustomerHub(state) {
       const timeB = new Date(b.achievedAt || 0).getTime();
       return timeB - timeA;
     })
-    .slice(0, 3);
+    .slice(0, 5);
   const fallbackTopBadges = recentBadge
     ? publishedBadges.filter(badge => badge.id !== recentBadge.id)
     : publishedBadges.slice();
-  const displayTopBadges = topRarityBadges.length > 0 ? topRarityBadges : fallbackTopBadges.slice(0, 3);
+  const displayTopBadges = topRarityBadges.length > 0 ? topRarityBadges : fallbackTopBadges.slice(0, 5);
   const renderBadgeShowcaseItem = (badge, extraClass = "") => {
     const achievedDate = badge?.achievedAt ? new Date(badge.achievedAt) : null;
     const metaMarkup =
