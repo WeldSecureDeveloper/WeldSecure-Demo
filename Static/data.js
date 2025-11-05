@@ -1042,3 +1042,6 @@ Object.assign(window.AppData, {
   }
 ]
 });
+
+// Expose routes for legacy hash navigation helpers.
+window.ROUTES = window.AppData.ROUTES;

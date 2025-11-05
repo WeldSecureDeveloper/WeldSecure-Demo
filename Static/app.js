@@ -124,63 +124,49 @@ function getAppShell() {
   return cachedAppShell;
 }
 
-function renderBadgeSpotlight(badgeInput) {
+function invokeShell(method, args = [], options = {}) {
   const shell = getAppShell();
-  if (shell && typeof shell.renderBadgeSpotlight === "function") {
-    return shell.renderBadgeSpotlight(badgeInput, state);
+  if (!shell || typeof shell[method] !== "function") {
+    return options.fallback;
   }
-  return "";
+  const includeState = options.includeState === true;
+  const finalArgs = includeState ? [...args, state] : args;
+  const result = shell[method](...finalArgs);
+  return result === undefined ? options.fallback : result;
+}
+
+function renderBadgeSpotlight(badgeInput) {
+  return (
+    invokeShell("renderBadgeSpotlight", [badgeInput], { includeState: true, fallback: "" }) || ""
+  );
 }
 
 function teardownBadgeShowcase() {
-  const shell = getAppShell();
-  if (shell && typeof shell.teardownBadgeShowcase === "function") {
-    shell.teardownBadgeShowcase();
-  }
+  invokeShell("teardownBadgeShowcase");
 }
 
 function setupBadgeShowcase(container) {
-  const shell = getAppShell();
-  if (shell && typeof shell.setupBadgeShowcase === "function") {
-    shell.setupBadgeShowcase(container, state);
-  }
+  invokeShell("setupBadgeShowcase", [container], { includeState: true });
 }
 
 function renderGlobalNav(activeRoute) {
-  const shell = getAppShell();
-  if (shell && typeof shell.renderGlobalNav === "function") {
-    return shell.renderGlobalNav(activeRoute);
-  }
-  return "";
+  return invokeShell("renderGlobalNav", [activeRoute], { fallback: "" }) || "";
 }
 
 function attachHeaderEvents(container) {
-  const shell = getAppShell();
-  if (shell && typeof shell.attachHeaderEvents === "function") {
-    shell.attachHeaderEvents(container, state);
-  }
+  invokeShell("attachHeaderEvents", [container]);
 }
 
 function attachGlobalNav(container) {
-  const shell = getAppShell();
-  if (shell && typeof shell.attachGlobalNav === "function") {
-    shell.attachGlobalNav(container, state);
-  }
+  invokeShell("attachGlobalNav", [container], { includeState: true });
 }
 
 function initializeSettingsUI(container) {
-  const shell = getAppShell();
-  if (shell && typeof shell.initializeSettingsUI === "function") {
-    shell.initializeSettingsUI(container, state);
-  }
+  invokeShell("initializeSettingsUI", [container], { includeState: true });
 }
 
 function renderHeader() {
-  const shell = getAppShell();
-  if (shell && typeof shell.renderHeader === "function") {
-    return shell.renderHeader(state);
-  }
-  return "";
+  return invokeShell("renderHeader", [], { includeState: true, fallback: "" }) || "";
 }
 
 

@@ -6,6 +6,23 @@
   const DEFAULT_EMERGENCY_LABEL = appData.DEFAULT_EMERGENCY_LABEL;
   const PREVIOUS_EMERGENCY_LABEL = appData.PREVIOUS_EMERGENCY_LABEL;
   const DEFAULT_REPORTER_REASONS = appData.DEFAULT_REPORTER_REASONS || [];
+  const DEFAULT_REPORTER_PROMPT_SAFE =
+    typeof DEFAULT_REPORTER_PROMPT === 'string' && DEFAULT_REPORTER_PROMPT.trim().length > 0
+      ? DEFAULT_REPORTER_PROMPT.trim()
+      : 'Why are you reporting this?';
+  const DEFAULT_EMERGENCY_LABEL_SAFE =
+    typeof DEFAULT_EMERGENCY_LABEL === 'string' && DEFAULT_EMERGENCY_LABEL.trim().length > 0
+      ? DEFAULT_EMERGENCY_LABEL.trim()
+      : 'I clicked a link, opened an attachment, or entered credentials';
+  const DEFAULT_REPORTER_REASONS_SAFE =
+    Array.isArray(DEFAULT_REPORTER_REASONS) && DEFAULT_REPORTER_REASONS.length > 0
+      ? DEFAULT_REPORTER_REASONS
+      : [
+          { id: 'reason-looks-like-phishing', label: 'Looks like a phishing attempt' },
+          { id: 'reason-unexpected-attachment', label: 'Unexpected attachment or link' },
+          { id: 'reason-urgent-tone', label: 'Urgent language / suspicious tone' },
+          { id: 'reason-spoofing-senior', label: 'Sender spoofing a senior colleague' }
+        ];
   const BADGES = appData.BADGES || [];
   const rawBadgeDrafts = appData.BADGE_DRAFTS;
   const BADGE_DRAFTS = rawBadgeDrafts instanceof Set ? rawBadgeDrafts : new Set(rawBadgeDrafts || []);
@@ -98,7 +115,7 @@
 
   function initialState() {
     const base = cloneBasePayload();
-    const reporterReasons = DEFAULT_REPORTER_REASONS.map(item => ({ ...item }));
+    const reporterReasons = DEFAULT_REPORTER_REASONS_SAFE.map(item => ({ ...item }));
 
     const metaSource = base.meta && typeof base.meta === "object" ? base.meta : FALLBACK_BASE.meta;
     const meta = {
@@ -118,13 +135,13 @@
         reasonPrompt:
           typeof DEFAULT_REPORTER_PROMPT === "string" && DEFAULT_REPORTER_PROMPT.trim().length > 0
             ? DEFAULT_REPORTER_PROMPT
-            : reporterSettingsBase.reasonPrompt || fallbackReporter.reasonPrompt || "Why are you reporting this?",
+            : reporterSettingsBase.reasonPrompt || fallbackReporter.reasonPrompt || DEFAULT_REPORTER_PROMPT_SAFE,
         emergencyLabel:
           typeof DEFAULT_EMERGENCY_LABEL === "string" && DEFAULT_EMERGENCY_LABEL.trim().length > 0
             ? DEFAULT_EMERGENCY_LABEL
             : reporterSettingsBase.emergencyLabel ||
               fallbackReporter.emergencyLabel ||
-              "I clicked a link, opened an attachment, or entered credentials",
+              DEFAULT_EMERGENCY_LABEL_SAFE,
         reasons: reporterReasons
       }
     };

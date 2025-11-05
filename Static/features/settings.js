@@ -13,12 +13,15 @@
   const WeldState = window.WeldState;
   const WeldUtil = window.WeldUtil || {};
 
-  function getState(appState) {
-    if (appState && typeof appState === "object") return appState;
-    if (window.state && typeof window.state === "object") return window.state;
-    if (window.Weld && typeof window.Weld.state === "object") return window.Weld.state;
-    return {};
-  }
+  const getState =
+    typeof WeldUtil.getState === "function"
+      ? WeldUtil.getState
+      : appState => {
+          if (appState && typeof appState === "object") return appState;
+          if (window.state && typeof window.state === "object") return window.state;
+          if (window.Weld && typeof window.Weld.state === "object") return window.Weld.state;
+          return {};
+        };
 
   function resolveActiveSettingsCategory(state) {
     if (!Array.isArray(SETTINGS_CATEGORIES) || SETTINGS_CATEGORIES.length === 0) return null;

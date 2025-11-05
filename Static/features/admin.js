@@ -6,6 +6,9 @@
   const WeldUtil = window.WeldUtil || {};
 
   const formatNumberSafe = value => {
+    if (typeof WeldUtil.formatNumberSafe === "function") {
+      return WeldUtil.formatNumberSafe(value);
+    }
     if (typeof window.formatNumber === "function") {
       return window.formatNumber(value);
     }
@@ -14,6 +17,9 @@
   };
 
   const formatDateTimeSafe = value => {
+    if (typeof WeldUtil.formatDateTimeSafe === "function") {
+      return WeldUtil.formatDateTimeSafe(value);
+    }
     if (typeof window.formatDateTime === "function") {
       return window.formatDateTime(value);
     }
@@ -27,12 +33,15 @@
     return value || "";
   };
 
-  function getState(appState) {
-    if (appState && typeof appState === "object") return appState;
-    if (window.Weld && typeof window.Weld.state === "object") return window.Weld.state;
-    if (typeof window.state === "object") return window.state;
-    return {};
-  }
+  const getState =
+    typeof WeldUtil.getState === "function"
+      ? WeldUtil.getState
+      : appState => {
+          if (appState && typeof appState === "object") return appState;
+          if (window.Weld && typeof window.Weld.state === "object") return window.Weld.state;
+          if (typeof window.state === "object") return window.state;
+          return {};
+        };
 
   function renderAdminView(stateOverride) {
     const state = getState(stateOverride);

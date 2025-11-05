@@ -49,8 +49,9 @@
 
   window.addEventListener('hashchange', () => {
     const hashRoute = window.location.hash.replace('#', '');
-    if (!hashRoute || !window.ROUTES || !window.ROUTES[hashRoute]) return;
-    const requiresRole = window.ROUTES[hashRoute].requiresRole;
+    const routes = window.ROUTES || (window.AppData && window.AppData.ROUTES) || {};
+    if (!hashRoute || !routes[hashRoute]) return;
+    const requiresRole = routes[hashRoute].requiresRole;
     if (requiresRole && typeof window.setRole === 'function') {
       setRole(requiresRole, hashRoute);
       return;
