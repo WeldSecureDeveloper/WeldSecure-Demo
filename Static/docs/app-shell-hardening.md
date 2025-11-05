@@ -61,7 +61,7 @@
 1. **Audit gradients & colors**  
    - Search `Static/styles.css` for repeated linear gradients and color literals used in buttons/nav/badges.
 2. **Define custom properties**  
-   - Extend `:root` with semantic tokens (`--btn-gradient-primary`, `--surface-gradient-accent`, etc.).  
+   - Extend `:root` with semantic tokens (`--btn-gradient-primary`, `--surface-gradient-accent`, `--badge-points-gradient`, `--celebration-bubble-gradient`, etc.).  
    - Document tokens inline to guide future updates.
 3. **Replace usages**  
    - Swap repeated literals with the new variables (e.g. nav hover gradients now use `--surface-gradient-accent`).  

@@ -12,3 +12,4 @@
 - Badge navigation chip: center-right positioning beside primary badge tile.
 - Security dashboard/customer reports: shared renderer with consistent chips/points and reliable approve/reject actions.
 - Global nav & settings: gradient hovers now sourced from `--surface-gradient-accent` token to simplify restyling.
+- Badge points & celebrations now draw from shared gradient tokens (`--badge-points-gradient`, `--celebration-bubble-gradient`) for easier palette tweaks.
