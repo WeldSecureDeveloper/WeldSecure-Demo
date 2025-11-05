@@ -7,6 +7,7 @@
 
 ## Recently Fixed
 - Themes hub gains a persisted light/dark toggle, covering nav chrome and settings surfaces.
+- Catalogue, quest, and reward cards plus dialog shells now adopt themed tokens so dark mode matches the light layout.
 - Reporter hub quests no longer render the catalogue configuration cog; CTA keeps the walkthrough invitational.
 - Landing page WeldSecure journey CTA inherits the green card tone for visual consistency.
 - Global nav brand chip now routes back to the landing experience reliably after any navigation.
