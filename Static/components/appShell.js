@@ -477,7 +477,12 @@
               confirmLabel: "Reset demo data",
               cancelLabel: "Keep current state",
               tone: "critical",
-              onConfirm: runReset
+              onConfirm: closeDialog => {
+                runReset();
+                if (typeof closeDialog === "function") {
+                  closeDialog();
+                }
+              }
             });
           } else {
             runReset();
