@@ -166,7 +166,7 @@ function attachDashboardEvents(container) {
   container.querySelectorAll(".table-actions button").forEach(button => {
     button.addEventListener("click", () => {
       const action = button.getAttribute("data-action");
-      const messageId = Number(button.getAttribute("data-message"));
+      const messageId = button.getAttribute("data-message");
       updateMessageStatus(messageId, action === "approve" ? MessageStatus.APPROVED : MessageStatus.REJECTED);
     });
   });
