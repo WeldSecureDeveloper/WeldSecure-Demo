@@ -58,7 +58,11 @@
     "badgeFilter": null,
     "badgeStatusFilter": null,
     "settingsOpen": false,
-    "settingsCategory": "reporter"
+    "settingsCategory": "reporter",
+    "directorySelection": {
+      "departmentId": null,
+      "teamId": null
+    }
   },
   "settings": {
     "reporter": {
@@ -66,6 +70,12 @@
       "emergencyLabel": defaultEmergencyLabel,
       "reasons": defaultReporterReasons
     }
+  },
+  "directory": {
+    "integrations": {},
+    "departments": [],
+    "teams": [],
+    "users": []
   },
   "customer": {
     "id": 501,

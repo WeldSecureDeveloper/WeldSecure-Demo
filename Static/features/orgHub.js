@@ -300,6 +300,11 @@ function renderOrgHub(state) {
       <span class="client-catalogue__eyebrow">Organisation Hub</span>
       <h1>Track health and momentum in one glance.</h1>
       <p>Use this view to connect reporter energy, security follow-up, and the rewards in flight. Everything aligns to the questions prospects ask.</p>
+      <div class="client-catalogue__actions">
+        <button type="button" class="button-pill button-pill--secondary" data-route="client-user-config">
+          Configure demo users &amp; teams
+        </button>
+      </div>
     </section>
     <section class="metrics-grid">
       ${metricsMarkup}
@@ -344,11 +349,11 @@ function attachOrgHubEvents(container) {
       return;
     }
 
-    const button = event.target.closest(".client-card .table-actions [data-route]");
-    if (!button) return;
+    const navTrigger = event.target.closest("[data-route]");
+    if (!navTrigger) return;
     event.preventDefault();
-    const route = button.getAttribute("data-route");
-    const role = button.getAttribute("data-role");
+    const route = navTrigger.getAttribute("data-route");
+    const role = navTrigger.getAttribute("data-role");
     if (role) {
       setRole(role, route || role);
     } else if (route) {

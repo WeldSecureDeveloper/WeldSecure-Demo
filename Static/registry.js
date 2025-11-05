@@ -138,6 +138,9 @@
     "client-dashboard": featureRoute("orgHub", {
       attachMethods: ["render"]
     }),
+    "client-user-config": featureRoute("userConfig", {
+      attachMethods: ["render"]
+    }),
     "client-leaderboards": featureRoute("leaderboards", {
       attachMethods: ["render"]
     }),

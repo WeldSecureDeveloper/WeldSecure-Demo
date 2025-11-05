@@ -89,6 +89,10 @@
       badgeStatusFilter: null,
       settingsOpen: false,
       settingsCategory: "reporter",
+      directorySelection: {
+        departmentId: null,
+        teamId: null
+      },
       featureToggles: { ...DEFAULT_FEATURE_TOGGLES }
     },
     settings: {
@@ -107,6 +111,12 @@
         breakdown: []
       },
       questCompletions: []
+    },
+    directory: {
+      integrations: {},
+      departments: [],
+      teams: [],
+      users: []
     },
     teamMembers: [],
     recognitions: [],
