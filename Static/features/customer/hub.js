@@ -16,7 +16,7 @@
       return null;
     }
 
-    const { MessageStatus, WeldUtil, formatNumber, formatDateTime, relativeTime, CONFIG_ICON, getState } = shared;
+    const { MessageStatus, WeldUtil, formatNumber, formatDateTime, relativeTime, getState } = shared;
 
 function renderRecognitionCard(entry, currentEmail) {
   if (!entry) return "";
@@ -466,10 +466,8 @@ function renderCustomerHub(state) {
       if (quest.category) headerTags.push(`<span class="quest-card__chip">${WeldUtil.escapeHtml(quest.category)}</span>`);
       const chipGroup = headerTags.length ? `<div class="quest-card__chip-group">${headerTags.join("")}</div>` : "";
       const questLabel = quest.title ? WeldUtil.escapeHtml(quest.title) : "quest";
-      const configButton = `<button type="button" class="quest-card__config" data-quest="${questId}" title="Configure ${questLabel}" aria-label="Configure ${questLabel}"><span class="quest-card__config-cog" aria-hidden="true">${CONFIG_ICON}</span></button>`;
       return `
       <article class="quest-card quest-card--hub" data-quest="${questId}">
-        ${configButton}
         <header class="quest-card__header quest-card__header--hub">
           ${difficultyRow}
           ${chipGroup}
@@ -788,15 +786,6 @@ function attachCustomerHubEvents(container, state) {
   container.querySelectorAll(".quest-card__cta").forEach(button => {
     button.addEventListener("click", () => {
       setRole("client", "client-quests");
-    });
-  });
-  container.querySelectorAll(".quest-card__config").forEach(button => {
-    button.addEventListener("click", event => {
-      event.preventDefault();
-      const questId = button.getAttribute("data-quest");
-      if (questId) {
-        openQuestConfig(questId);
-      }
     });
   });
   container.querySelectorAll(".section-header__action[data-route]").forEach(button => {

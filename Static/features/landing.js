@@ -39,7 +39,7 @@
         title: "WeldSecure Journey",
         description:
           "Highlight how Weld curates multi-tenant success with organisation health signals and playbooks.",
-        tone: "linear-gradient(135deg, #0ea5e9, #2563eb)",
+        tone: "linear-gradient(135deg, #22c55e, #15803d)",
         role: "admin",
         route: "weld-admin"
       }
@@ -59,13 +59,7 @@
           }
           <h3>${card.title}</h3>
           <p>${card.description}</p>
-          <span class="journey-card__action">${
-            card.route === "client-badges"
-              ? "Explore badges"
-              : card.route === "addin"
-              ? "Launch task pane"
-              : "Launch journey"
-          }</span>
+          <span class="journey-card__action">Launch journey</span>
         </button>
       `;
       })

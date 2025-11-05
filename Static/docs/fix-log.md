@@ -6,6 +6,10 @@
 - Align add-in celebration pop animation timing with badge showcase (pending visual QA).
 
 ## Recently Fixed
+- Reporter hub quests no longer render the catalogue configuration cog; CTA keeps the walkthrough invitational.
+- Landing page WeldSecure journey CTA inherits the green card tone for visual consistency.
+- Global nav brand chip now routes back to the landing experience reliably after any navigation.
+- Global nav sticks to the viewport and reappears whenever you scroll upward.
 - Regression checklist completed after full browser QA (2025-11-04).
 - Catalogue badges: consistent publish/unpublish footer alignment after layout flex adjustments.
 - Reporter bursts: bubble animation without blur, matching new static award pill.

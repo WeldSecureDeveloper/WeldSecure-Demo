@@ -325,7 +325,51 @@
       </button>
     </div>
   </nav>
-`;
+      `;
+    }
+
+    function setupNavScrollBehavior(globalNav) {
+      if (!globalNav || typeof window === "undefined") return;
+
+      if (typeof window.__weldGlobalNavScrollCleanup__ === "function") {
+        window.__weldGlobalNavScrollCleanup__();
+      }
+
+      let lastScrollY = window.scrollY || 0;
+      let ticking = false;
+
+      const handleScroll = () => {
+        const currentY = window.scrollY || 0;
+        const delta = currentY - lastScrollY;
+        const scrollingDown = delta > 6;
+        const scrollingUp = delta < -6;
+        const nearTop = currentY < 32;
+
+        globalNav.classList.toggle("global-nav--solid", currentY > 32);
+
+        if (nearTop || scrollingUp) {
+          globalNav.classList.remove("global-nav--hidden");
+        } else if (scrollingDown) {
+          globalNav.classList.add("global-nav--hidden");
+        }
+
+        lastScrollY = currentY;
+        ticking = false;
+      };
+
+      const onScroll = () => {
+        if (!ticking) {
+          ticking = true;
+          window.requestAnimationFrame(handleScroll);
+        }
+      };
+
+      window.addEventListener("scroll", onScroll, { passive: true });
+      window.__weldGlobalNavScrollCleanup__ = () => {
+        window.removeEventListener("scroll", onScroll);
+      };
+
+      handleScroll();
     }
 
     function attachHeaderEvents(container) {
@@ -457,6 +501,9 @@
           }
         });
       }
+
+      setupNavScrollBehavior(globalNav);
+      attachHeaderEvents(container);
 
       const outsideHandler = event => {
         if (!globalNav.contains(event.target)) {
