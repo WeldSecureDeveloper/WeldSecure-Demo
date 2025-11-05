@@ -4774,13 +4774,10 @@ button {
   align-items: flex-start;
 }
 
-.department-leaderboard__actions .table-actions {
-  align-self: flex-end;
-  margin-top: auto;
-}
-
 .department-leaderboard__actions .department-publish-toggle {
-  margin-left: auto;
+  padding: 0.55rem 1.2rem;
+  font-size: 0.85rem;
+  min-height: 0;
 }
 
 .department-leaderboard__state {

@@ -142,15 +142,13 @@
               </td>
               <td class="department-leaderboard__actions">
                 <span class="department-leaderboard__state ${statusClass}">${statusLabel}</span>
-                <div class="table-actions">
-                  <button
-                    type="button"
-                    class="button-pill ${actionTone} department-publish-toggle"
-                    data-department="${WeldUtil.escapeHtml(entryId)}"
-                    data-action="${action}">
-                    ${actionLabel}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  class="button-pill ${actionTone} department-publish-toggle"
+                  data-department="${WeldUtil.escapeHtml(entryId)}"
+                  data-action="${action}">
+                  ${actionLabel}
+                </button>
               </td>
             </tr>
           `;
