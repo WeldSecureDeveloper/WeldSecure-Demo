@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
   const modules = window.WeldModules;
   if (!modules || typeof modules.define !== "function") return;
   if (modules.has && modules.has("features/customer/hub")) return;
@@ -604,6 +604,7 @@ function renderCustomerHub(state) {
   const snapshotSource =
     publishedLeaderboardEntries.length > 0 ? publishedLeaderboardEntries : sortedLeaderboardEntries;
   const leaderboardSnapshotEntries = snapshotSource.slice(0, 3);
+  const topSnapshotEntry = leaderboardSnapshotEntries.length > 0 ? leaderboardSnapshotEntries[0] : null;
   const leaderboardSnapshotList = leaderboardSnapshotEntries
     .map((entry, index) => {
       if (!entry) return "";
@@ -621,38 +622,124 @@ function renderCustomerHub(state) {
         typeof entry.momentumTag === "string" && entry.momentumTag.trim().length > 0
           ? entry.momentumTag.trim()
           : null;
-      const detailParts = [`${pointsValue} pts`, departmentLabel];
-      if (momentumTag) {
-        detailParts.push(momentumTag);
-      }
+      const momentumChip = momentumTag
+        ? `<span class="leaderboard-snapshot__chip">${WeldUtil.escapeHtml(momentumTag)}</span>`
+        : "";
       return `
         <li class="leaderboard-snapshot__item">
-          <span class="leaderboard-snapshot__rank">${formatNumber(rank)}</span>
+          <span class="leaderboard-snapshot__rank" aria-hidden="true">${formatNumber(rank)}</span>
           <div class="leaderboard-snapshot__meta">
             <strong>${WeldUtil.escapeHtml(displayName)}</strong>
-            <span class="leaderboard-snapshot__detail">${WeldUtil.escapeHtml(detailParts.join(" | "))}</span>
+            <span class="leaderboard-snapshot__detail">${WeldUtil.escapeHtml(departmentLabel)}</span>
           </div>
+          <div class="leaderboard-snapshot__score">
+            <span class="leaderboard-snapshot__points">${WeldUtil.escapeHtml(pointsValue)}</span>
+            <span class="leaderboard-snapshot__points-unit">pts</span>
+          </div>
+          ${momentumChip}
         </li>
       `;
     })
     .join("");
-  const leaderboardSnapshotMarkup = leaderboardSnapshotEntries.length
-    ? `<ol class="leaderboard-snapshot__list">${leaderboardSnapshotList}</ol>`
+  const leaderboardListMarkup = leaderboardSnapshotEntries.length
+    ? `
+        <div class="leaderboard-snapshot__list-wrapper">
+          <span class="leaderboard-snapshot__list-label">Chasing the crown</span>
+          <ol class="leaderboard-snapshot__list">${leaderboardSnapshotList}</ol>
+        </div>
+      `
     : `<p class="leaderboard-snapshot__empty">No leaderboard stories published yet. Toggle them on inside the organisation hub.</p>`;
+  const topDepartmentName =
+    topSnapshotEntry && typeof topSnapshotEntry.name === "string" && topSnapshotEntry.name.trim().length > 0
+      ? topSnapshotEntry.name.trim()
+      : topSnapshotEntry
+      ? "Leaderboard leader"
+      : "Leaderboard pulse";
+  const topPointsDisplay =
+    topSnapshotEntry && Number.isFinite(topSnapshotEntry.points) ? formatNumber(topSnapshotEntry.points) : null;
+  const topMomentum =
+    topSnapshotEntry &&
+    typeof topSnapshotEntry.momentumTag === "string" &&
+    topSnapshotEntry.momentumTag.trim().length > 0
+      ? topSnapshotEntry.momentumTag.trim()
+      : null;
+  const topTrendValue =
+    topSnapshotEntry &&
+    typeof topSnapshotEntry.trendValue === "string" &&
+    topSnapshotEntry.trendValue.trim().length > 0
+      ? topSnapshotEntry.trendValue.trim()
+      : null;
+  const topTrendDirection =
+    topSnapshotEntry &&
+    typeof topSnapshotEntry.trendDirection === "string" &&
+    topSnapshotEntry.trendDirection.trim().length > 0
+      ? topSnapshotEntry.trendDirection.trim().toLowerCase()
+      : "";
+  const highlightDetails = [];
+  if (topTrendValue && topTrendValue !== "--") {
+    const trendLabel =
+      topTrendDirection === "down" ? "trend dip" : topTrendDirection === "up" ? "trend surge" : "trend";
+    highlightDetails.push(`${topTrendValue} ${trendLabel}`);
+  }
+  const highlightSubtitle =
+    highlightDetails.length > 0
+      ? highlightDetails.join(" | ")
+      : topPointsDisplay
+      ? `${topPointsDisplay} pts on the board`
+      : topSnapshotEntry
+      ? "All eyes on your defenders"
+      : "Highlight your leaderboard heroes";
+  const highlightChipsMarkup = topMomentum
+    ? `<div class="leaderboard-snapshot__chips">
+        <span class="leaderboard-snapshot__chip leaderboard-snapshot__chip--glow">${WeldUtil.escapeHtml(topMomentum)}</span>
+      </div>`
+    : "";
+  const leaderboardHighlightMarkup = topSnapshotEntry
+    ? `
+        <div class="leaderboard-snapshot__banner">
+          <span class="leaderboard-snapshot__icon">${WeldUtil.renderIcon("trophy", "md")}</span>
+          <div class="leaderboard-snapshot__copy">
+            <span class="leaderboard-snapshot__eyebrow">Leaderboard pulse</span>
+            <h2 class="leaderboard-snapshot__title">${WeldUtil.escapeHtml(topDepartmentName)}</h2>
+            <p class="leaderboard-snapshot__subtitle">${WeldUtil.escapeHtml(highlightSubtitle)}</p>
+            ${highlightChipsMarkup}
+          </div>
+          ${
+            topPointsDisplay
+              ? `<div class="leaderboard-snapshot__score leaderboard-snapshot__score--highlight">
+                  <span class="leaderboard-snapshot__points">${WeldUtil.escapeHtml(topPointsDisplay)}</span>
+                  <span class="leaderboard-snapshot__points-unit">pts</span>
+                </div>`
+              : ""
+          }
+        </div>
+      `
+    : `
+        <div class="leaderboard-snapshot__banner leaderboard-snapshot__banner--empty">
+          <span class="leaderboard-snapshot__icon">${WeldUtil.renderIcon("trophy", "md")}</span>
+          <div class="leaderboard-snapshot__copy">
+            <span class="leaderboard-snapshot__eyebrow">Leaderboard pulse</span>
+            <h2 class="leaderboard-snapshot__title">Ready when you are</h2>
+            <p class="leaderboard-snapshot__subtitle">Publish departments to light up the leaderboard spotlight.</p>
+          </div>
+        </div>
+      `;
   const leaderboardSnapshotCard = showLeaderboards
     ? `
     <div class="customer-hero-actions__panel customer-hero-actions__panel--snapshot">
       <div class="leaderboard-snapshot">
-        <span class="leaderboard-snapshot__eyebrow">Leaderboard pulse</span>
-        <h2 class="leaderboard-snapshot__title">Top departments</h2>
-        ${leaderboardSnapshotMarkup}
-        <button
-          type="button"
-          class="button-pill button-pill--ghost leaderboard-snapshot__cta"
-          data-route="customer-leaderboards"
-          data-role="customer">
-          View leaderboards
-        </button>
+        <span class="leaderboard-snapshot__spark" aria-hidden="true"></span>
+        ${leaderboardHighlightMarkup}
+        ${leaderboardListMarkup}
+        <div class="leaderboard-snapshot__cta-row">
+          <button
+            type="button"
+            class="button-pill button-pill--ghost leaderboard-snapshot__cta"
+            data-route="customer-leaderboards"
+            data-role="customer">
+            View leaderboards
+          </button>
+        </div>
       </div>
     </div>
   `
@@ -664,7 +751,8 @@ function renderCustomerHub(state) {
       <p>Your vigilance is fuelling a safer inbox for everyone at Evergreen Capital.</p>
     </header>
     <div class="customer-hero-actions">
-      <div class="customer-hero-actions__panel">
+      ${leaderboardSnapshotCard}
+      <div class="customer-hero-actions__panel customer-hero-actions__panel--report">
         <div class="customer-hero-actions__main">
           <button class="button-pill button-pill--primary customer-hero-actions__button" id="customer-report-button">Report other suspicious activity</button>
           <p class="customer-hero-actions__description">Log smishing, quishing, or any other suspicious behaviour you come across so the security team can jump on it.</p>
@@ -682,7 +770,6 @@ function renderCustomerHub(state) {
           <p class="customer-hero-actions__history-note">Each submission grants +20 pts immediately. Use Other report history to track how non-email incidents progress and when bonus points land.</p>
         </div>
       </div>
-      ${leaderboardSnapshotCard}
     </div>
     <section class="customer-section customer-section--points points-strip">
       <article class="points-card" style="background: linear-gradient(135deg, #6d28d9, #4338ca);">
@@ -940,3 +1027,6 @@ function attachCustomerHubEvents(container, state) {
     };
   });
 })();
+
+
+
