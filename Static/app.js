@@ -969,9 +969,11 @@ function openRecognitionFormDialog() {
 function setRewardPublication(rewardId, published) {
   const reward = rewardById(rewardId);
   if (!reward) return;
-  reward.published = Boolean(published);
+  const nextPublished = Boolean(published);
+  if (reward.published === nextPublished) return;
+  reward.published = nextPublished;
   WeldState.saveState(state);
-  renderApp();
+  renderAppPreservingScroll();
 }
 
 function setBadgePublication(badgeId, published) {
@@ -980,9 +982,11 @@ function setBadgePublication(badgeId, published) {
     typeof badgeId === "string" && badgeId.trim().length > 0 ? badgeId.trim() : String(badgeId ?? "");
   const badge = state.badges.find(item => item.id === targetId);
   if (!badge) return;
-  badge.published = Boolean(published);
+  const nextPublished = Boolean(published);
+  if (badge.published === nextPublished) return;
+  badge.published = nextPublished;
   WeldState.saveState(state);
-  renderApp();
+  renderAppPreservingScroll();
 }
 
 function setAllRewardsPublication(published) {
@@ -996,7 +1000,7 @@ function setAllRewardsPublication(published) {
   });
   if (!changed) return;
   WeldState.saveState(state);
-  renderApp();
+  renderAppPreservingScroll();
 }
 
 function setAllBadgesPublication(published) {
@@ -1011,7 +1015,7 @@ function setAllBadgesPublication(published) {
   });
   if (!changed) return;
   WeldState.saveState(state);
-  renderApp();
+  renderAppPreservingScroll();
 }
 
 function setAllQuestsPublication(published) {
@@ -2576,5 +2580,31 @@ function renderApp() {
   }
 }
 
+function renderAppPreservingScroll() {
+  if (typeof window === "undefined") {
+    renderApp();
+    return;
+  }
 
-
+  const doc = document.scrollingElement || document.documentElement || document.body;
+  const scrollX = window.pageXOffset ?? window.scrollX ?? (doc ? doc.scrollLeft : 0) ?? 0;
+  const scrollY = window.pageYOffset ?? window.scrollY ?? (doc ? doc.scrollTop : 0) ?? 0;
+  let previousScrollBehavior;
+  if (doc && doc.style) {
+    previousScrollBehavior = doc.style.scrollBehavior;
+    doc.style.scrollBehavior = "auto";
+  }
+  renderApp();
+  if (doc && typeof doc.scrollTo === "function") {
+    doc.scrollTo(scrollX, scrollY);
+  } else {
+    window.scrollTo(scrollX, scrollY);
+  }
+  if (doc && doc.style) {
+    if (typeof previousScrollBehavior === "string" && previousScrollBehavior.length > 0) {
+      doc.style.scrollBehavior = previousScrollBehavior;
+    } else {
+      doc.style.removeProperty("scroll-behavior");
+    }
+  }
+}
