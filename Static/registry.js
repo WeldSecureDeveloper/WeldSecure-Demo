@@ -131,7 +131,14 @@
       templateMethods: ["templateRedemptions"],
       attachMethods: ["attachRedemptions"]
     }),
+    "customer-leaderboards": featureRoute("customer", {
+      templateMethods: ["templateLeaderboards"],
+      attachMethods: ["attachLeaderboards"]
+    }),
     "client-dashboard": featureRoute("orgHub", {
+      attachMethods: ["render"]
+    }),
+    "client-leaderboards": featureRoute("leaderboards", {
       attachMethods: ["render"]
     }),
     "client-reporting": featureRoute("dashboard", {

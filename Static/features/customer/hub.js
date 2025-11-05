@@ -84,6 +84,13 @@ function renderRecognitionCard(entry, currentEmail) {
 
 
 function renderCustomerHub(state) {
+  const rawFeatureToggles =
+    state?.meta && typeof state.meta === "object" && state.meta.featureToggles && typeof state.meta.featureToggles === "object"
+      ? state.meta.featureToggles
+      : {};
+  const showBadges = rawFeatureToggles.badges !== false;
+  const showQuests = rawFeatureToggles.quests !== false;
+  const showRewards = rawFeatureToggles.rewards !== false;
   const customerMessages = state.messages.filter(messageBelongsToCustomer);
   const pendingMessages = customerMessages.filter(message => message.status === MessageStatus.PENDING);
   const pendingApprovalPoints = pendingMessages.reduce((sum, message) => sum + (message.pointsOnApproval || 0), 0);
@@ -587,6 +594,66 @@ function renderCustomerHub(state) {
       </div>
     `
     : `<div class="badge-empty"><p>No badges are currently published. Switch to the organisation catalogue to curate them.</p></div>`;
+  const sortedLeaderboardEntries = Array.isArray(state.departmentLeaderboard)
+    ? state.departmentLeaderboard
+        .slice()
+        .sort((a, b) => (Number(b?.points) || 0) - (Number(a?.points) || 0))
+    : [];
+  const publishedLeaderboardEntries = sortedLeaderboardEntries.filter(entry => entry && entry.published);
+  const snapshotSource =
+    publishedLeaderboardEntries.length > 0 ? publishedLeaderboardEntries : sortedLeaderboardEntries;
+  const leaderboardSnapshotEntries = snapshotSource.slice(0, 3);
+  const leaderboardSnapshotList = leaderboardSnapshotEntries
+    .map((entry, index) => {
+      if (!entry) return "";
+      const rank = index + 1;
+      const departmentLabel =
+        typeof entry.department === "string" && entry.department.trim().length > 0
+          ? entry.department.trim()
+          : "Organisation team";
+      const displayName =
+        typeof entry.name === "string" && entry.name.trim().length > 0
+          ? entry.name.trim()
+          : `Department ${rank}`;
+      const pointsValue = Number.isFinite(entry.points) ? formatNumber(entry.points) : "0";
+      const momentumTag =
+        typeof entry.momentumTag === "string" && entry.momentumTag.trim().length > 0
+          ? entry.momentumTag.trim()
+          : null;
+      const detailParts = [`${pointsValue} pts`, departmentLabel];
+      if (momentumTag) {
+        detailParts.push(momentumTag);
+      }
+      return `
+        <li class="leaderboard-snapshot__item">
+          <span class="leaderboard-snapshot__rank">${formatNumber(rank)}</span>
+          <div class="leaderboard-snapshot__meta">
+            <strong>${WeldUtil.escapeHtml(displayName)}</strong>
+            <span class="leaderboard-snapshot__detail">${WeldUtil.escapeHtml(detailParts.join(" | "))}</span>
+          </div>
+        </li>
+      `;
+    })
+    .join("");
+  const leaderboardSnapshotMarkup = leaderboardSnapshotEntries.length
+    ? `<ol class="leaderboard-snapshot__list">${leaderboardSnapshotList}</ol>`
+    : `<p class="leaderboard-snapshot__empty">No leaderboard stories published yet. Toggle them on inside the organisation hub.</p>`;
+  const leaderboardSnapshotCard = `
+    <div class="customer-hero-actions__panel customer-hero-actions__panel--snapshot">
+      <div class="leaderboard-snapshot">
+        <span class="leaderboard-snapshot__eyebrow">Leaderboard pulse</span>
+        <h2 class="leaderboard-snapshot__title">Top departments</h2>
+        ${leaderboardSnapshotMarkup}
+        <button
+          type="button"
+          class="button-pill button-pill--ghost leaderboard-snapshot__cta"
+          data-route="customer-leaderboards"
+          data-role="customer">
+          View leaderboards
+        </button>
+      </div>
+    </div>
+  `;
 
   return `
     <header class="customer-hero">
@@ -612,6 +679,7 @@ function renderCustomerHub(state) {
           <p class="customer-hero-actions__history-note">Each submission grants +20 pts immediately. Use Other report history to track how non-email incidents progress and when bonus points land.</p>
         </div>
       </div>
+      ${leaderboardSnapshotCard}
     </div>
     <section class="customer-section customer-section--points points-strip">
       <article class="points-card" style="background: linear-gradient(135deg, #6d28d9, #4338ca);">
@@ -661,7 +729,9 @@ function renderCustomerHub(state) {
       </article>
       ${bonusScaleHtml}
     </section>
-    <section class="customer-section customer-section--badges">
+    ${
+      showBadges
+        ? `<section class="customer-section customer-section--badges">
       <div class="section-header section-header--with-action">
         <div class="section-header__copy">
           <h2>Your badges</h2>
@@ -672,8 +742,12 @@ function renderCustomerHub(state) {
         </button>
       </div>
       ${badgesHtml}
-    </section>
-    <section id="customer-rewards" class="customer-section customer-section--rewards">
+    </section>`
+        : ""
+    }
+    ${
+      showRewards
+        ? `<section id="customer-rewards" class="customer-section customer-section--rewards">
       <div class="section-header">
         <h2>Your rewards</h2>
         <p>Select a reward to demonstrate the instant redemption flow. Only rewards published by your organisation appear here.</p>
@@ -683,8 +757,12 @@ function renderCustomerHub(state) {
           ? `<div class="reward-grid reward-grid--catalogue reward-grid--hub">${rewardsHtml}</div>`
           : `<div class="reward-empty"><p>No rewards are currently published. Check back soon!</p></div>`
       }
-    </section>
-    <section class="customer-section customer-section--quests">
+    </section>`
+        : ""
+    }
+    ${
+      showQuests
+        ? `<section class="customer-section customer-section--quests">
       <div class="section-header">
         <h2>Your quests</h2>
         <p>Introduce squads to the latest WeldSecure quests. Only published quests from your organisation appear here.</p>
@@ -694,7 +772,9 @@ function renderCustomerHub(state) {
           ? `<div class="quest-grid quest-grid--hub">${questsHtml}</div>`
           : `<div class="reward-empty"><p>No quests are currently published. Check back soon!</p></div>`
       }
-    </section>
+    </section>`
+        : ""
+    }
     ${recognitionBoardMarkup}
   `;
 }
@@ -790,6 +870,12 @@ function attachCustomerHubEvents(container, state) {
       setRole("client", "client-quests");
     });
   });
+  const leaderboardSnapshotCta = container.querySelector(".leaderboard-snapshot__cta");
+  if (leaderboardSnapshotCta) {
+    leaderboardSnapshotCta.addEventListener("click", () => {
+      setRole("customer", "customer-leaderboards");
+    });
+  }
   container.querySelectorAll(".section-header__action[data-route]").forEach(button => {
     button.addEventListener("click", () => {
       const targetRoute = button.getAttribute("data-route");

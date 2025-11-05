@@ -1125,6 +1125,35 @@ function setAllEngagementProgramsPublication(published) {
   renderApp();
 }
 
+function setHubFeatureToggle(featureKey, enabled) {
+  if (!state.meta || typeof state.meta !== "object") {
+    state.meta = {};
+  }
+  if (
+    !state.meta.featureToggles ||
+    typeof state.meta.featureToggles !== "object" ||
+    Array.isArray(state.meta.featureToggles)
+  ) {
+    state.meta.featureToggles = {};
+  }
+  const normalizedKey =
+    typeof featureKey === "string" && featureKey.trim().length > 0
+      ? featureKey.trim().toLowerCase()
+      : "";
+  if (!normalizedKey) return;
+  const targetEnabled = Boolean(enabled);
+  const currentEntry = state.meta.featureToggles[normalizedKey];
+  const currentEnabled = currentEntry !== false;
+  if (currentEnabled === targetEnabled) return;
+  if (targetEnabled) {
+    delete state.meta.featureToggles[normalizedKey];
+  } else {
+    state.meta.featureToggles[normalizedKey] = false;
+  }
+  WeldState.saveState(state);
+  renderApp();
+}
+
 function reportMessage(payload) {
   const origin = payload?.origin || "addin";
   const client = state.clients.find(c => c.id === state.customer.clientId);

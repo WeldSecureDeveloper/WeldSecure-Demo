@@ -45,6 +45,12 @@
     attachBadges: "attach"
   });
 
+  hydrateModule("features/customer/leaderboards", {
+    templateLeaderboards: "template",
+    renderLeaderboards: "render",
+    attachLeaderboards: "attach"
+  });
+
   hydrateModule("features/customer/reports", {
     templateReports: "template",
     renderReports: "render",

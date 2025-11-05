@@ -47,7 +47,9 @@ Object.assign(AppData, {
   "customer-reports": { requiresRole: "customer" },
   "customer-badges": { requiresRole: "customer" },
   "customer-redemptions": { requiresRole: "customer" },
+  "customer-leaderboards": { requiresRole: "customer" },
   "client-dashboard": { requiresRole: "client" },
+  "client-leaderboards": { requiresRole: "client" },
   "client-reporting": { requiresRole: "client" },
   "client-rewards": { requiresRole: "client" },
   "client-quests": { requiresRole: "client" },
@@ -73,6 +75,7 @@ Object.assign(AppData, {
     label: "Organisation",
     items: [
       { label: "Organisation Hub", route: "client-dashboard", role: "client" },
+      { label: "Leaderboards", route: "client-leaderboards", role: "client" },
       { label: "Security Team Dashboard", route: "client-reporting", role: "client" },
       { label: "Badge Catalogue", route: "client-badges", role: "client" },
       { label: "Quest Catalogue", route: "client-quests", role: "client" },

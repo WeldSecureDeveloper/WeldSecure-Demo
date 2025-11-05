@@ -45,6 +45,11 @@
   const ENGAGEMENT_PROGRAMS = appData.ENGAGEMENT_PROGRAMS || [];
   const MessageStatus = appData.MessageStatus || {};
   const THEME_OPTIONS = ["light", "dark"];
+  const DEFAULT_FEATURE_TOGGLES = {
+    badges: true,
+    quests: true,
+    rewards: true
+  };
 
   function storageAvailable() {
     try {
@@ -82,7 +87,8 @@
       badgeFilter: null,
       badgeStatusFilter: null,
       settingsOpen: false,
-      settingsCategory: "reporter"
+      settingsCategory: "reporter",
+      featureToggles: { ...DEFAULT_FEATURE_TOGGLES }
     },
     settings: {
       reporter: {}
@@ -137,6 +143,14 @@
     const meta = {
       ...FALLBACK_BASE.meta,
       ...metaSource
+    };
+    const metaFeatureToggles =
+      metaSource.featureToggles && typeof metaSource.featureToggles === "object"
+        ? metaSource.featureToggles
+        : {};
+    meta.featureToggles = {
+      ...DEFAULT_FEATURE_TOGGLES,
+      ...metaFeatureToggles
     };
 
     const reporterSettingsBase =
