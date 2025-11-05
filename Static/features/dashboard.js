@@ -16,28 +16,67 @@ function renderDashboard(state) {
     ? state.messages.slice().sort((a, b) => new Date(b.reportedAt).getTime() - new Date(a.reportedAt).getTime())
     : [];
 
-  const rowsMarkup = messages
-    .map(message => {
-      const reasons = Array.isArray(message.reasons) ? message.reasons.map(reasonById).filter(Boolean) : [];
-      const reasonChips = reasons
-        .map(reason => `<span class="detail-chip">${WeldUtil.escapeHtml(reason.label)}</span>`)
-        .join("");
-      const client =
-        state.clients && message && Number.isFinite(message.clientId)
-          ? state.clients.find(item => Number(item.id) === Number(message.clientId))
-          : null;
-      const reporterName = message?.reporterName ? WeldUtil.escapeHtml(message.reporterName) : "Reporter";
-      const reporterEmail = message?.reporterEmail ? WeldUtil.escapeHtml(message.reporterEmail) : "n/a";
-      const clientName = client ? WeldUtil.escapeHtml(client.name) : "Client view";
-      const clientOrgId = client?.organizationId ? WeldUtil.escapeHtml(client.organizationId) : "Org ID pending";
-      const reportedAt = message?.reportedAt ? formatDateTime(message.reportedAt) : "Unknown";
-      const status = WeldUtil.escapeHtml(message?.status || MessageStatus.PENDING);
-      const isPending = message?.status === MessageStatus.PENDING;
-      const approvePoints = Number(message?.pointsOnApproval) || 0;
-      const capturePoints = Number(message?.pointsOnMessage) || 0;
-      const totalPoints = capturePoints + (message?.status === MessageStatus.APPROVED ? approvePoints : 0);
-      const actionsMarkup = isPending
-        ? `<div class="table-actions">
+  const sharedRows =
+    window.WeldReportTable && typeof window.WeldReportTable.prepareRows === "function"
+      ? window.WeldReportTable.prepareRows(messages, { state })
+      : null;
+
+  const rowsMarkup = Array.isArray(sharedRows)
+    ? sharedRows
+        .map(row => {
+          const actionsMarkup = row.isPending
+            ? `<div class="table-actions">
+                <button type="button" class="button-pill button-pill--primary" data-action="approve" data-message="${row.idAttr}">Approve</button>
+                <button type="button" class="button-pill button-pill--critical" data-action="reject" data-message="${row.idAttr}">Reject</button>
+              </div>`
+            : `<span class="detail-table__meta">Decision recorded</span>`;
+          return `
+        <tr>
+          <td>${row.reportedAtDisplay}</td>
+          <td>
+            <strong>${row.reporterName}</strong>
+            <span class="detail-table__meta">${row.reporterEmail}</span>
+          </td>
+          <td>
+            <strong>${row.clientName}</strong>
+            <span class="detail-table__meta">${row.clientOrgId}</span>
+          </td>
+          <td>
+            <strong>${row.subject}</strong>
+            ${row.reasonChipsMarkup || ""}
+          </td>
+          <td>
+            ${row.pointsMarkup}
+          </td>
+          <td>
+            ${row.statusBadgeMarkup}
+            ${actionsMarkup}
+          </td>
+        </tr>`;
+        })
+        .join("")
+    : messages
+        .map(message => {
+          const reasons = Array.isArray(message.reasons) ? message.reasons.map(reasonById).filter(Boolean) : [];
+          const reasonChips = reasons
+            .map(reason => `<span class="detail-chip">${WeldUtil.escapeHtml(reason.label)}</span>`)
+            .join("");
+          const client =
+            state.clients && message && Number.isFinite(message.clientId)
+              ? state.clients.find(item => Number(item.id) === Number(message.clientId))
+              : null;
+          const reporterName = message?.reporterName ? WeldUtil.escapeHtml(message.reporterName) : "Reporter";
+          const reporterEmail = message?.reporterEmail ? WeldUtil.escapeHtml(message.reporterEmail) : "n/a";
+          const clientName = client ? WeldUtil.escapeHtml(client.name) : "Client view";
+          const clientOrgId = client?.organizationId ? WeldUtil.escapeHtml(client.organizationId) : "Org ID pending";
+          const reportedAt = message?.reportedAt ? formatDateTime(message.reportedAt) : "Unknown";
+          const status = WeldUtil.escapeHtml(message?.status || MessageStatus.PENDING);
+          const isPending = message?.status === MessageStatus.PENDING;
+          const approvePoints = Number(message?.pointsOnApproval) || 0;
+          const capturePoints = Number(message?.pointsOnMessage) || 0;
+          const totalPoints = capturePoints + (message?.status === MessageStatus.APPROVED ? approvePoints : 0);
+          const actionsMarkup = isPending
+            ? `<div class="table-actions">
             <button type="button" class="button-pill button-pill--primary" data-action="approve" data-message="${WeldUtil.escapeHtml(
               String(message.id)
             )}">Approve</button>
@@ -45,8 +84,8 @@ function renderDashboard(state) {
               String(message.id)
             )}">Reject</button>
           </div>`
-        : `<span class="detail-table__meta">Decision recorded</span>`;
-      return `
+            : `<span class="detail-table__meta">Decision recorded</span>`;
+          return `
         <tr>
           <td>${reportedAt}</td>
           <td>
@@ -74,8 +113,8 @@ function renderDashboard(state) {
           </td>
         </tr>
       `;
-    })
-    .join("");
+        })
+        .join("");
 
   const tableMarkup = messages.length
     ? `

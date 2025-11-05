@@ -32,25 +32,56 @@
         return true;
       });
 
-      const rowsMarkup = filteredMessages
-        .map(message => {
-          const reasons = Array.isArray(message.reasons) ? message.reasons.map(reasonById).filter(Boolean) : [];
-          const reasonChips = reasons
-            .map(reason => `<span class="detail-chip">${WeldUtil.escapeHtml(reason.label)}</span>`)
-            .join("");
-          const approvedPoints = message.status === MessageStatus.APPROVED ? message.pointsOnApproval || 0 : 0;
-          const totalPoints = (message.pointsOnMessage || 0) + approvedPoints;
-          const activityLabel = describeActivityType(message?.activityType);
-          const hasLocation =
-            typeof message?.incidentLocation === "string" && message.incidentLocation.trim().length > 0;
-          const activityMeta = activityLabel
-            ? `<span class="detail-table__meta">${WeldUtil.escapeHtml(activityLabel)}${
-                hasLocation ? ` ${WeldUtil.escapeHtml(message.incidentLocation.trim())}` : ""
-              }</span>`
-            : hasLocation
-            ? `<span class="detail-table__meta">Location: ${WeldUtil.escapeHtml(message.incidentLocation.trim())}</span>`
-            : "";
-          return `
+      const sharedRows =
+        window.WeldReportTable && typeof window.WeldReportTable.prepareRows === "function"
+          ? window.WeldReportTable.prepareRows(filteredMessages, { state })
+          : null;
+
+      const rowsMarkup = Array.isArray(sharedRows)
+        ? sharedRows
+            .map(row => {
+              const activityMeta = row.hasActivityLabel
+                ? `<span class="detail-table__meta">${row.activityLabel}${
+                    row.hasActivityLocation ? ` ${row.activityLocation}` : ""
+                  }</span>`
+                : row.hasActivityLocation
+                ? `<span class="detail-table__meta">Location: ${row.activityLocation}</span>`
+                : "";
+              return `
+            <tr>
+              <td>${row.reportedAtDisplay}</td>
+              <td>
+                <strong>${row.subject}</strong>
+                ${activityMeta}
+                ${row.reasonChipsMarkup || ""}
+              </td>
+              <td>${row.statusBadgeMarkup}</td>
+              <td>
+                ${row.pointsMarkup}
+              </td>
+            </tr>
+          `;
+            })
+            .join("")
+        : filteredMessages
+            .map(message => {
+              const reasons = Array.isArray(message.reasons) ? message.reasons.map(reasonById).filter(Boolean) : [];
+              const reasonChips = reasons
+                .map(reason => `<span class="detail-chip">${WeldUtil.escapeHtml(reason.label)}</span>`)
+                .join("");
+              const approvedPoints = message.status === MessageStatus.APPROVED ? message.pointsOnApproval || 0 : 0;
+              const totalPoints = (message.pointsOnMessage || 0) + approvedPoints;
+              const activityLabel = describeActivityType(message?.activityType);
+              const hasLocation =
+                typeof message?.incidentLocation === "string" && message.incidentLocation.trim().length > 0;
+              const activityMeta = activityLabel
+                ? `<span class="detail-table__meta">${WeldUtil.escapeHtml(activityLabel)}${
+                    hasLocation ? ` ${WeldUtil.escapeHtml(message.incidentLocation.trim())}` : ""
+                  }</span>`
+                : hasLocation
+                ? `<span class="detail-table__meta">Location: ${WeldUtil.escapeHtml(message.incidentLocation.trim())}</span>`
+                : "";
+              return `
             <tr>
               <td>${formatDateTime(message.reportedAt)}</td>
               <td>
@@ -72,8 +103,8 @@
               </td>
             </tr>
           `;
-        })
-        .join("");
+            })
+            .join("");
 
       const emptyCopy =
         reportFilter === "other"
