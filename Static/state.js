@@ -44,6 +44,7 @@
   const DEPARTMENT_LEADERBOARD = appData.DEPARTMENT_LEADERBOARD || [];
   const ENGAGEMENT_PROGRAMS = appData.ENGAGEMENT_PROGRAMS || [];
   const MessageStatus = appData.MessageStatus || {};
+  const THEME_OPTIONS = ["light", "dark"];
 
   function storageAvailable() {
     try {
@@ -60,6 +61,7 @@
     meta: {
       role: null,
       route: "landing",
+      theme: "light",
       addinScreen: "report",
       addinShellHeight: 760,
       lastReportedSubject: null,
@@ -812,6 +814,9 @@
         mergedMeta.lastBadgeIds = [];
       }
       mergedMeta.settingsOpen = false;
+      const normalizedTheme =
+        typeof mergedMeta.theme === "string" ? mergedMeta.theme.trim().toLowerCase() : "";
+      mergedMeta.theme = THEME_OPTIONS.includes(normalizedTheme) ? normalizedTheme : "light";
       if (
         mergedMeta.settingsCategory &&
         !SETTINGS_CATEGORIES.some(

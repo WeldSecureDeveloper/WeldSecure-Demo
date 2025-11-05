@@ -9,6 +9,68 @@
     const ROUTES = AppData.ROUTES || {};
     const BADGE_ICON_BACKDROPS = AppData.BADGE_ICON_BACKDROPS || {};
     const WeldUtil = window.WeldUtil || {};
+    const THEME_TOGGLE_LABELS = {
+      light: "Switch to dark mode",
+      dark: "Switch to light mode"
+    };
+
+    function renderMoonIcon() {
+      return `
+        <svg class="global-nav__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          ></path>
+        </svg>
+      `;
+    }
+
+    function renderSunIcon() {
+      return `
+        <svg class="global-nav__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle
+            cx="12"
+            cy="12"
+            r="4.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          ></circle>
+          <path
+            d="M12 2.25v2.5M12 19.25v2.5M4.219 4.219l1.768 1.768M17.99 17.99l1.768 1.768M2.25 12h2.5M19.25 12h2.5M4.219 19.781l1.768-1.768M17.99 6.01l1.768-1.768"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          ></path>
+        </svg>
+      `;
+    }
+
+    function renderThemeToggle(theme) {
+      const normalized = theme === "dark" ? "dark" : "light";
+      const ariaLabel = THEME_TOGGLE_LABELS[normalized];
+      const iconMarkup = normalized === "dark" ? renderSunIcon() : renderMoonIcon();
+      const pressed = normalized === "dark" ? "true" : "false";
+      return `
+        <button
+          type="button"
+          class="global-nav__icon-button"
+          id="global-theme-toggle"
+          data-theme-toggle
+          aria-pressed="${pressed}"
+          aria-label="${ariaLabel}"
+          title="${ariaLabel}"
+        >
+          ${iconMarkup.trim()}
+        </button>
+      `;
+    }
 
     const getFormatNumber = () => {
       if (typeof window.formatNumber === "function") {
@@ -255,9 +317,10 @@
       }
     }
 
-    function renderGlobalNav(activeRoute) {
+    function renderGlobalNav(activeRoute, state) {
+      const currentTheme = state?.meta?.theme === "dark" ? "dark" : "light";
       return `
-    <nav class="global-nav" aria-label="Primary navigation">
+    <nav class="global-nav" aria-label="Primary navigation" data-theme="${currentTheme}">
       <button type="button" class="brand global-nav__brand" id="brand-button">
         <span class="brand__glyph">W</span>
         <span>WeldSecure</span>
@@ -295,6 +358,7 @@
         <button type="button" class="button-pill button-pill--primary global-nav__reset" id="global-reset">
           Reset
         </button>
+        ${renderThemeToggle(currentTheme)}
         <button
         type="button"
         class="global-nav__icon-button"
@@ -396,7 +460,7 @@
 
       const navHost = container.querySelector(".global-nav");
       if (navHost) {
-        navHost.outerHTML = renderGlobalNav(activeRoute);
+        navHost.outerHTML = renderGlobalNav(activeRoute, state);
       }
 
       const globalNav = container.querySelector(".global-nav");
@@ -507,6 +571,18 @@
         });
       }
 
+      const themeToggle = globalNav.querySelector("[data-theme-toggle]");
+      if (themeToggle) {
+        themeToggle.addEventListener("click", event => {
+          event.preventDefault();
+          event.stopPropagation();
+          closeGroups();
+          if (typeof window.toggleTheme === "function") {
+            window.toggleTheme();
+          }
+        });
+      }
+
       setupNavScrollBehavior(globalNav);
       attachHeaderEvents(container);
 
@@ -538,7 +614,7 @@
 
     function renderHeader(state) {
       const role = state?.meta?.role;
-      const navMarkup = renderGlobalNav(state?.meta?.route || "landing");
+      const navMarkup = renderGlobalNav(state?.meta?.route || "landing", state);
       const chipMarkup =
         role && ROLE_LABELS[role]
           ? `<span class="chip ${ROLE_LABELS[role].chip}"><span class="chip__dot"></span>${ROLE_LABELS[role].label}</span>`

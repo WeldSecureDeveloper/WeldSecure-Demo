@@ -9,6 +9,18 @@
   const DEFAULT_REPORTER_PROMPT = AppData.DEFAULT_REPORTER_PROMPT || "";
   const DEFAULT_EMERGENCY_LABEL = AppData.DEFAULT_EMERGENCY_LABEL || "";
   const DEFAULT_REPORTER_REASONS = AppData.DEFAULT_REPORTER_REASONS || [];
+  const THEME_OPTIONS = [
+    {
+      id: "light",
+      label: "Light",
+      description: "Bright surfaces and punchy gradients"
+    },
+    {
+      id: "dark",
+      label: "Dark",
+      description: "High-contrast styling for low-light viewing"
+    }
+  ];
 
   const WeldState = window.WeldState;
   const WeldUtil = window.WeldUtil || {};
@@ -115,6 +127,44 @@
   `;
   }
 
+  function renderAppearanceSettingsContent(state) {
+    const currentTheme = state?.meta?.theme === "dark" ? "dark" : "light";
+    const optionsMarkup = THEME_OPTIONS.map(option => {
+      const optionId = WeldUtil.escapeHtml(option.id);
+      const label = WeldUtil.escapeHtml(option.label);
+      const description =
+        typeof option.description === "string" && option.description.trim().length > 0
+          ? `<span class="settings-theme__description">${WeldUtil.escapeHtml(option.description.trim())}</span>`
+          : "";
+      const checkedAttr = option.id === currentTheme ? " checked" : "";
+      return `
+      <label class="settings-theme__option">
+        <input
+          type="radio"
+          name="settings-theme"
+          value="${optionId}"
+          class="settings-theme__input"
+          data-theme-option
+          ${checkedAttr}
+        />
+        <span class="settings-theme__label">${label}</span>
+        ${description}
+      </label>
+    `;
+    }).join("");
+    return `
+    <section class="settings-panel__section">
+      <div class="settings-panel__section-header">
+        <h3>Theme</h3>
+        <p>Choose how WeldSecure should look.</p>
+      </div>
+      <div class="settings-theme" role="radiogroup" aria-label="Theme selection">
+        ${optionsMarkup}
+      </div>
+    </section>
+  `;
+  }
+
   function renderReporterSettingsContent(state) {
     const reporterSettings = state?.settings?.reporter || {};
     const reasonPrompt =
@@ -217,10 +267,18 @@
       `;
       })
       .join("");
-    const contentMarkup =
-      activeCategory && activeCategory.id === "reporter"
-        ? renderReporterSettingsContent(state)
-        : renderSettingsPlaceholder(activeCategory);
+    const contentMarkup = (() => {
+      if (!activeCategory) {
+        return renderSettingsPlaceholder(activeCategory);
+      }
+      if (activeCategory.id === "reporter") {
+        return renderReporterSettingsContent(state);
+      }
+      if (activeCategory.id === "appearance") {
+        return renderAppearanceSettingsContent(state);
+      }
+      return renderSettingsPlaceholder(activeCategory);
+    })();
     return `
     <div class="settings-shell settings-shell--open" role="presentation">
       <div class="settings-shell__backdrop" data-settings-dismiss></div>
@@ -290,6 +348,16 @@
         }
         if (typeof window.renderApp === "function") {
           window.renderApp();
+        }
+      });
+    });
+
+    root.querySelectorAll("[data-theme-option]").forEach(input => {
+      input.addEventListener("change", event => {
+        if (!event.target.checked) return;
+        const selectedTheme = typeof event.target.value === "string" ? event.target.value : "";
+        if (typeof window.setTheme === "function") {
+          window.setTheme(selectedTheme);
         }
       });
     });

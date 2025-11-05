@@ -13,6 +13,7 @@ const BADGE_DRAFTS = new Set(window.AppData.BADGE_DRAFTS);
 const DEFAULT_QUESTS = window.AppData.DEFAULT_QUESTS;
 const DEPARTMENT_LEADERBOARD = window.AppData.DEPARTMENT_LEADERBOARD;
 const ENGAGEMENT_PROGRAMS = window.AppData.ENGAGEMENT_PROGRAMS;
+const THEME_OPTIONS = ["light", "dark"];
 let state =
   (typeof window.state === "object" && window.state) ||
   WeldState.loadState() ||
@@ -23,6 +24,42 @@ if (window.Weld) {
 }
 
 const WeldServices = window.WeldServices || {};
+
+function normalizeTheme(theme) {
+  if (typeof theme === "string") {
+    const normalized = theme.trim().toLowerCase();
+    if (THEME_OPTIONS.includes(normalized)) {
+      return normalized;
+    }
+  }
+  return "light";
+}
+
+function applyTheme(theme) {
+  const root = document.documentElement;
+  const body = document.body;
+  const nextTheme = normalizeTheme(theme);
+  if (state?.meta) {
+    state.meta.theme = nextTheme;
+  }
+  if (root) {
+    root.setAttribute("data-theme", nextTheme);
+    root.classList.toggle("theme-dark", nextTheme === "dark");
+    root.classList.toggle("theme-light", nextTheme === "light");
+    if (root.style) {
+      root.style.colorScheme = nextTheme === "dark" ? "dark" : "light";
+    }
+  }
+  if (body) {
+    body.setAttribute("data-theme", nextTheme);
+    body.classList.toggle("theme-dark", nextTheme === "dark");
+    body.classList.toggle("theme-light", nextTheme === "light");
+  }
+  return nextTheme;
+}
+
+applyTheme(state?.meta?.theme);
+window.applyTheme = applyTheme;
 
 function invokeService(name, args = []) {
   const service = WeldServices[name];
@@ -65,6 +102,14 @@ function closeSettings() {
   return invokeService("closeSettings", [state]);
 }
 
+function setTheme(theme) {
+  return invokeService("setTheme", [theme, state]);
+}
+
+function toggleTheme() {
+  return invokeService("toggleTheme", [state]);
+}
+
 const serviceWrappers = {
   navigate,
   setRole,
@@ -73,7 +118,9 @@ const serviceWrappers = {
   completeQuest,
   redeemReward,
   openSettings,
-  closeSettings
+  closeSettings,
+  setTheme,
+  toggleTheme
 };
 
 Object.entries(serviceWrappers).forEach(([key, fn]) => {
@@ -150,7 +197,9 @@ function setupBadgeShowcase(container) {
 }
 
 function renderGlobalNav(activeRoute) {
-  return invokeShell("renderGlobalNav", [activeRoute], { fallback: "" }) || "";
+  return (
+    invokeShell("renderGlobalNav", [activeRoute], { includeState: true, fallback: "" }) || ""
+  );
 }
 
 function attachHeaderEvents(container) {
@@ -2481,6 +2530,7 @@ function ensureRouteSafety() {
 
 function renderApp() {
   ensureRouteSafety();
+  applyTheme(state?.meta?.theme);
 
   const app = document.getElementById("app");
   const route = state.meta.route;

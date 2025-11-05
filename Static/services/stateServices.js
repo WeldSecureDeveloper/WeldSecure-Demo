@@ -5,6 +5,7 @@
   const WeldServices = window.WeldServices || (window.WeldServices = {});
 
   const ROUTES = AppData.ROUTES || {};
+  const THEME_OPTIONS = ["light", "dark"];
   const DEFAULT_REPORTER_PROMPT = AppData.DEFAULT_REPORTER_PROMPT || "";
   const DEFAULT_EMERGENCY_LABEL = AppData.DEFAULT_EMERGENCY_LABEL || "";
   const DEFAULT_REPORTER_REASONS = AppData.DEFAULT_REPORTER_REASONS || [];
@@ -36,6 +37,22 @@
       window.renderApp();
     } else if (window.Weld && typeof window.Weld.render === "function" && window.Weld.autorun) {
       window.Weld.render();
+    }
+  }
+
+  function normalizeTheme(theme) {
+    if (typeof theme === "string") {
+      const normalized = theme.trim().toLowerCase();
+      if (THEME_OPTIONS.includes(normalized)) {
+        return normalized;
+      }
+    }
+    return "light";
+  }
+
+  function applyThemeIfAvailable(theme) {
+    if (typeof window.applyTheme === "function") {
+      window.applyTheme(theme);
     }
   }
 
@@ -98,6 +115,7 @@
     }
 
     syncGlobalState(state);
+    applyThemeIfAvailable(state.meta && state.meta.theme);
     saveState(state);
     renderShell();
   };
@@ -107,6 +125,25 @@
     if (!state) return;
     syncGlobalState(state);
     saveState(state);
+  };
+
+  WeldServices.setTheme = function setTheme(theme, providedState) {
+    const state = resolveState(providedState);
+    if (!state || !state.meta) return;
+    const nextTheme = normalizeTheme(theme);
+    state.meta.theme = nextTheme;
+    syncGlobalState(state);
+    saveState(state);
+    applyThemeIfAvailable(nextTheme);
+    renderShell();
+  };
+
+  WeldServices.toggleTheme = function toggleTheme(providedState) {
+    const state = resolveState(providedState);
+    if (!state || !state.meta) return;
+    const current = normalizeTheme(state.meta.theme);
+    const next = current === "dark" ? "light" : "dark";
+    WeldServices.setTheme(next, state);
   };
 
   WeldServices.completeQuest = function completeQuest(questId, options = {}, providedState) {

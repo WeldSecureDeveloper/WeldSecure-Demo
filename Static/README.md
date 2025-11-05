@@ -4,6 +4,7 @@ This demo ships as a **fully static experience** - double-click `Static/index.ht
 
 ## Highlights
 - **Persona tours** - hop between Reporter, Customer, Organisation, Security, Admin, and Labs flows using the landing hero cards or the global navigation.
+- **Themes** - switch between light and dark chromes from the global nav or Appearance settings; the choice persists per browser.
 - **Reporter success loop** - walk through live point balances, badge showcases, redemption decisions, and the Outlook-style add-in.
 - **Client storytelling** - show momentum dashboards, quest catalogues, badge governance, and rewards publishing with state changes reflected instantly.
 - **Admin & Labs oversight** - surface multi-tenant health plus experimental feature toggles to illustrate rollout control.

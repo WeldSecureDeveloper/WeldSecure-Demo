@@ -95,6 +95,11 @@ Object.assign(AppData, {
     description: "Configure the reporter add-in experience"
   },
   {
+    id: "appearance",
+    label: "Appearance",
+    description: "Toggle between light and dark themes"
+  },
+  {
     id: "organisation",
     label: "Organisation",
     description: "Tailor organisation dashboards and engagement",
