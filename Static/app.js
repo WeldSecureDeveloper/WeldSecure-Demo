@@ -183,13 +183,14 @@ function getBadges() {
 window.getBadges = getBadges;
 
 function rewardRemainingLabel(reward) {
+  if (typeof WeldUtil?.rewardRemainingLabel === "function") {
+    return WeldUtil.rewardRemainingLabel(reward);
+  }
   if (reward?.unlimited) {
     return "&infin;";
   }
-  if (typeof reward?.remaining === "number") {
-    return reward.remaining;
-  }
-  return 0;
+  const remaining = Number(reward?.remaining);
+  return Number.isFinite(remaining) ? remaining : 0;
 }
 
 function reasonById(id) {
@@ -2114,7 +2115,7 @@ function renderHubBadgeCard(badge) {
     : "";
   const pointsValue = Number(badge.points) || 0;
   const toggleTitle = difficultyLabel
-    ? `${WeldUtil.escapeHtml(difficultyLabel)}  ${formatNumber(pointsValue)} pts`
+    ? `${WeldUtil.escapeHtml(difficultyLabel)} - ${formatNumber(pointsValue)} pts`
     : `${formatNumber(pointsValue)} pts`;
   const ariaLabel = `${badge.title} badge, worth ${formatNumber(pointsValue)} points in the collection.`;
 
@@ -2158,6 +2159,9 @@ function renderHubBadgeCard(badge) {
 }
 
 function formatCatalogueLabel(label) {
+  if (typeof WeldUtil?.formatCatalogueLabel === "function") {
+    return WeldUtil.formatCatalogueLabel(label);
+  }
   if (typeof label !== "string") return "";
   const normalized = label.replace(/[_-]+/g, " ").trim();
   if (!normalized) return "";

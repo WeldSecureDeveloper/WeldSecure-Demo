@@ -17,27 +17,19 @@
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#39;");
 
-  const formatNumberSafe = value => {
-    if (typeof WeldUtil.formatNumberSafe === "function") {
-      return WeldUtil.formatNumberSafe(value);
-    }
-    if (typeof global.formatNumber === "function") {
-      return global.formatNumber(value);
-    }
-    const numeric = Number(value);
-    if (!Number.isFinite(numeric)) return "0";
-    return numeric.toLocaleString("en-GB");
-  };
+  const formatNumberSafe =
+    typeof WeldUtil.formatNumberSafe === "function"
+      ? WeldUtil.formatNumberSafe
+      : value => {
+          const numeric = Number(value);
+          if (!Number.isFinite(numeric)) return "0";
+          return numeric.toLocaleString("en-GB");
+        };
 
-  const formatDateTimeSafe = value => {
-    if (typeof WeldUtil.formatDateTimeSafe === "function") {
-      return WeldUtil.formatDateTimeSafe(value);
-    }
-    if (typeof global.formatDateTime === "function") {
-      return global.formatDateTime(value);
-    }
-    return value ? String(value) : "Unknown";
-  };
+  const formatDateTimeSafe =
+    typeof WeldUtil.formatDateTimeSafe === "function"
+      ? WeldUtil.formatDateTimeSafe
+      : value => (value ? String(value) : "Unknown");
 
   function describeActivity(value) {
     if (typeof global.describeActivityType === "function") {

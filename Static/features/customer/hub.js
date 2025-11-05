@@ -158,7 +158,7 @@ function renderCustomerHub(state) {
         if (isDouble) {
           tooltipParts.push("First quest completion this month delivered double points.");
         }
-        const tooltipText = tooltipParts.join(" ´┐¢ ");
+        const tooltipText = tooltipParts.join(" | ");
         const sourceClasses = [
           "points-bonus__source",
           isDouble ? "points-bonus__source--boost" : ""

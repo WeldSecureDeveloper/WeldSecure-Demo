@@ -1,28 +1,42 @@
 ﻿// state.js - state init & persistence helpers (namespaced)
 (function () {
   const appData = window.AppData || {};
-  const STORAGE_KEY = appData.STORAGE_KEY || 'WeldDemoState';
-  const DEFAULT_REPORTER_PROMPT = appData.DEFAULT_REPORTER_PROMPT;
-  const DEFAULT_EMERGENCY_LABEL = appData.DEFAULT_EMERGENCY_LABEL;
-  const PREVIOUS_EMERGENCY_LABEL = appData.PREVIOUS_EMERGENCY_LABEL;
-  const DEFAULT_REPORTER_REASONS = appData.DEFAULT_REPORTER_REASONS || [];
-  const DEFAULT_REPORTER_PROMPT_SAFE =
-    typeof DEFAULT_REPORTER_PROMPT === 'string' && DEFAULT_REPORTER_PROMPT.trim().length > 0
-      ? DEFAULT_REPORTER_PROMPT.trim()
-      : 'Why are you reporting this?';
-  const DEFAULT_EMERGENCY_LABEL_SAFE =
-    typeof DEFAULT_EMERGENCY_LABEL === 'string' && DEFAULT_EMERGENCY_LABEL.trim().length > 0
-      ? DEFAULT_EMERGENCY_LABEL.trim()
-      : 'I clicked a link, opened an attachment, or entered credentials';
-  const DEFAULT_REPORTER_REASONS_SAFE =
-    Array.isArray(DEFAULT_REPORTER_REASONS) && DEFAULT_REPORTER_REASONS.length > 0
-      ? DEFAULT_REPORTER_REASONS
-      : [
-          { id: 'reason-looks-like-phishing', label: 'Looks like a phishing attempt' },
-          { id: 'reason-unexpected-attachment', label: 'Unexpected attachment or link' },
-          { id: 'reason-urgent-tone', label: 'Urgent language / suspicious tone' },
-          { id: 'reason-spoofing-senior', label: 'Sender spoofing a senior colleague' }
-        ];
+  const STORAGE_KEY = appData.STORAGE_KEY || "WeldDemoState";
+  const APP_DEFAULTS = appData.DEFAULTS && typeof appData.DEFAULTS === "object" ? appData.DEFAULTS : {};
+  const resolveStringDefault = (value, fallback) => {
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed.length > 0) return trimmed;
+    }
+    if (typeof fallback === "string") {
+      const trimmedFallback = fallback.trim();
+      if (trimmedFallback.length > 0) return trimmedFallback;
+    }
+    return "";
+  };
+  const cloneReasonList = source =>
+    Array.isArray(source) ? source.map(item => (item && typeof item === "object" ? { ...item } : item)) : [];
+  const DEFAULT_REPORTER_PROMPT_SAFE = resolveStringDefault(
+    appData.DEFAULT_REPORTER_PROMPT,
+    APP_DEFAULTS.REPORTER_PROMPT
+  );
+  const DEFAULT_EMERGENCY_LABEL_SAFE = resolveStringDefault(
+    appData.DEFAULT_EMERGENCY_LABEL,
+    APP_DEFAULTS.EMERGENCY_LABEL
+  );
+  const PREVIOUS_EMERGENCY_LABEL = resolveStringDefault(
+    appData.PREVIOUS_EMERGENCY_LABEL,
+    APP_DEFAULTS.PREVIOUS_EMERGENCY_LABEL
+  );
+  const DEFAULT_REPORTER_REASONS_SAFE = (() => {
+    if (Array.isArray(appData.DEFAULT_REPORTER_REASONS) && appData.DEFAULT_REPORTER_REASONS.length > 0) {
+      return cloneReasonList(appData.DEFAULT_REPORTER_REASONS);
+    }
+    if (Array.isArray(APP_DEFAULTS.REPORTER_REASONS) && APP_DEFAULTS.REPORTER_REASONS.length > 0) {
+      return cloneReasonList(APP_DEFAULTS.REPORTER_REASONS);
+    }
+    return [];
+  })();
   const BADGES = appData.BADGES || [];
   const rawBadgeDrafts = appData.BADGE_DRAFTS;
   const BADGE_DRAFTS = rawBadgeDrafts instanceof Set ? rawBadgeDrafts : new Set(rawBadgeDrafts || []);

@@ -6,33 +6,20 @@
   const WeldUtil = window.WeldUtil || {};
   const WeldServices = window.WeldServices || {};
 
-  const formatNumberSafe = value => {
-    if (typeof WeldUtil.formatNumberSafe === "function") {
-      return WeldUtil.formatNumberSafe(value);
-    }
-    if (typeof window.formatNumber === "function") {
-      return window.formatNumber(value);
-    }
-    const numeric = Number(value);
-    return Number.isFinite(numeric) ? numeric : 0;
-  };
+  const formatNumberSafe =
+    typeof WeldUtil.formatNumberSafe === "function"
+      ? WeldUtil.formatNumberSafe
+      : value => (Number.isFinite(Number(value)) ? Number(value) : 0);
 
-  const formatDateTimeSafe = value => {
-    if (typeof WeldUtil.formatDateTimeSafe === "function") {
-      return WeldUtil.formatDateTimeSafe(value);
-    }
-    if (typeof window.formatDateTime === "function") {
-      return window.formatDateTime(value);
-    }
-    return value || "";
-  };
+  const formatDateTimeSafe =
+    typeof WeldUtil.formatDateTimeSafe === "function"
+      ? WeldUtil.formatDateTimeSafe
+      : value => (value === null || value === undefined ? "" : String(value));
 
-  const relativeTimeSafe = value => {
-    if (typeof window.relativeTime === "function") {
-      return window.relativeTime(value);
-    }
-    return value || "";
-  };
+  const relativeTimeSafe =
+    typeof WeldUtil.relativeTimeSafe === "function"
+      ? WeldUtil.relativeTimeSafe
+      : value => (value === null || value === undefined ? "" : String(value));
 
   const normalizeLabFeatureIdSafe = value => {
     if (typeof WeldUtil.normalizeLabFeatureId === "function") {

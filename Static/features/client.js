@@ -8,42 +8,25 @@
   const CONFIG_ICON =
     typeof WeldUtil.renderConfigIcon === "function" ? WeldUtil.renderConfigIcon() : "";
 
-  const formatNumberSafe = value => {
-    if (typeof WeldUtil.formatNumberSafe === "function") {
-      return WeldUtil.formatNumberSafe(value);
-    }
-    if (typeof window.formatNumber === "function") {
-      return window.formatNumber(value);
-    }
-    const numeric = Number(value);
-    return Number.isFinite(numeric) ? numeric : 0;
-  };
+  const formatNumberSafe =
+    typeof WeldUtil.formatNumberSafe === "function"
+      ? WeldUtil.formatNumberSafe
+      : value => (Number.isFinite(Number(value)) ? Number(value) : 0);
 
-  const formatCatalogueLabelSafe = label => {
-    if (typeof window.formatCatalogueLabel === "function") {
-      return window.formatCatalogueLabel(label);
-    }
-    return label ? String(label) : "Reward";
-  };
+  const formatCatalogueLabelSafe =
+    typeof WeldUtil.formatCatalogueLabel === "function"
+      ? WeldUtil.formatCatalogueLabel
+      : label => (label ? String(label) : "Reward");
 
-  const rewardRemainingLabelSafe = reward => {
-    if (typeof window.rewardRemainingLabel === "function") {
-      return window.rewardRemainingLabel(reward);
-    }
-    if (reward?.unlimited) return "&infin;";
-    const remaining = Number(reward?.remaining);
-    return Number.isFinite(remaining) ? remaining : 0;
-  };
+  const rewardRemainingLabelSafe =
+    typeof WeldUtil.rewardRemainingLabel === "function"
+      ? WeldUtil.rewardRemainingLabel
+      : reward => (reward?.unlimited ? "&infin;" : Number(reward?.remaining) || 0);
 
   const getState =
     typeof WeldUtil.getState === "function"
       ? WeldUtil.getState
-      : appState => {
-          if (appState && typeof appState === "object") return appState;
-          if (window.Weld && typeof window.Weld.state === "object") return window.Weld.state;
-          if (typeof window.state === "object") return window.state;
-          return {};
-        };
+      : appState => (appState && typeof appState === "object" ? appState : {});
 
   function renderClientRewardsView(stateOverride) {
     const state = getState(stateOverride);

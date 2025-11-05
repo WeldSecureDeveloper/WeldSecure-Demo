@@ -1,23 +1,38 @@
 ﻿// data/state/defaultState.js - baseline demo payload kept separate from logic
 (function () {
   const AppData = window.AppData || {};
-  const defaultReporterPrompt =
-    typeof AppData.DEFAULT_REPORTER_PROMPT === "string" && AppData.DEFAULT_REPORTER_PROMPT.trim().length > 0
-      ? AppData.DEFAULT_REPORTER_PROMPT.trim()
-      : "Why are you reporting this?";
-  const defaultEmergencyLabel =
-    typeof AppData.DEFAULT_EMERGENCY_LABEL === "string" && AppData.DEFAULT_EMERGENCY_LABEL.trim().length > 0
-      ? AppData.DEFAULT_EMERGENCY_LABEL.trim()
-      : "I clicked a link, opened an attachment, or entered credentials";
-  const defaultReporterReasons =
-    Array.isArray(AppData.DEFAULT_REPORTER_REASONS) && AppData.DEFAULT_REPORTER_REASONS.length > 0
-      ? AppData.DEFAULT_REPORTER_REASONS.map(reason => ({ ...reason }))
-      : [
-          { id: "reason-looks-like-phishing", label: "Looks like a phishing attempt" },
-          { id: "reason-unexpected-attachment", label: "Unexpected attachment or link" },
-          { id: "reason-urgent-tone", label: "Urgent language / suspicious tone" },
-          { id: "reason-spoofing-senior", label: "Sender spoofing a senior colleague" }
-        ];
+  const defaults = AppData.DEFAULTS && typeof AppData.DEFAULTS === "object" ? AppData.DEFAULTS : {};
+  const resolveStringDefault = (value, fallback) => {
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed.length > 0) return trimmed;
+    }
+    if (typeof fallback === "string") {
+      const trimmedFallback = fallback.trim();
+      if (trimmedFallback.length > 0) return trimmedFallback;
+    }
+    return "";
+  };
+  const cloneReasonArray = source =>
+    Array.isArray(source) ? source.map(reason => (reason && typeof reason === "object" ? { ...reason } : reason)) : [];
+
+  const defaultReporterPrompt = resolveStringDefault(
+    AppData.DEFAULT_REPORTER_PROMPT,
+    defaults.REPORTER_PROMPT
+  );
+  const defaultEmergencyLabel = resolveStringDefault(
+    AppData.DEFAULT_EMERGENCY_LABEL,
+    defaults.EMERGENCY_LABEL
+  );
+  const defaultReporterReasons = (() => {
+    if (Array.isArray(AppData.DEFAULT_REPORTER_REASONS) && AppData.DEFAULT_REPORTER_REASONS.length > 0) {
+      return cloneReasonArray(AppData.DEFAULT_REPORTER_REASONS);
+    }
+    if (Array.isArray(defaults.REPORTER_REASONS) && defaults.REPORTER_REASONS.length > 0) {
+      return cloneReasonArray(defaults.REPORTER_REASONS);
+    }
+    return [];
+  })();
   const payload = {
   "version": "2025-11-05",
   "meta": {
@@ -172,7 +187,7 @@
       "recipientTitle": "Operations Lead",
       "points": 25,
       "focus": "Awareness champion",
-      "message": "Rachelâ€™s town hall walkthrough on spotting bogus invoices gave every squad a playbook to challenge risky requests.",
+      "message": "Rachel's town hall walkthrough on spotting bogus invoices gave every squad a playbook to challenge risky requests.",
       "channel": "Town hall shout-out",
       "createdAt": "2025-10-04T17:20:00Z"
     },
@@ -395,7 +410,7 @@
       ],
       "pointsOnMessage": 20,
       "pointsOnApproval": 80,
-      "additionalNotes": "Sticker looked unofficial and led to a fake login page when scanned â€” removed it and reported facilities."
+      "additionalNotes": "Sticker looked unofficial and led to a fake login page when scanned -- removed it and reported facilities."
     }
   ],
   "labs": {
@@ -450,5 +465,6 @@
 };
   window.WeldInitialState = payload;
 })();
+
 
 

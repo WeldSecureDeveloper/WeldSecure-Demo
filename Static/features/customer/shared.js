@@ -10,20 +10,18 @@
 
     const formatNumber =
       typeof WeldUtil.formatNumberSafe === "function"
-        ? value => WeldUtil.formatNumberSafe(value)
-        : typeof window.formatNumber === "function"
-        ? window.formatNumber
+        ? WeldUtil.formatNumberSafe
         : value => (Number.isFinite(Number(value)) ? Number(value) : 0);
 
     const formatDateTime =
       typeof WeldUtil.formatDateTimeSafe === "function"
-        ? value => WeldUtil.formatDateTimeSafe(value)
-        : typeof window.formatDateTime === "function"
-        ? window.formatDateTime
-        : value => value || "";
+        ? WeldUtil.formatDateTimeSafe
+        : value => (value === null || value === undefined ? "" : String(value));
 
     const relativeTime =
-      typeof window.relativeTime === "function" ? window.relativeTime : value => value || "";
+      typeof WeldUtil.relativeTimeSafe === "function"
+        ? WeldUtil.relativeTimeSafe
+        : value => (value === null || value === undefined ? "" : String(value));
 
     const CONFIG_ICON =
       typeof WeldUtil.renderConfigIcon === "function" ? WeldUtil.renderConfigIcon() : "";
@@ -31,12 +29,7 @@
     const getState =
       typeof WeldUtil.getState === "function"
         ? WeldUtil.getState
-        : appState => {
-            if (appState && typeof appState === "object") return appState;
-            if (window.Weld && typeof window.Weld.state === "object") return window.Weld.state;
-            if (typeof window.state === "object") return window.state;
-            return {};
-          };
+        : appState => (appState && typeof appState === "object" ? appState : {});
 
     return {
       AppData,

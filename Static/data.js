@@ -1,6 +1,40 @@
 ﻿// data.js - container for static demo data & enums (migrate in Phase 3)
-window.AppData = window.AppData || {};
-Object.assign(window.AppData, {
+const AppData = window.AppData || (window.AppData = {});
+
+const DEFAULT_REPORTER_PROMPT_BASE = "Why are you reporting this?";
+const DEFAULT_EMERGENCY_LABEL_BASE = "I clicked a link, opened an attachment, or entered credentials";
+const PREVIOUS_EMERGENCY_LABEL_BASE =
+  "Recipient clicked a link, opened an attachment, or entered credentials";
+const DEFAULT_REPORTER_REASONS_BASE = [
+  { id: "reason-looks-like-phishing", label: "Looks like a phishing attempt" },
+  { id: "reason-unexpected-attachment", label: "Unexpected attachment or link" },
+  { id: "reason-urgent-tone", label: "Urgent language / suspicious tone" },
+  { id: "reason-spoofing-senior", label: "Sender spoofing a senior colleague" }
+];
+
+const existingDefaults = AppData.DEFAULTS && typeof AppData.DEFAULTS === "object" ? AppData.DEFAULTS : {};
+const reporterReasonDefaults =
+  Array.isArray(existingDefaults.REPORTER_REASONS) && existingDefaults.REPORTER_REASONS.length > 0
+    ? existingDefaults.REPORTER_REASONS
+    : DEFAULT_REPORTER_REASONS_BASE;
+
+AppData.DEFAULTS = {
+  REPORTER_PROMPT: existingDefaults.REPORTER_PROMPT || DEFAULT_REPORTER_PROMPT_BASE,
+  EMERGENCY_LABEL: existingDefaults.EMERGENCY_LABEL || DEFAULT_EMERGENCY_LABEL_BASE,
+  PREVIOUS_EMERGENCY_LABEL: existingDefaults.PREVIOUS_EMERGENCY_LABEL || PREVIOUS_EMERGENCY_LABEL_BASE,
+  REPORTER_REASONS: reporterReasonDefaults
+};
+
+const resolvedReporterReasons =
+  Array.isArray(AppData.DEFAULT_REPORTER_REASONS) && AppData.DEFAULT_REPORTER_REASONS.length > 0
+    ? AppData.DEFAULT_REPORTER_REASONS
+    : reporterReasonDefaults;
+
+const normalizedReporterReasons = Array.isArray(resolvedReporterReasons)
+  ? resolvedReporterReasons.map(reason => (reason && typeof reason === "object" ? { ...reason } : reason))
+  : [];
+
+Object.assign(AppData, {
   STORAGE_KEY: "weldStaticDemoStateV1",
   ROLE_LABELS: {
   customer: { label: "Reporter", chip: "chip--customer" },
@@ -73,15 +107,10 @@ Object.assign(window.AppData, {
     disabled: true
   }
 ],
-  DEFAULT_REPORTER_PROMPT: "Why are you reporting this?",
-  DEFAULT_EMERGENCY_LABEL: "I clicked a link, opened an attachment, or entered credentials",
-  PREVIOUS_EMERGENCY_LABEL: "Recipient clicked a link, opened an attachment, or entered credentials",
-  DEFAULT_REPORTER_REASONS: [
-  { id: "reason-looks-like-phishing", label: "Looks like a phishing attempt" },
-  { id: "reason-unexpected-attachment", label: "Unexpected attachment or link" },
-  { id: "reason-urgent-tone", label: "Urgent language / suspicious tone" },
-  { id: "reason-spoofing-senior", label: "Sender spoofing a senior colleague" }
-],
+  DEFAULT_REPORTER_PROMPT: AppData.DEFAULT_REPORTER_PROMPT || AppData.DEFAULTS.REPORTER_PROMPT,
+  DEFAULT_EMERGENCY_LABEL: AppData.DEFAULT_EMERGENCY_LABEL || AppData.DEFAULTS.EMERGENCY_LABEL,
+  PREVIOUS_EMERGENCY_LABEL: AppData.PREVIOUS_EMERGENCY_LABEL || AppData.DEFAULTS.PREVIOUS_EMERGENCY_LABEL,
+  DEFAULT_REPORTER_REASONS: normalizedReporterReasons,
   ICON_PATHS: {
     medal: "svg/medal.svg",
     outlook: "svg/outlook.svg",
