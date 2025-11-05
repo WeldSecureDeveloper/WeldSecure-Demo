@@ -603,12 +603,12 @@ function renderCustomerHub(state) {
   const publishedLeaderboardEntries = sortedLeaderboardEntries.filter(entry => entry && entry.published);
   const snapshotSource =
     publishedLeaderboardEntries.length > 0 ? publishedLeaderboardEntries : sortedLeaderboardEntries;
-  const leaderboardSnapshotEntries = snapshotSource.slice(0, 3);
-  const topSnapshotEntry = leaderboardSnapshotEntries.length > 0 ? leaderboardSnapshotEntries[0] : null;
+  const topSnapshotEntry = snapshotSource.length > 0 ? snapshotSource[0] : null;
+  const leaderboardSnapshotEntries = snapshotSource.slice(1, 4);
   const leaderboardSnapshotList = leaderboardSnapshotEntries
     .map((entry, index) => {
       if (!entry) return "";
-      const rank = index + 1;
+      const rank = index + 2;
       const departmentLabel =
         typeof entry.department === "string" && entry.department.trim().length > 0
           ? entry.department.trim()
@@ -625,6 +625,9 @@ function renderCustomerHub(state) {
       const momentumChip = momentumTag
         ? `<span class="leaderboard-snapshot__chip">${WeldUtil.escapeHtml(momentumTag)}</span>`
         : "";
+      const momentumChipMarkup = momentumChip
+        ? `<div class="leaderboard-snapshot__chips">${momentumChip}</div>`
+        : "";
       return `
         <li class="leaderboard-snapshot__item">
           <span class="leaderboard-snapshot__rank" aria-hidden="true">${formatNumber(rank)}</span>
@@ -636,7 +639,7 @@ function renderCustomerHub(state) {
             <span class="leaderboard-snapshot__points">${WeldUtil.escapeHtml(pointsValue)}</span>
             <span class="leaderboard-snapshot__points-unit">pts</span>
           </div>
-          ${momentumChip}
+          ${momentumChipMarkup}
         </li>
       `;
     })
@@ -690,7 +693,7 @@ function renderCustomerHub(state) {
       ? "All eyes on your defenders"
       : "Highlight your leaderboard heroes";
   const highlightChipsMarkup = topMomentum
-    ? `<div class="leaderboard-snapshot__chips">
+    ? `<div class="leaderboard-snapshot__chips leaderboard-snapshot__chips--banner">
         <span class="leaderboard-snapshot__chip leaderboard-snapshot__chip--glow">${WeldUtil.escapeHtml(topMomentum)}</span>
       </div>`
     : "";
@@ -1027,6 +1030,11 @@ function attachCustomerHubEvents(container, state) {
     };
   });
 })();
+
+
+
+
+
 
 
 
