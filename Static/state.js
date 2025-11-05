@@ -47,6 +47,7 @@
   const THEME_OPTIONS = ["light", "dark"];
   const DEFAULT_FEATURE_TOGGLES = {
     badges: true,
+    leaderboards: true,
     quests: true,
     rewards: true
   };

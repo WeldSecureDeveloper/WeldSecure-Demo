@@ -89,6 +89,7 @@ function renderCustomerHub(state) {
       ? state.meta.featureToggles
       : {};
   const showBadges = rawFeatureToggles.badges !== false;
+  const showLeaderboards = rawFeatureToggles.leaderboards !== false;
   const showQuests = rawFeatureToggles.quests !== false;
   const showRewards = rawFeatureToggles.rewards !== false;
   const customerMessages = state.messages.filter(messageBelongsToCustomer);
@@ -638,7 +639,8 @@ function renderCustomerHub(state) {
   const leaderboardSnapshotMarkup = leaderboardSnapshotEntries.length
     ? `<ol class="leaderboard-snapshot__list">${leaderboardSnapshotList}</ol>`
     : `<p class="leaderboard-snapshot__empty">No leaderboard stories published yet. Toggle them on inside the organisation hub.</p>`;
-  const leaderboardSnapshotCard = `
+  const leaderboardSnapshotCard = showLeaderboards
+    ? `
     <div class="customer-hero-actions__panel customer-hero-actions__panel--snapshot">
       <div class="leaderboard-snapshot">
         <span class="leaderboard-snapshot__eyebrow">Leaderboard pulse</span>
@@ -653,7 +655,8 @@ function renderCustomerHub(state) {
         </button>
       </div>
     </div>
-  `;
+  `
+    : "";
 
   return `
     <header class="customer-hero">

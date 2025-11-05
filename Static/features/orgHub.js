@@ -83,6 +83,12 @@ function renderOrgHub(state) {
       icon: "medal"
     },
     {
+      key: "leaderboards",
+      label: "Leaderboard pulse",
+      description: "Highlight top departments on the reporter hub snapshot and deep dive page.",
+      icon: "trophy"
+    },
+    {
       key: "quests",
       label: "Quest playlist",
       description: "Highlight quests so squads can see the next security upskill challenge.",
