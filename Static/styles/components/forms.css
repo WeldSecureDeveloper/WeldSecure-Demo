@@ -151,6 +151,15 @@
   border-color: var(--btn-dark-border);
 }
 
+.journey-card__action {
+  margin-top: auto;
+  align-self: flex-start;
+  z-index: 1;
+  background: var(--tone, var(--btn-gradient-primary));
+  border-color: rgba(255, 255, 255, 0.32);
+  color: #fff;
+}
+
 [data-theme='dark'] .button-pill--ghost {
   border: 1px solid var(--color-border-soft);
   background: rgba(31, 45, 68, 0.65);

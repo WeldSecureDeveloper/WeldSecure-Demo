@@ -146,43 +146,6 @@
 .landing__tiles--features {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
-.journey-card {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  padding: 2.2rem;
-  border-radius: 28px;
-  background: var(--color-bg-surface);
-  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.12);
-  position: relative;
-  cursor: pointer;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-  border: none;
-  text-align: left;
-}
-.journey-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 28px;
-  background: var(--tone, rgba(93, 59, 255, 0.1));
-  opacity: 0.08;
-  pointer-events: none;
-}
-.journey-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.16);
-}
-.journey-card__action {
-  margin-top: auto;
-  align-self: flex-start;
-  z-index: 1;
-  background: var(--tone, var(--btn-gradient-primary));
-  border-color: rgba(255, 255, 255, 0.32);
-  color: #fff;
-}
 .feature-card {
   display: flex;
   flex-direction: column;
@@ -250,55 +213,6 @@
 .feature-card__action:active {
   transform: translateY(0);
   box-shadow: 0 12px 24px rgba(79, 70, 229, 0.2);
-}
-.metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.25rem;
-}
-.metric-card {
-  border-radius: 24px;
-  padding: 1.6rem 1.8rem;
-  display: flex;
-  align-items: center;
-  gap: 1.1rem;
-  color: var(--tone-color, #312e81);
-  background: var(--tone-bg, rgba(99, 102, 241, 0.18));
-  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.1);
-}
-.metric-card__icon {
-  flex-shrink: 0;
-}
-.metric-card__body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-.metric-card__label {
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  font-size: 0.7rem;
-  opacity: 0.62;
-}
-.metric-card__value {
-  font-size: 2.2rem;
-  line-height: 1.1;
-}
-.metric-card__trend {
-  display: flex;
-  gap: 0.6rem;
-  font-weight: 600;
-  align-items: center;
-}
-.metric-card__trend[data-direction="up"] {
-  color: #047857;
-}
-.metric-card__trend[data-direction="down"] {
-  color: #dc2626;
-}
-.metric-card__trend small {
-  font-weight: 500;
-  color: rgba(15, 23, 42, 0.6);
 }
 .points-strip {
   display: flex;
