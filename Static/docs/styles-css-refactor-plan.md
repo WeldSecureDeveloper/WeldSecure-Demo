@@ -22,8 +22,8 @@ Goal: split the monolithic `Static/styles.css` (~7k lines) into focused, maintai
 - [ ] Diff visually: verify typography, spacing, and theme colors still render.
 
 ## Phase 3 - Extract Shared Layout & Utilities
-- [ ] Relocate grid/flex helpers, page wrappers, and layout utilities into `styles/base/layout.css`.
-- [ ] Keep related media queries bundled with their selectors to preserve responsive behaviour.
+- [x] Relocate grid/flex helpers, page wrappers, and layout utilities into `styles/base/layout.css`.
+- [x] Keep related media queries bundled with their selectors to preserve responsive behaviour.
 - [ ] Sanity check in the browser: resize viewport; ensure layouts still respond correctly.
 
 ## Phase 4 - Extract Reusable Components
