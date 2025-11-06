@@ -445,7 +445,6 @@
   font-size: 0.82rem;
   color: rgba(49, 46, 129, 0.76);
 }
-
 @media (max-width: 768px) {
   .points-bonus__meter-labels {
     flex-direction: column;
@@ -453,7 +452,33 @@
     gap: 0.35rem;
   }
 }
-
+.badge-gallery__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.4rem;
+}
+.badge-gallery__metric {
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 0.9rem;
+  padding: 1.3rem 1.5rem;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.badge-gallery__metric span {
+  font-size: 0.85rem;
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.badge-gallery__metric strong {
+  font-size: 1.85rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
 .customer-hero {
   position: relative;
   display: flex;
@@ -4460,6 +4485,8 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+}
+
 .addin-emergency {
   display: inline-flex;
   align-items: center;
@@ -4493,9 +4520,6 @@
   color: #450a0a;
 }
 .addin-emergency:has(input[type="checkbox"]:checked) {
-  border-color: rgba(185, 28, 28, 0.55);
-  background: rgba(254, 226, 226, 0.5);
-}
   border-color: rgba(185, 28, 28, 0.55);
   background: rgba(254, 226, 226, 0.5);
 }

@@ -27,7 +27,7 @@ Goal: split the monolithic `Static/styles.css` (~7k lines) into focused, maintai
 - [x] Sanity check in the browser: resize viewport; ensure layouts still respond correctly.
 
 ## Phase 4 - Extract Reusable Components
-- [ ] Identify reusable blocks (chips, cards, tables, nav, forms) and create files under `styles/components/` (e.g., `chips.css`, `cards.css`, `tables.css`, `nav.css`, `forms.css`).
+- [x] Identify reusable blocks (chips, cards, tables, nav, forms) and create files under `styles/components/` (e.g., `chips.css`, `cards.css`, `tables.css`, `nav.css`, `forms.css`).
 - [ ] Cut/paste each block from `styles.css` into its component file, keeping import order consistent with dependency needs (base -> components -> features).
 - [ ] After each extraction, reload and perform a quick UI sweep on sections using that component.
 
