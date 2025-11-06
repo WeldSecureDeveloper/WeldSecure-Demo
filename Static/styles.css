@@ -7,6 +7,7 @@
 @import url("./styles/components/tables.css");
 @import url("./styles/components/nav.css");
 @import url("./styles/components/forms.css");
+@import url("./styles/components/icons.css");
 @import url("./styles/features/landing.css");
 @import url("./styles/features/customer.css");
 @import url("./styles/features/dashboard.css");
@@ -59,61 +60,6 @@
   display: flex;
   gap: 1rem;
   align-items: center;
-}
-.icon-token {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  width: 60px;
-  height: 60px;
-  background: radial-gradient(circle at 30% 30%, #5b21b6, #312e81 72%);
-  box-shadow: 0 16px 32px rgba(76, 29, 149, 0.32);
-  overflow: hidden;
-  position: relative;
-}
-.icon-token::after {
-  content: "";
-  position: absolute;
-  inset: -20%;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.28),
-    transparent 56%
-  );
-  mix-blend-mode: screen;
-  opacity: 0.75;
-  pointer-events: none;
-}
-.icon-token svg,
-.icon-token img {
-  width: 58%;
-  height: 58%;
-  z-index: 1;
-  transform: translateY(1px);
-  display: block;
-}
-.icon-token--lg {
-  width: 72px;
-  height: 72px;
-  flex-shrink: 0;
-}
-.icon-token--md {
-  width: 60px;
-  height: 60px;
-  flex-shrink: 0;
-}
-.icon-token--sm {
-  width: 52px;
-  height: 52px;
-  box-shadow: 0 12px 26px rgba(76, 29, 149, 0.26);
-  flex-shrink: 0;
-}
-.icon-token--xs {
-  width: 44px;
-  height: 44px;
-  box-shadow: 0 10px 20px rgba(76, 29, 149, 0.22);
-  flex-shrink: 0;
 }
 .landing {
   width: 100%;
