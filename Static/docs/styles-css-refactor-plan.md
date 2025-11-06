@@ -38,7 +38,7 @@ Goal: split the monolithic `Static/styles.css` (~7 k lines) into focused, main
 - [ ] Repeat until no feature-specific rules remain in the root file.
 
 ## Phase 6 – Badges & Remaining Special Cases
-- [ ] Keep or move existing `styles/badges.css` into `styles/features/` if it is feature-specific; otherwise leave as-is and ensure the import order still fits.
+- [ ] Leave the existing `styles/badges.css` in place; just make sure its import remains in the correct spot relative to the new files.
 - [ ] Find any remaining selectors in `styles.css` (run `rg "." Static/styles.css`) and relocate them to the appropriate file; aim for the aggregator to be imports-only plus optional comments.
 
 ## Phase 7 – Finalise Aggregator
