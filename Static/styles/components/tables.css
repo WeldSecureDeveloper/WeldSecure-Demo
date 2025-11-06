@@ -1,1 +1,121 @@
-/* Placeholder: table styling will move here during Phase 4. */
+.detail-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.detail-table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+}
+
+.detail-table th {
+  text-align: left;
+  padding: 0.85rem 1rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.24);
+}
+
+.detail-table td {
+  padding: 1rem 1rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  vertical-align: top;
+}
+
+.detail-table tr:last-child td {
+  border-bottom: none;
+}
+
+.detail-table strong {
+  display: block;
+  font-size: 1rem;
+  color: var(--color-text-primary);
+}
+
+.detail-table__chips {
+  margin-top: 0.4rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--burst-queue-spacing, 48px) * 0.35);
+}
+
+.detail-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.32rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.14);
+  color: #3730a3;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+}
+
+.detail-table__points {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.detail-table__points span {
+  display: inline-flex;
+  padding: 0.24rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  font-size: 0.78rem;
+}
+
+.detail-table__points strong {
+  font-size: 0.85rem;
+  color: var(--color-text-strong);
+}
+
+.detail-table__meta {
+  margin-top: 0.4rem;
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-text-subtle);
+}
+
+.table-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.table-actions button {
+  padding: 0.55rem 1.1rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.01em;
+  min-height: 0;
+  box-shadow: var(--btn-shadow-soft);
+}
+
+.table-actions button:first-child {
+  background: var(--btn-gradient-accent);
+  color: #fff;
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: var(--btn-shadow-strong);
+}
+
+.table-actions button:first-child:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 22px 38px rgba(79, 70, 229, 0.32);
+}
+
+.table-actions button:first-child:active {
+  transform: translateY(0);
+  box-shadow: 0 12px 24px rgba(79, 70, 229, 0.22);
+}
+
+.table-actions button:last-child {
+  color: #fff;
+}

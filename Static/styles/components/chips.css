@@ -1,1 +1,32 @@
-/* Placeholder: chip component styles will move here during Phase 4. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.chip--customer {
+  background: linear-gradient(135deg, #6f47ff, #3623de);
+}
+
+.chip--client {
+  background: linear-gradient(135deg, #ff8a80, #ff4d6d);
+}
+
+.chip--admin {
+  background: linear-gradient(135deg, #10b981, #047857);
+}
+
+.chip--addin {
+  background: linear-gradient(135deg, #0ea5e9, #4f46e5);
+}
+
+.chip__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+}
