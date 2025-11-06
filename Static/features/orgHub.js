@@ -166,16 +166,6 @@ function renderOrgHub(state) {
   `;
 
   const programs = Array.isArray(state.engagementPrograms) ? state.engagementPrograms.slice() : [];
-  programs.sort((a, b) => {
-    const aPublished = Boolean(a?.published);
-    const bPublished = Boolean(b?.published);
-    if (aPublished !== bPublished) {
-      return aPublished ? -1 : 1;
-    }
-    const titleA = typeof a?.title === "string" ? a.title : "";
-    const titleB = typeof b?.title === "string" ? b.title : "";
-    return titleA.localeCompare(titleB, undefined, { sensitivity: "base" });
-  });
   const publishedPrograms = programs.filter(program => program && program.published);
   const programCards = programs.length
     ? programs

@@ -1107,7 +1107,7 @@ function setEngagementProgramPublication(programId, published) {
   if (program.published === nextPublished) return;
   program.published = nextPublished;
   WeldState.saveState(state);
-  renderApp();
+  renderAppPreservingScroll();
 }
 
 function setAllEngagementProgramsPublication(published) {
@@ -1122,7 +1122,7 @@ function setAllEngagementProgramsPublication(published) {
   });
   if (!changed) return;
   WeldState.saveState(state);
-  renderApp();
+  renderAppPreservingScroll();
 }
 
 function setHubFeatureToggle(featureKey, enabled) {
@@ -1151,7 +1151,7 @@ function setHubFeatureToggle(featureKey, enabled) {
     state.meta.featureToggles[normalizedKey] = false;
   }
   WeldState.saveState(state);
-  renderApp();
+  renderAppPreservingScroll();
 }
 
 function reportMessage(payload) {
