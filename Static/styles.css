@@ -3920,6 +3920,7 @@
   font-size: 0.95rem;
 }
 
+[data-theme='dark'] {
   --color-bg-page: #0b1220;
   --color-bg-page-muted: #111827;
   --color-bg-surface: #111827;
@@ -3959,6 +3960,7 @@
   color: var(--color-text-primary);
   background: var(--color-bg-page);
 }
+
 [data-theme='dark'] body {
   background: var(--color-bg-page);
   color: var(--color-text-primary);

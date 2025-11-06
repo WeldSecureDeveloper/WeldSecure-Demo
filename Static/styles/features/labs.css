@@ -267,3 +267,15 @@
   font-size: 0.95rem;
 }
 
+/* Dark theme overrides */
+[data-theme='dark'] .weld-labs__empty {
+  background: rgba(23, 33, 51, 0.75);
+  border-color: rgba(82, 102, 138, 0.6);
+}
+[data-theme='dark'] .weld-labs__empty h3 {
+  color: #93c5fd;
+}
+[data-theme='dark'] .weld-labs__empty p {
+  color: var(--color-text-subtle);
+}
+
