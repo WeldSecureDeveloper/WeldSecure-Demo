@@ -14,11 +14,11 @@ Goal: split the monolithic `Static/styles.css` (~7k lines) into focused, maintai
   - `features/`
 - [x] Add placeholder files (`base/tokens.css`, `base/structure.css`, etc.) with a header comment so imports resolve before moving content.
 - [x] Update `Static/styles.css` to include ordered `@import` statements for the new placeholders (keep the Google Fonts import first).
-- [ ] Reload locally to ensure no 404s (placeholders can be empty; layout will be blank but confirm console is clean).
+- [x] Reload locally to ensure no 404s (placeholders can be empty; layout will be blank but confirm console is clean).
 
 ## Phase 2 - Extract Global Foundations
-- [ ] Move design tokens (`:root` variables) and resets (`*`, `body`, `.page`, `.page__inner`, etc., currently around lines 13-160) into `styles/base/tokens.css` and `styles/base/structure.css`.
-- [ ] Update `Static/styles.css` imports so `tokens.css` loads before `structure.css`.
+- [x] Move design tokens (`:root` variables) and resets (`*`, `body`, `.page`, `.page__inner`, etc., currently around lines 13-160) into `styles/base/tokens.css` and `styles/base/structure.css`.
+- [x] Update `Static/styles.css` imports so `tokens.css` loads before `structure.css`.
 - [ ] Diff visually: verify typography, spacing, and theme colors still render.
 
 ## Phase 3 - Extract Shared Layout & Utilities

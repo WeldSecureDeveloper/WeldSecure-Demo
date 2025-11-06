@@ -1,1 +1,23 @@
-/* Placeholder: layout utilities will be moved here during Phase 3. */
+.layout-content {
+  flex: 1;
+  background: var(--color-bg-surface);
+  border-radius: 24px;
+  padding: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  box-shadow: 0 20px 60px rgba(21, 34, 66, 0.08);
+}
+
+.layout-content--flush {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+@media (max-width: 900px) {
+  .layout-content {
+    padding: 1.75rem;
+  }
+}
