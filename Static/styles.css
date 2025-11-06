@@ -1,4 +1,25 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
+@import url("./styles/base/tokens.css");
+@import url("./styles/base/structure.css");
+@import url("./styles/base/layout.css");
+@import url("./styles/components/chips.css");
+@import url("./styles/components/cards.css");
+@import url("./styles/components/tables.css");
+@import url("./styles/components/nav.css");
+@import url("./styles/components/forms.css");
+@import url("./styles/features/landing.css");
+@import url("./styles/features/customer.css");
+@import url("./styles/features/dashboard.css");
+@import url("./styles/features/reports.css");
+@import url("./styles/features/settings.css");
+@import url("./styles/features/hub.css");
+@import url("./styles/features/orgHub.css");
+@import url("./styles/features/leaderboards.css");
+@import url("./styles/features/reporter.css");
+@import url("./styles/features/labs.css");
+@import url("./styles/features/userConfig.css");
+@import url("./styles/features/admin.css");
+@import url("./styles/features/client.css");
 @import url("./styles/badges.css");
 
 :root {
