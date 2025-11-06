@@ -8,6 +8,7 @@
 @import url("./styles/components/nav.css");
 @import url("./styles/components/forms.css");
 @import url("./styles/components/icons.css");
+@import url("./styles/components/dialog.css");
 @import url("./styles/features/landing.css");
 @import url("./styles/features/customer.css");
 @import url("./styles/features/dashboard.css");
@@ -5321,36 +5322,6 @@
   .addin-actions .addin-cta {
     min-width: 180px;
   }
-}
-.dialog-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.48);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  z-index: 1000;
-}
-.dialog-surface {
-  background: var(--color-bg-popover);
-  border-radius: 28px;
-  padding: 2.25rem;
-  width: 100%;
-  max-width: 520px;
-  display: flex;
-  flex-direction: column;
-  gap: 1.75rem;
-  border: 1px solid var(--color-border-soft);
-  box-shadow: var(--shadow-popover);
-}
-.dialog-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.85rem;
-}
-.hidden {
-  display: none !important;
 }
 @media (max-width: 1100px) {
   .timeline__item {
