@@ -80,7 +80,7 @@
   "customer": {
     "id": 501,
     "name": "Rachel Summers",
-    "email": "rachel.summers@example.com",
+    "email": "rachel.summers@weld.onmicrosoft.com",
     "currentPoints": 540,
     "redeemedPoints": 180,
     "clientId": 101,
@@ -115,7 +115,7 @@
     {
       "id": "rachel-summers",
       "name": "Rachel Summers",
-      "email": "rachel.summers@example.com",
+      "email": "rachel.summers@weld.onmicrosoft.com",
       "title": "Operations Lead",
       "location": "London HQ",
       "specialty": "Finance workflows",
@@ -164,7 +164,7 @@
       "senderEmail": "priya.shah@example.com",
       "senderName": "Priya Shah",
       "senderTitle": "Senior Security Analyst",
-      "recipientEmail": "rachel.summers@example.com",
+      "recipientEmail": "rachel.summers@weld.onmicrosoft.com",
       "recipientName": "Rachel Summers",
       "recipientTitle": "Operations Lead",
       "points": 35,
@@ -178,7 +178,7 @@
       "senderEmail": "will.adams@example.com",
       "senderName": "Will Adams",
       "senderTitle": "Risk Champion - Finance",
-      "recipientEmail": "rachel.summers@example.com",
+      "recipientEmail": "rachel.summers@weld.onmicrosoft.com",
       "recipientName": "Rachel Summers",
       "recipientTitle": "Operations Lead",
       "points": 20,
@@ -192,7 +192,7 @@
       "senderEmail": "hannah.elliott@example.com",
       "senderName": "Hannah Elliott",
       "senderTitle": "Employee Success Partner",
-      "recipientEmail": "rachel.summers@example.com",
+      "recipientEmail": "rachel.summers@weld.onmicrosoft.com",
       "recipientName": "Rachel Summers",
       "recipientTitle": "Operations Lead",
       "points": 25,
@@ -203,7 +203,7 @@
     },
     {
       "id": "rec-1004",
-      "senderEmail": "rachel.summers@example.com",
+      "senderEmail": "rachel.summers@weld.onmicrosoft.com",
       "senderName": "Rachel Summers",
       "senderTitle": "Operations Lead",
       "recipientEmail": "daniel.cho@example.com",
@@ -376,7 +376,7 @@
       "messageId": "AAMkAGU0Zjk5ZGMyLTQ4M2UtND",
       "subject": "Caller posing as IT support about device settings",
       "reporterName": "Rachel Summers",
-      "reporterEmail": "rachel.summers@example.com",
+      "reporterEmail": "rachel.summers@weld.onmicrosoft.com",
       "clientId": 101,
       "reportedAt": "2025-10-07T08:45:00Z",
       "status": "approved",
@@ -393,7 +393,7 @@
       "messageId": "AAMkAGRjYTgzZjAtOGQ0Mi00",
       "subject": "WhatsApp message pretending to be our CFO",
       "reporterName": "Rachel Summers",
-      "reporterEmail": "rachel.summers@example.com",
+      "reporterEmail": "rachel.summers@weld.onmicrosoft.com",
       "clientId": 101,
       "reportedAt": "2025-10-02T17:12:00Z",
       "status": "pending",
@@ -410,7 +410,7 @@
       "messageId": "AAMkAGQxZTZlNDAtZWMxOS00",
       "subject": "Unfamiliar QR code posted at the car park entrance",
       "reporterName": "Rachel Summers",
-      "reporterEmail": "rachel.summers@example.com",
+      "reporterEmail": "rachel.summers@weld.onmicrosoft.com",
       "clientId": 101,
       "reportedAt": "2025-09-26T11:06:00Z",
       "status": "approved",
@@ -475,6 +475,9 @@
 };
   window.WeldInitialState = payload;
 })();
+
+
+
 
 
 
