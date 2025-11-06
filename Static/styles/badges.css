@@ -279,6 +279,95 @@
   margin-left: auto;
 }
 
+/* Catalogue group layouts */
+.catalogue-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.catalogue-card__tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 700;
+  font-size: 0.68rem;
+  line-height: 1;
+}
+
+.catalogue-badge-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.catalogue-badge-group__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.catalogue-badge-group__header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--color-text-strong);
+}
+
+.catalogue-badge-group__grid {
+  display: grid;
+  padding-bottom: 0;
+  row-gap: 0.9rem;
+  column-gap: 0.1125rem;
+}
+
+.catalogue-badge-group:last-of-type .catalogue-badge-group__grid {
+  padding-bottom: 0;
+}
+
+.catalogue-badge-group__grid.catalogue-badge-grid {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 260px));
+  column-gap: 0.1125rem;
+}
+
+.catalogue-badge-group__grid .catalogue-badge {
+  width: min(100%, 260px);
+  justify-self: start;
+}
+
+.catalogue-badge--spotlight {
+  gap: 0.4rem;
+}
+
+.catalogue-badge--spotlight .catalogue-badge__label {
+  font-weight: 600;
+  text-align: center;
+}
+
+.catalogue-badge-card--catalogue {
+  max-width: min(360px, 80vw);
+}
+
+@media (min-width: 768px) {
+  .catalogue-badge-card--catalogue {
+    top: 50%;
+    left: calc(100% + 1.25rem);
+    transform: translate(-12px, -50%) scale(0.98);
+  }
+
+  .catalogue-badge:hover .catalogue-badge-card--catalogue,
+  .catalogue-badge:focus-within .catalogue-badge-card--catalogue,
+  .catalogue-badge-card--catalogue:hover,
+  .catalogue-badge-card--catalogue:focus-within {
+    transform: translate(0, -50%) scale(1);
+  }
+}
+
 /* Dark theme overrides */
 [data-theme='dark'] .catalogue-badge-card__title {
   text-shadow: 0 14px 32px rgba(4, 12, 40, 0.6);

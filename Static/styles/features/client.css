@@ -1,1 +1,175 @@
-/* Placeholder: client feature styles will move here during Phase 5. */
+/* Client feature */
+.client-rewards__metrics,
+.client-quests__metrics,
+.client-badges__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.6rem;
+  margin: 2.4rem 0;
+}
+
+.client-rewards__actions,
+.client-quests__actions,
+.client-badges__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin: 1.5rem 0 2rem;
+}
+
+.client-rewards__metric,
+.client-quests__metric,
+.client-badges__metric {
+  background: var(--color-bg-surface-alt);
+  border-radius: 22px;
+  padding: 1.6rem 1.8rem;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.client-rewards__metric h3,
+.client-quests__metric h3,
+.client-badges__metric h3 {
+  margin: 0;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--color-text-muted);
+}
+
+.client-rewards__metric strong,
+.client-quests__metric strong,
+.client-badges__metric strong {
+  font-size: 2.1rem;
+  line-height: 1.1;
+  color: var(--color-text-primary);
+}
+
+.client-rewards__metric span:last-child,
+.client-quests__metric span:last-child,
+.client-badges__metric span:last-child {
+  font-size: 0.85rem;
+  color: var(--color-text-subtle);
+}
+
+.client-catalogue__actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.client-catalogue__actions-row > .client-catalogue__status {
+  margin-left: auto;
+}
+
+.client-catalogue__status {
+  margin-top: 0;
+  margin-left: auto;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.client-rewards__bulk,
+.client-quests__bulk,
+.client-badges__bulk {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.client-rewards__filters,
+.client-quests__filters,
+.client-badges__filters {
+  width: 100%;
+}
+
+.client-badges__groups {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  padding-bottom: 3rem;
+}
+
+.client-badges__actions .detail-table__meta {
+  color: var(--color-text-muted);
+}
+
+.client-badges__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+
+.client-badges__grid .badge-empty {
+  width: 100%;
+  max-width: 100%;
+  margin-top: 0;
+}
+
+.client-badges__grid .catalogue-badge {
+  justify-self: start;
+  width: min(100%, 260px);
+  transition: none;
+  box-shadow: none;
+}
+
+.client-badges__grid .catalogue-badge:hover,
+.client-badges__grid .catalogue-badge:focus-within {
+  transform: none;
+  box-shadow: none;
+}
+
+.client-badges__grid .catalogue-badge.catalogue-badge--published {
+  border-color: var(--catalogue-status-published-border);
+}
+
+.client-badges__grid .catalogue-badge.catalogue-badge--draft {
+  border-color: var(--catalogue-status-draft-border);
+}
+
+.client-badges__grid .catalogue-badge__body {
+  gap: 0.75rem;
+}
+
+.client-badges__grid .catalogue-badge__figure {
+  width: 72px;
+  height: 72px;
+}
+
+.client-badges__grid .catalogue-badge__copy {
+  gap: 0.4rem;
+}
+
+.client-badges__grid .catalogue-badge__copy h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.client-badges__grid .catalogue-badge__description,
+.client-badges__grid .catalogue-badge__bonus {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.client-badges__grid .catalogue-badge__bonus strong {
+  color: var(--color-text-strong);
+}
+
+.client-badges__grid .catalogue-badge__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.client-badges__grid .catalogue-badge__points {
+  font-weight: 700;
+  color: var(--color-text-strong);
+}
+
+.client-badges__grid .catalogue-badge__footer .button-pill {
+  flex-shrink: 0;
+}

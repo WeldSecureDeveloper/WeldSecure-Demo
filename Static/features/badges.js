@@ -157,13 +157,12 @@
       const sanitizedId = rawId.replace(/[^a-zA-Z0-9:_-]/g, "-");
       const id = WeldUtil.escapeHtml(rawId);
       const cardId = WeldUtil.escapeHtml(`badge-card-${index}-${sanitizedId || "detail"}`);
-      const action = badge.published ? "unpublish" : "publish";
-      const actionLabel = badge.published ? "Unpublish" : "Publish";
-      const actionTone = badge.published ? "button-pill--danger-light" : "button-pill--primary";
       const toneKey = badgeTones[badge.tone] ? badge.tone : "violet";
       const tone = badgeTones[toneKey] || badgeTones.violet;
       const iconBackdrop =
-        badgeIconBackdrops[toneKey]?.background || badgeIconBackdrops.violet?.background || "linear-gradient(135deg, #c7d2fe, #818cf8)";
+        badgeIconBackdrops[toneKey]?.background ||
+        badgeIconBackdrops.violet?.background ||
+        "linear-gradient(135deg, #c7d2fe, #818cf8)";
       const iconShadow =
         badgeIconBackdrops[toneKey]?.shadow || badgeIconBackdrops.violet?.shadow || "rgba(79, 70, 229, 0.32)";
       const descriptionText =
@@ -190,11 +189,11 @@
         ? `<div class="catalogue-badge-card__tags catalogue-card__tags">${tags.join("")}</div>`
         : "";
       const descriptionMarkup = descriptionText.length
-        ? `<p class="catalogue-badge__description">${WeldUtil.escapeHtml(descriptionText)}</p>`
+        ? `<p class="catalogue-badge-card__description">${WeldUtil.escapeHtml(descriptionText)}</p>`
         : "";
       const bonusMarkup =
         badge.bonus && badge.bonusDetail
-          ? `<p class="catalogue-badge__bonus"><strong>${WeldUtil.escapeHtml(badge.bonus)}</strong> ${WeldUtil.escapeHtml(
+          ? `<p class="catalogue-badge-card__description catalogue-badge-card__description--bonus"><strong>${WeldUtil.escapeHtml(badge.bonus)}</strong> ${WeldUtil.escapeHtml(
               badge.bonusDetail
             )}</p>`
           : "";
@@ -202,47 +201,58 @@
       if (difficultyLabel) toggleTitleParts.push(difficultyLabel);
       if (rawCategory && rawCategory.toLowerCase() !== "badge") toggleTitleParts.push(categoryLabel);
       if (badge.points) toggleTitleParts.push(`${formatNumber(pointsValue)} pts`);
-      const toggleTitle = toggleTitleParts.join(" • ");
+      const toggleTitle = toggleTitleParts.join(" - ");
+      const statusLabel = badge.published ? "Published" : "Unpublished";
+      const statusClass = badge.published
+        ? "catalogue-badge-card__status--published"
+        : "catalogue-badge-card__status--draft";
+      const cardStateClass = badge.published ? "catalogue-badge-card--published" : "catalogue-badge-card--draft";
 
       return `
       <article
-        class="catalogue-badge ${badge.published ? "catalogue-badge--published" : "catalogue-badge--draft"}"
+        class="catalogue-badge catalogue-badge--spotlight ${badge.published ? "catalogue-badge--published" : "catalogue-badge--draft"}"
         data-badge="${id}"
         style="--badge-tone:${WeldUtil.escapeHtml(tone)};--badge-icon-tone:${WeldUtil.escapeHtml(iconBackdrop)};--badge-icon-shadow:${WeldUtil.escapeHtml(
           iconShadow
         )};">
-        <header class="catalogue-badge__header">
-          ${tagsMarkup}
-        </header>
-        <div class="catalogue-badge__body">
-          <div class="catalogue-badge__figure">
-            <span class="catalogue-badge__icon" style="background:${iconBackdrop}; box-shadow:0 22px 44px ${iconShadow};">
-              ${WeldUtil.renderIcon(badge.icon || "medal", "sm")}
-            </span>
-          </div>
-          <div class="catalogue-badge__copy">
-            <h3>${WeldUtil.escapeHtml(badge.title || "Badge")}</h3>
-          </div>
-          ${descriptionMarkup}
-          ${bonusMarkup}
-        </div>
-        <footer class="catalogue-badge__footer">
-          <span class="catalogue-badge__points">
-            <strong>${formatNumber(pointsValue)}</strong>
-            <span>pts</span>
+        <button
+          type="button"
+          class="catalogue-badge__trigger"
+          aria-haspopup="true"
+          aria-controls="${cardId}"
+          aria-label="${WeldUtil.escapeHtml(ariaLabel)}"
+          title="${WeldUtil.escapeHtml(toggleTitle)}">
+          <span class="catalogue-badge__icon" style="background:${iconBackdrop}; box-shadow:0 18px 32px ${iconShadow};">
+            ${WeldUtil.renderIcon(badge.icon || "medal", "sm")}
           </span>
-          <button
-            type="button"
-            class="button-pill ${actionTone} badge-publish-toggle"
-            data-badge="${id}"
-            data-action="${action}"
-            aria-label="${WeldUtil.escapeHtml(`${actionLabel} ${badge.title}`)}">
-            ${actionLabel}
-          </button>
-        </footer>
+        </button>
+        <span class="catalogue-badge__label">${WeldUtil.escapeHtml(badge.title || "Badge")}</span>
+        <div id="${cardId}" class="catalogue-badge-card catalogue-badge-card--hub ${cardStateClass}" role="group" aria-label="${WeldUtil.escapeHtml(
+          ariaLabel
+        )}">
+          <span class="catalogue-badge-card__halo"></span>
+          <span class="catalogue-badge-card__orb catalogue-badge-card__orb--one"></span>
+          <span class="catalogue-badge-card__orb catalogue-badge-card__orb--two"></span>
+          <div class="catalogue-badge-card__main">
+            <h3 class="catalogue-badge-card__title">${WeldUtil.escapeHtml(badge.title || "Badge")}</h3>
+            ${tagsMarkup}
+            ${descriptionMarkup}
+            ${bonusMarkup}
+          </div>
+          <footer class="catalogue-badge-card__footer">
+            <span class="catalogue-badge-card__points">
+              <span class="catalogue-badge-card__points-value">+${formatNumber(pointsValue)}</span>
+              <span class="catalogue-badge-card__points-unit">pts</span>
+            </span>
+            <span class="catalogue-badge-card__status ${statusClass}">
+              ${WeldUtil.escapeHtml(statusLabel)}
+            </span>
+          </footer>
+        </div>
       </article>
     `;
     };
+;
 
     let badgeIndex = 0;
     const groupedBadges = groupBadgesByCategory(filteredBadges);
@@ -413,13 +423,24 @@
         return;
       }
 
-      const toggle = event.target.closest(".badge-publish-toggle");
-      if (!toggle) return;
-      const badgeId = toggle.getAttribute("data-badge");
-      const action = toggle.getAttribute("data-action");
-      if (!badgeId || !action) return;
-      setBadgePublication(badgeId, action === "publish");
+      const badgeTrigger = event.target.closest(".catalogue-badge__trigger");
+      if (badgeTrigger) {
+        const badgeElement = badgeTrigger.closest(".catalogue-badge");
+        const badgeId = (badgeElement?.getAttribute("data-badge") || "").trim();
+        if (!badgeId) return;
+        event.preventDefault();
+        const badgeLookup = typeof window.badgeById === "function" ? window.badgeById : null;
+        const badgeData = badgeLookup ? badgeLookup(badgeId) : null;
+        const isPublished =
+          typeof badgeData?.published === "boolean"
+            ? badgeData.published
+            : badgeElement?.classList.contains("catalogue-badge--published");
+        setBadgePublication(badgeId, !isPublished);
+        return;
+      }
+
     });
   }
 })();
+
 
