@@ -147,8 +147,10 @@
           data-theme-option
           ${checkedAttr}
         />
-        <span class="settings-theme__label">${label}</span>
-        ${description}
+        <span class="settings-theme__content">
+          <span class="settings-theme__label">${label}</span>
+          ${description}
+        </span>
       </label>
     `;
     }).join("");

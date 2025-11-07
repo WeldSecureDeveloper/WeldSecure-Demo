@@ -17,6 +17,7 @@
     }
 
     const { WeldUtil, formatNumber, getState } = shared;
+    const directoryFallback = (window.AppData && window.AppData.DIRECTORY) || {};
     const formatPercentSafe = value => {
       if (typeof window.formatPercent === "function") {
         return window.formatPercent(value);
@@ -25,6 +26,22 @@
       if (!Number.isFinite(numeric)) return "--";
       const percent = Math.round(numeric * 100);
       return `${percent}%`;
+    };
+    const getDirectoryData = state => {
+      const directory = state && typeof state.directory === "object" ? state.directory : {};
+      const ensureList = (source, backup) => {
+        if (Array.isArray(source) && source.length > 0) return source;
+        if (Array.isArray(backup) && backup.length > 0) return backup;
+        return [];
+      };
+      const departments = ensureList(directory.departments, directoryFallback.departments);
+      const users = ensureList(directory.users, directoryFallback.users);
+      return {
+        departments,
+        users,
+        departmentMap: new Map(departments.map(dept => [dept.id, dept])),
+        userMap: new Map(users.map(user => [user.id, user]))
+      };
     };
 
     function renderLeaderboardRows(state) {
@@ -43,23 +60,32 @@
         .slice()
         .sort((a, b) => (Number(b?.points) || 0) - (Number(a?.points) || 0));
 
+      const directory = getDirectoryData(state);
       const rowsMarkup = sorted
         .map((entry, index) => {
           const fallbackId = `dept-${index}`;
-          const entryId =
-            typeof entry.id === "string" && entry.id.trim().length > 0 ? entry.id.trim() : fallbackId;
+          const departmentId =
+            (typeof entry.departmentId === "string" && entry.departmentId.trim().length > 0
+              ? entry.departmentId.trim()
+              : null) ||
+            (typeof entry.id === "string" && entry.id.trim().length > 0 ? entry.id.trim() : null);
+          const directoryDepartment = departmentId ? directory.departmentMap.get(departmentId) : null;
+          const entryId = departmentId || fallbackId;
           const tone =
             typeof entry.tone === "string" && entry.tone.trim().length > 0
               ? entry.tone.trim().toLowerCase()
               : "indigo";
           const teamName =
-            typeof entry.name === "string" && entry.name.trim().length > 0
+            directoryDepartment?.name ||
+            (typeof entry.name === "string" && entry.name.trim().length > 0
               ? entry.name.trim()
-              : `Department ${formatNumber(index + 1)}`;
+              : `Department ${formatNumber(index + 1)}`);
           const departmentLabel =
-            typeof entry.department === "string" && entry.department.trim().length > 0
+            directoryDepartment?.description ||
+            directoryDepartment?.name ||
+            (typeof entry.department === "string" && entry.department.trim().length > 0
               ? entry.department.trim()
-              : "Organisation team";
+              : "Organisation team");
           const pointsValue = Number.isFinite(entry.points) ? formatNumber(entry.points) : "0";
           const momentumTag =
             typeof entry.momentumTag === "string" && entry.momentumTag.trim().length > 0
@@ -110,6 +136,17 @@
             chips.push(
               `<span class="department-leaderboard__chip">${WeldUtil.escapeHtml(avgResponse)}</span>`
             );
+          }
+          if (directoryDepartment?.ownerId) {
+            const owner = directory.userMap.get(directoryDepartment.ownerId);
+            if (owner) {
+              const ownerLabel = owner.displayName || owner.mail;
+              chips.push(
+                `<span class="department-leaderboard__chip">${WeldUtil.escapeHtml(
+                  `Owner: ${ownerLabel}`
+                )}</span>`
+              );
+            }
           }
           const chipsMarkup = chips.length
             ? `<div class="department-leaderboard__chips">${chips.join("")}</div>`

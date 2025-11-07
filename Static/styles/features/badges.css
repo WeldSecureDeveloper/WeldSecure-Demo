@@ -287,10 +287,6 @@
     margin: 0 0.5rem;
   }
   
-  .badge-showcase__item--recent .badge-showcase__meta {
-    font-weight: 600;
-    color: var(--color-text-strong);
-  }
   
   .badge-showcase__meta {
     font-size: 0.82rem;

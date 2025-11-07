@@ -221,6 +221,12 @@
   margin-top: 0.2rem;
   accent-color: #6366f1;
 }
+.settings-theme__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
 .settings-theme__label {
   font-weight: 600;
   color: var(--color-text-primary);

@@ -1,6 +1,7 @@
 ﻿// data/state/defaultState.js - baseline demo payload kept separate from logic
 (function () {
   const AppData = window.AppData || {};
+  const DirectoryData = window.DirectoryData || {};
   const defaults = AppData.DEFAULTS && typeof AppData.DEFAULTS === "object" ? AppData.DEFAULTS : {};
   const resolveStringDefault = (value, fallback) => {
     if (typeof value === "string") {
@@ -15,6 +16,44 @@
   };
   const cloneReasonArray = source =>
     Array.isArray(source) ? source.map(reason => (reason && typeof reason === "object" ? { ...reason } : reason)) : [];
+  const cloneDirectoryObject = source => {
+    if (!source || typeof source !== "object") return {};
+    try {
+      return JSON.parse(JSON.stringify(source));
+    } catch {
+      return { ...source };
+    }
+  };
+  const cloneDirectoryList = key =>
+    Array.isArray(DirectoryData[key]) ? DirectoryData[key].map(entry => ({ ...entry })) : [];
+  const directorySnapshot = {
+    integrations: cloneDirectoryObject(DirectoryData.integrations),
+    departments: cloneDirectoryList("departments"),
+    teams: cloneDirectoryList("teams"),
+    users: cloneDirectoryList("users")
+  };
+  const tonePalette = ["violet", "teal", "amber", "blue", "rose", "emerald", "indigo", "cyan"];
+  const buildTeamMembers = () => {
+    if (!Array.isArray(directorySnapshot.users) || directorySnapshot.users.length === 0) {
+      return [];
+    }
+    return directorySnapshot.users.map((user, index) => {
+      const id = user.id || `member-${index}`;
+      const displayNameParts = [user.givenName, user.surname].filter(
+        part => typeof part === "string" && part.trim().length > 0
+      );
+      const name = user.displayName || displayNameParts.join(" ") || user.mail || `Member ${index + 1}`;
+      return {
+        id,
+        name,
+        email: user.mail || "",
+        title: user.jobTitle || "",
+        location: user.officeLocation || "Hybrid workplace",
+        specialty: user.expertiseTag || user.jobTitle || "Security champion",
+        avatarTone: tonePalette[index % tonePalette.length]
+      };
+    });
+  };
 
   const defaultReporterPrompt = resolveStringDefault(
     AppData.DEFAULT_REPORTER_PROMPT,
@@ -71,12 +110,7 @@
       "reasons": defaultReporterReasons
     }
   },
-  "directory": {
-    "integrations": {},
-    "departments": [],
-    "teams": [],
-    "users": []
-  },
+  "directory": directorySnapshot,
   "customer": {
     "id": 501,
     "name": "Rachel Summers",
@@ -111,59 +145,13 @@
     },
     "questCompletions": []
   },
-  "teamMembers": [
-    {
-      "id": "rachel-summers",
-      "name": "Rachel Summers",
-      "email": "rachel.summers@weld.onmicrosoft.com",
-      "title": "Operations Lead",
-      "location": "London HQ",
-      "specialty": "Finance workflows",
-      "avatarTone": "violet"
-    },
-    {
-      "id": "priya-shah",
-      "name": "Priya Shah",
-      "email": "priya.shah@example.com",
-      "title": "Senior Security Analyst",
-      "location": "London SOC",
-      "specialty": "Payment diversion",
-      "avatarTone": "teal"
-    },
-    {
-      "id": "will-adams",
-      "name": "Will Adams",
-      "email": "will.adams@example.com",
-      "title": "Risk Champion - Finance",
-      "location": "Birmingham",
-      "specialty": "Executive impersonation",
-      "avatarTone": "amber"
-    },
-    {
-      "id": "daniel-cho",
-      "name": "Daniel Cho",
-      "email": "daniel.cho@example.com",
-      "title": "Trading Operations Associate",
-      "location": "London HQ",
-      "specialty": "Market alerts",
-      "avatarTone": "blue"
-    },
-    {
-      "id": "hannah-elliott",
-      "name": "Hannah Elliott",
-      "email": "hannah.elliott@example.com",
-      "title": "Employee Success Partner",
-      "location": "Manchester",
-      "specialty": "Awareness programmes",
-      "avatarTone": "rose"
-    }
-  ],
+  "teamMembers": buildTeamMembers(),
   "recognitions": [
     {
       "id": "rec-1001",
-      "senderEmail": "priya.shah@example.com",
-      "senderName": "Priya Shah",
-      "senderTitle": "Senior Security Analyst",
+      "senderEmail": "amelia.reed@weld.onmicrosoft.com",
+      "senderName": "Amelia Reed",
+      "senderTitle": "Director of Treasury Assurance",
       "recipientEmail": "rachel.summers@weld.onmicrosoft.com",
       "recipientName": "Rachel Summers",
       "recipientTitle": "Operations Lead",
@@ -175,29 +163,29 @@
     },
     {
       "id": "rec-1002",
-      "senderEmail": "will.adams@example.com",
-      "senderName": "Will Adams",
-      "senderTitle": "Risk Champion - Finance",
-      "recipientEmail": "rachel.summers@weld.onmicrosoft.com",
-      "recipientName": "Rachel Summers",
-      "recipientTitle": "Operations Lead",
+      "senderEmail": "george.collins@weld.onmicrosoft.com",
+      "senderName": "George Collins",
+      "senderTitle": "Accounts Payable Specialist",
+      "recipientEmail": "amelia.reed@weld.onmicrosoft.com",
+      "recipientName": "Amelia Reed",
+      "recipientTitle": "Director of Treasury Assurance",
       "points": 20,
       "focus": "BEC attempt escalated",
-      "message": "Thanks for looping me in on the fake CEO request. Your context helped us warn the exec team before any funds moved.",
+      "message": "She caught the fake CFO approval trail and had treasury roll back the request before anything moved.",
       "channel": "Slack kudos",
       "createdAt": "2025-10-06T14:25:00Z"
     },
     {
       "id": "rec-1003",
-      "senderEmail": "hannah.elliott@example.com",
-      "senderName": "Hannah Elliott",
-      "senderTitle": "Employee Success Partner",
-      "recipientEmail": "rachel.summers@weld.onmicrosoft.com",
-      "recipientName": "Rachel Summers",
-      "recipientTitle": "Operations Lead",
+      "senderEmail": "emily.chen@weld.onmicrosoft.com",
+      "senderName": "Emily Chen",
+      "senderTitle": "Director of People Experience",
+      "recipientEmail": "nina.kowalski@weld.onmicrosoft.com",
+      "recipientName": "Nina Kowalski",
+      "recipientTitle": "Chief Security Enablement Officer",
       "points": 25,
       "focus": "Awareness champion",
-      "message": "Rachel's town hall walkthrough on spotting bogus invoices gave every squad a playbook to challenge risky requests.",
+      "message": "Nina's executive rundown on hybrid hygiene made it easy for HR to reinforce the right behaviours in every hub.",
       "channel": "Town hall shout-out",
       "createdAt": "2025-10-04T17:20:00Z"
     },
@@ -206,12 +194,12 @@
       "senderEmail": "rachel.summers@weld.onmicrosoft.com",
       "senderName": "Rachel Summers",
       "senderTitle": "Operations Lead",
-      "recipientEmail": "daniel.cho@example.com",
-      "recipientName": "Daniel Cho",
-      "recipientTitle": "Trading Operations Associate",
+      "recipientEmail": "noah.sato@weld.onmicrosoft.com",
+      "recipientName": "Noah Sato",
+      "recipientTitle": "Business Continuity Manager",
       "points": 15,
       "focus": "Credential lure spotted",
-      "message": "Daniel reset credentials within minutes of the lure email and blocked the follow-up attempt from reaching the desk.",
+      "message": "Noah reset credentials within minutes of the lure email and blocked the follow-up attempt from reaching the desk.",
       "channel": "Hub spotlight",
       "createdAt": "2025-10-05T11:02:00Z"
     }

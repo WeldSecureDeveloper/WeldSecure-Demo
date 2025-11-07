@@ -223,5 +223,326 @@
   color: var(--color-text-subtle);
   font-size: 0.95rem;
 }
+
+.leaderboards-hub {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.leaderboard-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.4rem;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.leaderboard-tab {
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  padding: 0.55rem 1.3rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.leaderboard-tab__meta {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-subtle);
+}
+
+.leaderboard-tab.is-active {
+  background: #fff;
+  color: var(--color-text-primary);
+  box-shadow: 0 12px 26px rgba(79, 70, 229, 0.16);
+}
+
+.leaderboard-panels {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.leaderboard-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.leaderboard-panel[hidden] {
+  display: none;
+}
+
+.leaderboard-panel__intro {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.leaderboard-panel__intro h2 {
+  margin: 0 0 0.3rem;
+}
+
+.leaderboard-panel__intro p {
+  margin: 0;
+}
+
+.leaderboard-panel__summary {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.leaderboard-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.leaderboard-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 960px) {
+  .leaderboard-cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.leaderboard-card {
+  border: 1px solid rgba(226, 232, 240, 0.75);
+  border-radius: 20px;
+  padding: 1.15rem 1.35rem;
+  background: var(--color-surface, #fff);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.leaderboard-card--expanded {
+  box-shadow: 0 25px 50px rgba(79, 70, 229, 0.18);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.leaderboard-card__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.leaderboard-card__rank {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1rem;
+  background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+  color: #312e81;
+  box-shadow: 0 10px 20px rgba(99, 102, 241, 0.22);
+}
+
+.leaderboard-card[data-tone="indigo"] .leaderboard-card__rank {
+  background: linear-gradient(135deg, #ede9fe, #c7d2fe);
+  color: #312e81;
+  box-shadow: 0 12px 24px rgba(99, 102, 241, 0.28);
+}
+
+.leaderboard-card[data-tone="rose"] .leaderboard-card__rank {
+  background: linear-gradient(135deg, #ffe4e6, #fecdd3);
+  color: #be185d;
+  box-shadow: 0 12px 24px rgba(236, 72, 153, 0.28);
+}
+
+.leaderboard-card[data-tone="cyan"] .leaderboard-card__rank {
+  background: linear-gradient(135deg, #cffafe, #bae6fd);
+  color: #0f172a;
+  box-shadow: 0 12px 24px rgba(14, 165, 233, 0.24);
+}
+
+.leaderboard-card[data-tone="emerald"] .leaderboard-card__rank {
+  background: linear-gradient(135deg, #d1fae5, #bbf7d0);
+  color: #065f46;
+  box-shadow: 0 12px 24px rgba(16, 185, 129, 0.2);
+}
+
+.leaderboard-card[data-tone="slate"] .leaderboard-card__rank {
+  background: linear-gradient(135deg, #e2e8f0, #cbd5f5);
+  color: #0f172a;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.18);
+}
+
+.leaderboard-card__primary {
+  flex: 1;
+  min-width: 160px;
+}
+
+.leaderboard-card__primary strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.leaderboard-card__meta {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.leaderboard-card__value {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 120px;
+}
+
+.leaderboard-card__value strong {
+  font-size: 1.1rem;
+}
+
+.leaderboard-card__value-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-subtle);
+}
+
+.leaderboard-card__trend {
+  display: flex;
+  flex-direction: column;
+  min-width: 100px;
+}
+
+.leaderboard-card__detail-toggle {
+  margin-left: auto;
+  border: none;
+  background: rgba(15, 23, 42, 0.06);
+  color: var(--color-text-primary);
+  border-radius: 999px;
+  padding: 0.3rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.leaderboard-card__detail-toggle:hover {
+  background: rgba(99, 102, 241, 0.15);
+}
+
+.leaderboard-card__details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.leaderboard-card__details[hidden] {
+  display: none;
+}
+
+.leaderboard-card__detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+.leaderboard-card__detail-grid strong {
+  font-size: 1rem;
+}
+
+.leaderboard-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.leaderboard-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.leaderboard-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(15, 23, 42, 0.08);
+  color: var(--color-text-primary);
+}
+
+.leaderboard-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.leaderboard-badge[data-variant="positive"] {
+  background: rgba(16, 185, 129, 0.16);
+  color: #047857;
+}
+
+.leaderboard-badge[data-variant="neutral"] {
+  background: rgba(79, 70, 229, 0.12);
+  color: #4338ca;
+}
+
+.leaderboard-badge[data-variant="warning"] {
+  background: rgba(249, 115, 22, 0.15);
+  color: #c2410c;
+}
+
+.leaderboard-badge[data-variant="muted"] {
+  background: rgba(148, 163, 184, 0.18);
+  color: var(--color-text-muted);
+}
+
+.leaderboard-focus {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.leaderboard-empty-card {
+  border: 1px dashed rgba(148, 163, 184, 0.6);
+  border-radius: 16px;
+  padding: 1.25rem;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--color-text-subtle);
+  background: rgba(15, 23, 42, 0.02);
+}
 }
 
