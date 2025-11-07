@@ -170,3 +170,66 @@
 [data-theme='dark'] .button-pill--ghost:focus-visible {
   background: rgba(49, 73, 109, 0.75);
 }
+
+/* Other activity capture form */
+.other-activity-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.other-activity-form__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.other-activity-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-size: 0.95rem;
+  color: var(--color-text-strong);
+}
+
+.other-activity-form__label {
+  font-weight: 600;
+}
+
+.other-activity-form__optional {
+  font-weight: 400;
+  color: var(--color-text-subtle);
+}
+
+.other-activity-form__input,
+.other-activity-form__select,
+.other-activity-form__textarea {
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: var(--color-bg-surface);
+  font: inherit;
+  color: var(--color-text-primary);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.other-activity-form__input:focus,
+.other-activity-form__select:focus,
+.other-activity-form__textarea:focus {
+  outline: none;
+  border-color: rgba(79, 70, 229, 0.5);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+.other-activity-form__helper {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.other-activity-form__error {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #b91c1c;
+  font-weight: 600;
+}

@@ -31,3 +31,136 @@
 .hidden {
   display: none !important;
 }
+
+/* Report history dialog */
+.report-history-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 30rem;
+}
+
+.report-history-dialog__summary {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+}
+
+.report-history-dialog__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.report-history-dialog__item {
+  background: var(--color-bg-surface-alt);
+  border: 1px solid var(--color-border-mid);
+  border-radius: 16px;
+  padding: 1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.report-history-dialog__title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.report-history-dialog__subject {
+  font-weight: 600;
+  color: var(--color-text-strong);
+}
+
+.report-history-dialog__meta {
+  font-size: 0.85rem;
+  color: var(--color-text-subtle);
+}
+
+.report-history-dialog__activity {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  background: rgba(148, 163, 184, 0.24);
+  color: var(--color-text-muted);
+}
+
+.report-history-dialog__location {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.report-history-dialog__reasons {
+  list-style: disc;
+  margin: 0 0 0 1.2rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.report-history-dialog__response {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  background: rgba(79, 70, 229, 0.08);
+}
+
+.report-history-dialog__note {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-primary);
+}
+
+.report-history-dialog__points {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.report-history-dialog__points-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.report-history-dialog__points-chip--base {
+  background: rgba(34, 197, 94, 0.14);
+  color: #047857;
+}
+
+.report-history-dialog__points-chip--bonus {
+  background: rgba(59, 130, 246, 0.18);
+  color: #1d4ed8;
+}
+
+.report-history-dialog__points-chip--pending {
+  background: rgba(148, 163, 184, 0.18);
+  color: var(--color-text-muted);
+}
+
+.report-history-dialog__points-total {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-strong);
+}
