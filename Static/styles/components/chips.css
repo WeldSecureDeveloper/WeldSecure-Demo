@@ -30,3 +30,31 @@
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.9);
 }
+
+.badge {
+  display: inline-flex;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.badge[data-state="pending"] {
+  background: rgba(250, 204, 21, 0.18);
+  color: #b45309;
+}
+
+.badge[data-state="approved"] {
+  background: rgba(34, 197, 94, 0.18);
+  color: #166534;
+}
+
+.badge[data-state="rejected"] {
+  background: rgba(248, 113, 113, 0.18);
+  color: #b91c1c;
+}
+
+.badge[data-state="fulfilled"] {
+  background: rgba(34, 197, 94, 0.16);
+  color: #166534;
+}

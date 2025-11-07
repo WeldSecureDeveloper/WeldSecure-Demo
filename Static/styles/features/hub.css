@@ -64,10 +64,16 @@
   margin-top: 0.5rem;
 }
 
-.reward-grid--hub {
+.reward-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1.4rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.75rem;
+}
+
+.reward-grid--hub {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 280px));
+  justify-content: flex-start;
+  gap: 1.5rem;
 }
 
 .reward-grid--catalogue {
