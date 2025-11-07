@@ -1,0 +1,39 @@
+@layer components {
+  .catalogue-badge__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    font-size: 0.74rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: rgba(15, 23, 42, 0.62);
+  }
+
+  .catalogue-badge__points {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    padding: 0.35rem 0.95rem 0.38rem;
+    border-radius: 999px;
+    background: var(--badge-points-gradient, linear-gradient(135deg, #f97316, #fb923c));
+    box-shadow: var(--badge-points-shadow, 0 18px 32px rgba(249, 115, 22, 0.28));
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 0.82rem;
+  }
+
+  .catalogue-badge__points strong {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+  }
+
+  .catalogue-badge__points span {
+    font-size: 0.64rem;
+    font-weight: 600;
+    opacity: 0.85;
+  }
+}

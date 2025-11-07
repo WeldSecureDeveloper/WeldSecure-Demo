@@ -53,15 +53,15 @@ Every feature stylesheet is now wrapped with `@layer features { ... }`. Persona 
 | `client.css` | [x] | Client catalogue |
 
 ## Phase E - Legacy / Badges (Next Up)
-- [ ] Decide whether to split `styles/badges.css` into component + feature files or wrap the whole file with `@layer features { ... }`.
-- [ ] After the badges layer is applied, re-test badge gallery + badge showcase in both themes.
+- [x] Split `styles/badges.css` into component + feature files. *Done: `styles/components/badges/{tokens,cards,spotlight,grids}.css` + `styles/features/badges.css`.*
+- [ ] After the badges layer is applied, re-test badge gallery + badge showcase in both themes. *Pending manual UI pass.*
 
 **Split plan (recommended)**
-1. Extract reusable badge pieces (tokens, cards, spotlights, grids) into `styles/components/badges/*.css` with `@layer components { ... }`.
-2. Create `styles/features/badges.css` for the gallery/showcase layouts under `@layer features { ... }`.
-3. Update `Static/styles.css` imports accordingly; remove the old `styles/badges.css` import once empty.
-4. After each extraction, smoke-test customer hub badges and the badge gallery (light + dark).
-5. When finished, delete or leave a thin wrapper in `styles/badges.css` and check the bullets above.
+- [x] Extract reusable badge pieces (tokens, cards, spotlights, grids) into `styles/components/badges/*.css` with `@layer components { ... }`.
+- [x] Create `styles/features/badges.css` for the gallery/showcase layouts under `@layer features { ... }`.
+- [x] Update `Static/styles.css` imports accordingly; remove the old `styles/badges.css` import once empty.
+- [ ] After each extraction, smoke-test customer hub badges and the badge gallery (light + dark).
+- [x] Delete the legacy `styles/badges.css` once replaced.
 
 ## Phase F - Final QA
 - [ ] Run `rg "@layer" Static/styles -g "*.css"` to verify every file is layered and there are no typos.

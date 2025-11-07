@@ -1,0 +1,81 @@
+@layer components {
+  .catalogue-card__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    align-items: center;
+  }
+
+  .catalogue-card__tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.28rem 0.65rem;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 700;
+    font-size: 0.68rem;
+    line-height: 1;
+  }
+
+  .catalogue-badge-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .catalogue-badge-group__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .catalogue-badge-group__header h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    color: var(--color-text-strong);
+  }
+
+  .catalogue-badge-group__grid {
+    display: grid;
+    padding-bottom: 0;
+    row-gap: 0.9rem;
+    column-gap: 0.1125rem;
+  }
+
+  .catalogue-badge-group:last-of-type .catalogue-badge-group__grid {
+    padding-bottom: 0;
+  }
+
+  .catalogue-badge-group__grid.catalogue-badge-grid {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 260px));
+    column-gap: 0.1125rem;
+  }
+
+  .catalogue-badge-group__grid .catalogue-badge {
+    width: min(100%, 260px);
+    justify-self: start;
+  }
+
+  .catalogue-badge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.75rem;
+    padding-bottom: 5rem;
+    position: relative;
+  }
+
+  .catalogue-badge-grid--hub {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 260px));
+    justify-content: flex-start;
+    justify-items: center;
+    align-items: start;
+    gap: 1.5rem;
+  }
+
+  .catalogue-badge-grid--hub .catalogue-badge {
+    width: min(100%, 260px);
+  }
+}
