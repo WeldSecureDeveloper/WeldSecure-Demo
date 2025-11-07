@@ -28,22 +28,22 @@ Goal: split the monolithic `Static/styles.css` (~7k lines) into focused, maintai
 
 ## Phase 4 - Extract Reusable Components
 - [x] Identify reusable blocks (chips, cards, tables, nav, forms) and create files under `styles/components/` (e.g., `chips.css`, `cards.css`, `tables.css`, `nav.css`, `forms.css`).
-- [ ] Cut/paste each block from `styles.css` into its component file, keeping import order consistent with dependency needs (base -> components -> features).
+- [x] Cut/paste each block from `styles.css` into its component file, keeping import order consistent with dependency needs (base -> components -> features).
 - [ ] After each extraction, reload and perform a quick UI sweep on sections using that component.
 
 ## Phase 5 - Extract Feature-Specific Styling
-- [ ] For each feature module that has CSS (landing, customer hub, dashboards, reports, settings, etc.), create `styles/features/<name>.css`.
-- [ ] Move the corresponding block from `styles.css` (use class prefixes like `.landing__`, `.customer-`, `.client-`, etc. for grouping).
+- [x] For each feature module that has CSS (landing, customer hub, dashboards, reports, settings, etc.), create `styles/features/<name>.css`.
+- [x] Move the corresponding block from `styles.css` (use class prefixes like `.landing__`, `.customer-`, `.client-`, etc. for grouping).
 - [ ] Once a feature block is moved, test that screen manually (navigate via app routes or adjust route state).
-- [ ] Repeat until no feature-specific rules remain in the root file.
+- [x] Repeat until no feature-specific rules remain in the root file.
 
 ## Phase 6 - Badges & Remaining Special Cases
-- [ ] Leave the existing `styles/badges.css` in place; just make sure its import remains in the correct spot relative to the new files.
-- [ ] Find any remaining selectors in `styles.css` (run `rg "." Static/styles.css`) and relocate them to the appropriate file; aim for the aggregator to be imports-only plus optional comments.
+- [x] Leave the existing `styles/badges.css` in place; just make sure its import remains in the correct spot relative to the new files.
+- [x] Find any remaining selectors in `styles.css` (run `rg "." Static/styles.css`) and relocate them to the appropriate file; aim for the aggregator to be imports-only plus optional comments.
 
 ## Phase 7 - Finalise Aggregator
-- [ ] Ensure `Static/styles.css` contains only ordered `@import` statements and documentation comments.
-- [ ] Double-check for accidental duplicate imports or unused placeholder files.
+- [x] Ensure `Static/styles.css` contains only ordered `@import` statements and documentation comments.
+- [x] Double-check for accidental duplicate imports or unused placeholder files.
 - [ ] Document the final import order within a short comment block for future maintainers.
 
 ## Phase 8 - Regression & Cleanup
