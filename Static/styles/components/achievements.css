@@ -6,21 +6,26 @@
     z-index: 1200;
     pointer-events: none;
     opacity: 0;
-    transform: translate(-50%, -32px);
-    transition:
-      opacity 220ms ease,
-      transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1);
+    transform: translate(-50%, -12px) scale(0.98);
     max-width: min(520px, calc(100vw - 32px));
+    outline: none;
   }
 
   .achievement-overlay--visible {
     opacity: 1;
-    transform: translate(-50%, 0);
+    transform: translate(-50%, 0) scale(1);
+    pointer-events: auto;
+    animation: achievementOverlayEnter 220ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
   }
 
   .achievement-overlay--leaving {
-    opacity: 0;
-    transform: translate(-50%, -18px);
+    pointer-events: none;
+    animation: achievementOverlayExit 180ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  }
+
+  .achievement-overlay:focus-visible {
+    outline: 2px solid rgba(99, 102, 241, 0.7);
+    outline-offset: 6px;
   }
 
   .achievement-toast {
@@ -145,8 +150,21 @@
 
   @media (prefers-reduced-motion: reduce) {
     .achievement-overlay {
-      transition: none;
-      transform: none !important;
+      transition: opacity 220ms ease;
+      transform: translate(-50%, 0) scale(1) !important;
+      opacity: 0;
+    }
+
+    .achievement-overlay--visible {
+      animation: none !important;
+      opacity: 1;
+    }
+
+    .achievement-overlay--leaving {
+      animation: none !important;
+      opacity: 0;
+      transition-duration: 180ms;
+      transition-timing-function: cubic-bezier(0.4, 0, 1, 1);
     }
 
     .achievement-toast__pulse,
@@ -157,6 +175,28 @@
     .achievement-overlay--collapsing .achievement-toast__icon {
       animation: none !important;
       transition: none !important;
+    }
+  }
+
+  @keyframes achievementOverlayEnter {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -12px) scale(0.98);
+    }
+    100% {
+      opacity: 1;
+      transform: translate(-50%, 0) scale(1);
+    }
+  }
+
+  @keyframes achievementOverlayExit {
+    0% {
+      opacity: 1;
+      transform: translate(-50%, 0) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -20px) scale(0.97);
     }
   }
 

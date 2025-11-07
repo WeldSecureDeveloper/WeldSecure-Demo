@@ -128,8 +128,9 @@ Object.entries(serviceWrappers).forEach(([key, fn]) => {
 });
 
 const ACHIEVEMENT_EYEBROW = "Badge unlocked";
-const ACHIEVEMENT_DISPLAY_MS = 5200;
-const ACHIEVEMENT_EXIT_MS = 420;
+const ACHIEVEMENT_TRIGGER_DELAY = 600;
+const ACHIEVEMENT_DISPLAY_MS = 5000;
+const ACHIEVEMENT_EXIT_MS = 180;
 const ACHIEVEMENT_BLINK_DELAY = 1400;
 const ACHIEVEMENT_COLLAPSE_LEAD_MS = 620;
 const ACHIEVEMENT_FLAG_KEYS = {
@@ -141,10 +142,15 @@ const achievementOverlayState = {
   host: null,
   queue: [],
   active: null,
+  pendingShowTimer: null,
   hideTimer: null,
   cleanupTimer: null,
   blinkTimer: null,
-  collapseTimer: null
+  collapseTimer: null,
+  timeline: null,
+  paused: false,
+  blinkFired: false,
+  collapseFired: false
 };
 
 function ensureAchievementFlags() {
@@ -190,10 +196,23 @@ function ensureAchievementHost() {
   host.setAttribute("aria-atomic", "true");
   host.setAttribute("role", "status");
   host.setAttribute("aria-hidden", "true");
+  host.tabIndex = -1;
   host.dataset.achievementOverlay = "true";
+  bindAchievementOverlayInteractions(host);
   document.body.appendChild(host);
   achievementOverlayState.host = host;
   return host;
+}
+
+function bindAchievementOverlayInteractions(host) {
+  if (!host || host.dataset.achievementOverlayBound === "true") return;
+  const pause = () => pauseAchievementTimeline();
+  const resume = () => resumeAchievementTimeline();
+  host.addEventListener("mouseenter", pause);
+  host.addEventListener("mouseleave", resume);
+  host.addEventListener("focus", pause);
+  host.addEventListener("blur", resume);
+  host.dataset.achievementOverlayBound = "true";
 }
 
 function achievementToneStyles(toneKey) {
@@ -279,11 +298,18 @@ function processAchievementQueue() {
   if (achievementOverlayState.active || achievementOverlayState.queue.length === 0) return;
   const nextEntry = achievementOverlayState.queue.shift();
   achievementOverlayState.active = nextEntry;
-  displayAchievement(nextEntry);
+  achievementOverlayState.pendingShowTimer = window.setTimeout(() => {
+    achievementOverlayState.pendingShowTimer = null;
+    displayAchievement(nextEntry);
+  }, ACHIEVEMENT_TRIGGER_DELAY);
 }
 
 function clearAchievementTimers() {
   const host = achievementOverlayState.host;
+  if (achievementOverlayState.pendingShowTimer) {
+    window.clearTimeout(achievementOverlayState.pendingShowTimer);
+    achievementOverlayState.pendingShowTimer = null;
+  }
   if (achievementOverlayState.hideTimer) {
     window.clearTimeout(achievementOverlayState.hideTimer);
     achievementOverlayState.hideTimer = null;
@@ -300,8 +326,16 @@ function clearAchievementTimers() {
     window.clearTimeout(achievementOverlayState.collapseTimer);
     achievementOverlayState.collapseTimer = null;
   }
+  achievementOverlayState.timeline = null;
+  achievementOverlayState.paused = false;
+  achievementOverlayState.blinkFired = false;
+  achievementOverlayState.collapseFired = false;
   if (host) {
-    host.classList.remove("achievement-overlay--blink", "achievement-overlay--collapsing");
+    host.classList.remove(
+      "achievement-overlay--blink",
+      "achievement-overlay--collapsing",
+      "achievement-overlay--paused"
+    );
   }
 }
 
@@ -312,8 +346,15 @@ function hideAchievement(entryId) {
     processAchievementQueue();
     return;
   }
+  if (host.dataset.activeId !== entryId) {
+    return;
+  }
   if (!host.classList.contains("achievement-overlay--collapsing")) {
     host.classList.add("achievement-overlay--collapsing");
+  }
+  if (achievementOverlayState.hideTimer) {
+    window.clearTimeout(achievementOverlayState.hideTimer);
+    achievementOverlayState.hideTimer = null;
   }
   if (achievementOverlayState.blinkTimer) {
     window.clearTimeout(achievementOverlayState.blinkTimer);
@@ -323,17 +364,24 @@ function hideAchievement(entryId) {
     window.clearTimeout(achievementOverlayState.collapseTimer);
     achievementOverlayState.collapseTimer = null;
   }
-  host.classList.remove("achievement-overlay--visible");
   host.classList.add("achievement-overlay--leaving");
   achievementOverlayState.cleanupTimer = window.setTimeout(() => {
     if (host.dataset.activeId === entryId) {
       host.innerHTML = "";
       host.removeAttribute("data-active-id");
       host.setAttribute("aria-hidden", "true");
+      host.tabIndex = -1;
     }
-    host.classList.remove("achievement-overlay--leaving");
-    host.classList.remove("achievement-overlay--blink", "achievement-overlay--collapsing");
+    host.classList.remove(
+      "achievement-overlay--leaving",
+      "achievement-overlay--visible",
+      "achievement-overlay--blink",
+      "achievement-overlay--collapsing",
+      "achievement-overlay--paused"
+    );
     achievementOverlayState.active = null;
+    achievementOverlayState.timeline = null;
+    achievementOverlayState.paused = false;
     achievementOverlayState.cleanupTimer = null;
     processAchievementQueue();
   }, ACHIEVEMENT_EXIT_MS);
@@ -346,35 +394,173 @@ function displayAchievement(entry) {
     return;
   }
   clearAchievementTimers();
+  host.classList.remove(
+    "achievement-overlay--leaving",
+    "achievement-overlay--blink",
+    "achievement-overlay--collapsing",
+    "achievement-overlay--paused"
+  );
   host.innerHTML = renderAchievementContent(entry);
   host.dataset.activeId = entry.id;
   host.setAttribute("aria-hidden", "false");
-  host.classList.remove("achievement-overlay--leaving");
-  // Force layout so the transition applies when the visible class is added.
-  void host.offsetWidth;
+  host.tabIndex = 0;
   host.classList.add("achievement-overlay--visible");
   scheduleAchievementTimeline(entry);
-  achievementOverlayState.hideTimer = window.setTimeout(() => {
-    hideAchievement(entry.id);
-  }, entry.displayMs);
 }
 
 function scheduleAchievementTimeline(entry) {
   const host = achievementOverlayState.host;
   if (!host) return;
-  if (ACHIEVEMENT_BLINK_DELAY > 0) {
-    achievementOverlayState.blinkTimer = window.setTimeout(() => {
-      if (host.dataset.activeId === entry.id) {
-        host.classList.add("achievement-overlay--blink");
-      }
-    }, ACHIEVEMENT_BLINK_DELAY);
-  }
+  const now = performance.now();
   const collapseDelay = Math.max(0, entry.displayMs - ACHIEVEMENT_COLLAPSE_LEAD_MS);
-  achievementOverlayState.collapseTimer = window.setTimeout(() => {
-    if (host.dataset.activeId === entry.id) {
-      host.classList.add("achievement-overlay--collapsing");
+  const blinkDelay = Math.max(0, ACHIEVEMENT_BLINK_DELAY);
+  const timeline = {
+    entryId: entry.id,
+    hideRemaining: entry.displayMs,
+    hideTimerStart: now,
+    blinkRemaining: blinkDelay,
+    blinkTimerStart: blinkDelay > 0 ? now : null,
+    collapseRemaining: collapseDelay,
+    collapseTimerStart: collapseDelay > 0 ? now : null
+  };
+  achievementOverlayState.timeline = timeline;
+  achievementOverlayState.paused = false;
+  achievementOverlayState.blinkFired = blinkDelay <= 0;
+  achievementOverlayState.collapseFired = collapseDelay <= 0;
+
+  achievementOverlayState.hideTimer = window.setTimeout(() => {
+    hideAchievement(entry.id);
+  }, timeline.hideRemaining);
+
+  if (!achievementOverlayState.blinkFired) {
+    achievementOverlayState.blinkTimer = window.setTimeout(() => {
+      triggerAchievementBlink(entry.id);
+    }, blinkDelay);
+  } else {
+    triggerAchievementBlink(entry.id);
+  }
+
+  if (!achievementOverlayState.collapseFired) {
+    achievementOverlayState.collapseTimer = window.setTimeout(() => {
+      triggerAchievementCollapse(entry.id);
+    }, collapseDelay);
+  } else {
+    triggerAchievementCollapse(entry.id);
+  }
+}
+
+function triggerAchievementBlink(entryId) {
+  achievementOverlayState.blinkFired = true;
+  if (achievementOverlayState.blinkTimer) {
+    window.clearTimeout(achievementOverlayState.blinkTimer);
+    achievementOverlayState.blinkTimer = null;
+  }
+  const host = achievementOverlayState.host;
+  if (!host || host.dataset.activeId !== entryId) return;
+  host.classList.add("achievement-overlay--blink");
+  if (achievementOverlayState.timeline) {
+    achievementOverlayState.timeline.blinkRemaining = 0;
+    achievementOverlayState.timeline.blinkTimerStart = null;
+  }
+}
+
+function triggerAchievementCollapse(entryId) {
+  achievementOverlayState.collapseFired = true;
+  if (achievementOverlayState.collapseTimer) {
+    window.clearTimeout(achievementOverlayState.collapseTimer);
+    achievementOverlayState.collapseTimer = null;
+  }
+  const host = achievementOverlayState.host;
+  if (!host || host.dataset.activeId !== entryId) return;
+  host.classList.add("achievement-overlay--collapsing");
+  if (achievementOverlayState.timeline) {
+    achievementOverlayState.timeline.collapseRemaining = 0;
+    achievementOverlayState.timeline.collapseTimerStart = null;
+  }
+}
+
+function pauseAchievementTimeline() {
+  if (!achievementOverlayState.active || achievementOverlayState.paused) return;
+  const timeline = achievementOverlayState.timeline;
+  if (!timeline) return;
+  const now = performance.now();
+  if (achievementOverlayState.hideTimer) {
+    window.clearTimeout(achievementOverlayState.hideTimer);
+    achievementOverlayState.hideTimer = null;
+    if (typeof timeline.hideRemaining === "number" && typeof timeline.hideTimerStart === "number") {
+      timeline.hideRemaining = Math.max(0, timeline.hideRemaining - (now - timeline.hideTimerStart));
+    } else {
+      timeline.hideRemaining = 0;
     }
-  }, collapseDelay);
+  }
+  if (!achievementOverlayState.blinkFired && achievementOverlayState.blinkTimer) {
+    window.clearTimeout(achievementOverlayState.blinkTimer);
+    achievementOverlayState.blinkTimer = null;
+    if (typeof timeline.blinkRemaining === "number" && typeof timeline.blinkTimerStart === "number") {
+      timeline.blinkRemaining = Math.max(0, timeline.blinkRemaining - (now - timeline.blinkTimerStart));
+    } else {
+      timeline.blinkRemaining = 0;
+    }
+  }
+  if (!achievementOverlayState.collapseFired && achievementOverlayState.collapseTimer) {
+    window.clearTimeout(achievementOverlayState.collapseTimer);
+    achievementOverlayState.collapseTimer = null;
+    if (
+      typeof timeline.collapseRemaining === "number" &&
+      typeof timeline.collapseTimerStart === "number"
+    ) {
+      timeline.collapseRemaining = Math.max(
+        0,
+        timeline.collapseRemaining - (now - timeline.collapseTimerStart)
+      );
+    } else {
+      timeline.collapseRemaining = 0;
+    }
+  }
+  achievementOverlayState.paused = true;
+  if (achievementOverlayState.host) {
+    achievementOverlayState.host.classList.add("achievement-overlay--paused");
+  }
+}
+
+function resumeAchievementTimeline() {
+  if (!achievementOverlayState.active || !achievementOverlayState.paused) return;
+  const timeline = achievementOverlayState.timeline;
+  if (!timeline) return;
+  const entryId = timeline.entryId;
+  const now = performance.now();
+  if (timeline.hideRemaining > 0) {
+    timeline.hideTimerStart = now;
+    achievementOverlayState.hideTimer = window.setTimeout(() => {
+      hideAchievement(entryId);
+    }, timeline.hideRemaining);
+  } else if (!achievementOverlayState.hideTimer) {
+    hideAchievement(entryId);
+    return;
+  }
+
+  if (!achievementOverlayState.blinkFired && timeline.blinkRemaining > 0) {
+    timeline.blinkTimerStart = now;
+    achievementOverlayState.blinkTimer = window.setTimeout(() => {
+      triggerAchievementBlink(entryId);
+    }, timeline.blinkRemaining);
+  } else if (!achievementOverlayState.blinkFired && timeline.blinkRemaining <= 0) {
+    triggerAchievementBlink(entryId);
+  }
+
+  if (!achievementOverlayState.collapseFired && timeline.collapseRemaining > 0) {
+    timeline.collapseTimerStart = now;
+    achievementOverlayState.collapseTimer = window.setTimeout(() => {
+      triggerAchievementCollapse(entryId);
+    }, timeline.collapseRemaining);
+  } else if (!achievementOverlayState.collapseFired && timeline.collapseRemaining <= 0) {
+    triggerAchievementCollapse(entryId);
+  }
+
+  achievementOverlayState.paused = false;
+  if (achievementOverlayState.host) {
+    achievementOverlayState.host.classList.remove("achievement-overlay--paused");
+  }
 }
 
 function queueAchievementToast(entry) {
