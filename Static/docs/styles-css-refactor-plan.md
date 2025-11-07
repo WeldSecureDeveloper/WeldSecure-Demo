@@ -29,12 +29,12 @@ Goal: split the monolithic `Static/styles.css` (~7k lines) into focused, maintai
 ## Phase 4 - Extract Reusable Components
 - [x] Identify reusable blocks (chips, cards, tables, nav, forms) and create files under `styles/components/` (e.g., `chips.css`, `cards.css`, `tables.css`, `nav.css`, `forms.css`).
 - [x] Cut/paste each block from `styles.css` into its component file, keeping import order consistent with dependency needs (base -> components -> features).
-- [ ] After each extraction, reload and perform a quick UI sweep on sections using that component.
+- [x] After each extraction, reload and perform a quick UI sweep on sections using that component.
 
 ## Phase 5 - Extract Feature-Specific Styling
 - [x] For each feature module that has CSS (landing, customer hub, dashboards, reports, settings, etc.), create `styles/features/<name>.css`.
 - [x] Move the corresponding block from `styles.css` (use class prefixes like `.landing__`, `.customer-`, `.client-`, etc. for grouping).
-- [ ] Once a feature block is moved, test that screen manually (navigate via app routes or adjust route state).
+- [x] Once a feature block is moved, test that screen manually (navigate via app routes or adjust route state).
 - [x] Repeat until no feature-specific rules remain in the root file.
 
 ## Phase 6 - Badges & Remaining Special Cases
@@ -44,13 +44,13 @@ Goal: split the monolithic `Static/styles.css` (~7k lines) into focused, maintai
 ## Phase 7 - Finalise Aggregator
 - [x] Ensure `Static/styles.css` contains only ordered `@import` statements and documentation comments.
 - [x] Double-check for accidental duplicate imports or unused placeholder files.
-- [ ] Document the final import order within a short comment block for future maintainers.
+- [x] Document the final import order within a short comment block for future maintainers.
 
 ## Phase 8 - Regression & Cleanup
 - [x] Run through critical flows (landing, customer, client, admin, settings) noting any styling regressions.
 - [x] Validate dark theme (if applicable) since tokens moved first.
-- [ ] Remove any temporary comments or TODO markers added during extraction.
-- [ ] Update `Static/docs/fix-log.md` or relevant documentation with a summary of the refactor.
+- [x] Remove any temporary comments or TODO markers added during extraction.
+- [x] Update `Static/docs/fix-log.md` or relevant documentation with a summary of the refactor.
 - [ ] Commit the changes when satisfied.
 
 ## Optional Follow-Ups

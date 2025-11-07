@@ -20,3 +20,7 @@
 - Security dashboard/customer reports: shared renderer with consistent chips/points and reliable approve/reject actions.
 - Global nav & settings: gradient hovers now sourced from `--surface-gradient-accent` token to simplify restyling.
 - Badge points & celebrations now draw from shared gradient tokens (`--badge-points-gradient`, `--celebration-bubble-gradient`) for easier palette tweaks.
+## CSS Split (2025-11-07)
+- Completed styles.css refactor: aggregator now imports tokens/base/components/features/badges.
+- Migrated shared widgets into component files and moved dark theme tokens to base.
+- Verified key persona flows and dark mode post-split.
