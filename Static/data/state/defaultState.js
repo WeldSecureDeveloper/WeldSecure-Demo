@@ -101,7 +101,8 @@
     "directorySelection": {
       "departmentId": null,
       "teamId": null
-    }
+    },
+    "achievementFlags": {}
   },
   "settings": {
     "reporter": {

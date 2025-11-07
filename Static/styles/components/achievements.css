@@ -1,0 +1,263 @@
+@layer components {
+  .achievement-overlay {
+    position: fixed;
+    top: clamp(88px, 11vh, 140px);
+    left: 50%;
+    z-index: 1200;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, -32px);
+    transition:
+      opacity 220ms ease,
+      transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1);
+    max-width: min(520px, calc(100vw - 32px));
+  }
+
+  .achievement-overlay--visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  .achievement-overlay--leaving {
+    opacity: 0;
+    transform: translate(-50%, -18px);
+  }
+
+  .achievement-toast {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 20px 10px 12px;
+    border-radius: 999px;
+    background: var(--surface-gradient-accent);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: var(--shadow-popover);
+    color: var(--color-text-on-accent);
+    overflow: hidden;
+  }
+
+  .achievement-toast__pulse {
+    position: absolute;
+    inset: 4px;
+    border-radius: 999px;
+    background: radial-gradient(circle at 30% 40%, rgba(255, 255, 255, 0.45), transparent 55%);
+    opacity: 0.35;
+    filter: blur(16px);
+    animation: achievementPulse 2.4s ease-out infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .achievement-toast__icon {
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0c1a0a;
+    animation: achievementBadgePop 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .achievement-toast__icon svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .achievement-toast__body {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex: 1;
+    min-width: 0;
+    animation: achievementDetailsSlide 640ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both;
+  }
+
+  .achievement-toast__text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .achievement-toast__eyebrow {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(241, 255, 242, 0.82);
+  }
+
+  .achievement-toast__title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #ffffff;
+    line-height: 1.2;
+  }
+
+  .achievement-toast__meta {
+    font-size: 0.85rem;
+    color: rgba(241, 255, 242, 0.85);
+  }
+
+  .achievement-toast__score {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 8px 10px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.25);
+    text-align: right;
+    min-width: 64px;
+  }
+
+  .achievement-toast__score-value {
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .achievement-toast__score-unit {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    opacity: 0.85;
+  }
+
+  @media (max-width: 720px) {
+    .achievement-overlay {
+      left: 50%;
+      transform: translate(-50%, -24px);
+      max-width: calc(100vw - 32px);
+    }
+
+    .achievement-toast {
+      border-radius: 24px;
+      padding-right: 16px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .achievement-overlay {
+      transition: none;
+      transform: none !important;
+    }
+
+    .achievement-toast__pulse,
+    .achievement-toast__icon,
+    .achievement-toast__body,
+    .achievement-overlay--blink .achievement-toast,
+    .achievement-overlay--collapsing .achievement-toast__body,
+    .achievement-overlay--collapsing .achievement-toast__icon {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+
+  @keyframes achievementPulse {
+    0% {
+      opacity: 0.45;
+      transform: scale(0.9);
+    }
+    70% {
+      opacity: 0.1;
+      transform: scale(1.1);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1.2);
+    }
+  }
+
+  @keyframes achievementBadgePop {
+    0% {
+      transform: scale(0.65) rotate(-8deg);
+      opacity: 0;
+    }
+    60% {
+      transform: scale(1.08) rotate(2deg);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+    }
+  }
+
+  @keyframes achievementDetailsSlide {
+    0% {
+      opacity: 0;
+      transform: translateX(-24px);
+    }
+    70% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .achievement-overlay--blink .achievement-toast {
+    animation: achievementBlink 1.4s ease-in-out 2;
+  }
+
+  @keyframes achievementBlink {
+    0% {
+      box-shadow: var(--shadow-popover);
+      filter: brightness(1);
+    }
+    40% {
+      box-shadow: 0 30px 80px rgba(99, 102, 241, 0.45);
+      filter: brightness(1.06);
+    }
+    100% {
+      box-shadow: var(--shadow-popover);
+      filter: brightness(1);
+    }
+  }
+
+  .achievement-overlay--collapsing .achievement-toast__body {
+    animation: achievementDetailsCollapse 0.58s cubic-bezier(0.55, 0, 0.1, 1) forwards;
+  }
+
+  @keyframes achievementDetailsCollapse {
+    0% {
+      opacity: 1;
+      transform: translateX(0) scaleX(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(36px) scaleX(0.78);
+    }
+  }
+
+  .achievement-overlay--collapsing .achievement-toast__icon {
+    animation: achievementBadgeExit 0.5s cubic-bezier(0.55, 0, 0.1, 1) 80ms forwards;
+  }
+
+  @keyframes achievementBadgeExit {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(0.65);
+      opacity: 0;
+    }
+  }
+
+  [data-theme='dark'] .achievement-toast {
+    border-color: rgba(15, 23, 42, 0.45);
+  }
+
+  [data-theme='dark'] .achievement-toast__score {
+    background: rgba(15, 23, 42, 0.55);
+  }
+}

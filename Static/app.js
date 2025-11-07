@@ -127,6 +127,347 @@ Object.entries(serviceWrappers).forEach(([key, fn]) => {
   window[key] = fn;
 });
 
+const ACHIEVEMENT_EYEBROW = "Badge unlocked";
+const ACHIEVEMENT_DISPLAY_MS = 5200;
+const ACHIEVEMENT_EXIT_MS = 420;
+const ACHIEVEMENT_BLINK_DELAY = 1400;
+const ACHIEVEMENT_COLLAPSE_LEAD_MS = 620;
+const ACHIEVEMENT_FLAG_KEYS = {
+  HUB_WELCOME: "hub-welcome"
+};
+const HUB_WELCOME_BADGE_ID = "welcome-wave";
+
+const achievementOverlayState = {
+  host: null,
+  queue: [],
+  active: null,
+  hideTimer: null,
+  cleanupTimer: null,
+  blinkTimer: null,
+  collapseTimer: null
+};
+
+function ensureAchievementFlags() {
+  if (!state.meta || typeof state.meta !== "object") {
+    state.meta = {};
+  }
+  if (!state.meta.achievementFlags || typeof state.meta.achievementFlags !== "object") {
+    state.meta.achievementFlags = {};
+  }
+  return state.meta.achievementFlags;
+}
+
+function hasAchievementFlag(key) {
+  const flags = ensureAchievementFlags();
+  return Boolean(flags[key]);
+}
+
+function setAchievementFlag(key, value) {
+  const flags = ensureAchievementFlags();
+  const stamp =
+    typeof value === "string" && value.trim().length > 0 ? value.trim() : new Date().toISOString();
+  flags[key] = stamp;
+  try {
+    WeldState.saveState(state);
+  } catch (error) {
+    console.warn("Failed to persist achievement flag:", error);
+  }
+}
+
+function ensureAchievementHost() {
+  if (typeof document === "undefined") return null;
+  if (
+    achievementOverlayState.host &&
+    document.body &&
+    document.body.contains(achievementOverlayState.host)
+  ) {
+    return achievementOverlayState.host;
+  }
+  if (!document.body) return null;
+  const host = document.createElement("div");
+  host.className = "achievement-overlay";
+  host.setAttribute("aria-live", "polite");
+  host.setAttribute("aria-atomic", "true");
+  host.setAttribute("role", "status");
+  host.setAttribute("aria-hidden", "true");
+  host.dataset.achievementOverlay = "true";
+  document.body.appendChild(host);
+  achievementOverlayState.host = host;
+  return host;
+}
+
+function achievementToneStyles(toneKey) {
+  if (toneKey && BADGE_ICON_BACKDROPS && BADGE_ICON_BACKDROPS[toneKey]) {
+    return BADGE_ICON_BACKDROPS[toneKey];
+  }
+  if (BADGE_ICON_BACKDROPS?.default) {
+    return BADGE_ICON_BACKDROPS.default;
+  }
+  return {
+    background: "linear-gradient(135deg, #86efac, #22c55e)",
+    shadow: "rgba(34, 197, 94, 0.3)"
+  };
+}
+
+function normalizeAchievementEntry(entry) {
+  if (!entry || typeof entry !== "object") return null;
+  const escapeTitle = value =>
+    typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+  const pointsValue = Number(entry.points);
+  return {
+    id:
+      (typeof entry.id === "string" && entry.id.trim().length > 0
+        ? entry.id.trim()
+        : (WeldUtil?.generateId?.("achievement") ||
+            `achievement-${Date.now()}-${Math.random().toString(16).slice(2)}`)),
+    eyebrow: escapeTitle(entry.eyebrow) || ACHIEVEMENT_EYEBROW,
+    title: escapeTitle(entry.title) || "Badge unlocked",
+    subtitle: escapeTitle(entry.subtitle) || "",
+    points: Number.isFinite(pointsValue) && pointsValue > 0 ? pointsValue : null,
+    icon: escapeTitle(entry.icon) || "medal",
+    tone: escapeTitle(entry.tone) || "emerald",
+    displayMs:
+      Number.isFinite(entry.displayMs) && entry.displayMs > 0 ? entry.displayMs : ACHIEVEMENT_DISPLAY_MS
+  };
+}
+
+function renderAchievementContent(entry) {
+  const escapeHtml =
+    typeof WeldUtil?.escapeHtml === "function"
+      ? WeldUtil.escapeHtml
+      : value => value;
+  const iconMarkup =
+    typeof WeldUtil?.renderIcon === "function"
+      ? WeldUtil.renderIcon(entry.icon || "medal", "md")
+      : `<span class="achievement-toast__icon-placeholder">★</span>`;
+  const toneStyles = achievementToneStyles(entry.tone);
+  const subtitleMarkup = entry.subtitle
+    ? `<span class="achievement-toast__meta">${escapeHtml(entry.subtitle)}</span>`
+    : "";
+  let scoreMarkup = "";
+  if (Number.isFinite(entry.points) && entry.points > 0) {
+    const formattedPoints =
+      typeof formatNumber === "function"
+        ? formatNumber(entry.points)
+        : Number(entry.points).toLocaleString("en-GB");
+    scoreMarkup = `
+      <div class="achievement-toast__score" aria-label="+${escapeHtml(formattedPoints)} points">
+        <span class="achievement-toast__score-value">+${escapeHtml(formattedPoints)}</span>
+        <span class="achievement-toast__score-unit">pts</span>
+      </div>
+    `;
+  }
+  return `
+    <div class="achievement-toast" data-achievement-toast>
+      <span class="achievement-toast__pulse"></span>
+      <div class="achievement-toast__icon" style="background:${toneStyles.background}; box-shadow:0 18px 36px ${toneStyles.shadow};">
+        ${iconMarkup}
+      </div>
+      <div class="achievement-toast__body">
+        <div class="achievement-toast__text">
+          <span class="achievement-toast__eyebrow">${escapeHtml(entry.eyebrow)}</span>
+          <span class="achievement-toast__title">${escapeHtml(entry.title)}</span>
+          ${subtitleMarkup}
+        </div>
+        ${scoreMarkup}
+      </div>
+    </div>
+  `;
+}
+
+function processAchievementQueue() {
+  if (achievementOverlayState.active || achievementOverlayState.queue.length === 0) return;
+  const nextEntry = achievementOverlayState.queue.shift();
+  achievementOverlayState.active = nextEntry;
+  displayAchievement(nextEntry);
+}
+
+function clearAchievementTimers() {
+  const host = achievementOverlayState.host;
+  if (achievementOverlayState.hideTimer) {
+    window.clearTimeout(achievementOverlayState.hideTimer);
+    achievementOverlayState.hideTimer = null;
+  }
+  if (achievementOverlayState.cleanupTimer) {
+    window.clearTimeout(achievementOverlayState.cleanupTimer);
+    achievementOverlayState.cleanupTimer = null;
+  }
+  if (achievementOverlayState.blinkTimer) {
+    window.clearTimeout(achievementOverlayState.blinkTimer);
+    achievementOverlayState.blinkTimer = null;
+  }
+  if (achievementOverlayState.collapseTimer) {
+    window.clearTimeout(achievementOverlayState.collapseTimer);
+    achievementOverlayState.collapseTimer = null;
+  }
+  if (host) {
+    host.classList.remove("achievement-overlay--blink", "achievement-overlay--collapsing");
+  }
+}
+
+function hideAchievement(entryId) {
+  const host = achievementOverlayState.host;
+  if (!host) {
+    achievementOverlayState.active = null;
+    processAchievementQueue();
+    return;
+  }
+  if (!host.classList.contains("achievement-overlay--collapsing")) {
+    host.classList.add("achievement-overlay--collapsing");
+  }
+  if (achievementOverlayState.blinkTimer) {
+    window.clearTimeout(achievementOverlayState.blinkTimer);
+    achievementOverlayState.blinkTimer = null;
+  }
+  if (achievementOverlayState.collapseTimer) {
+    window.clearTimeout(achievementOverlayState.collapseTimer);
+    achievementOverlayState.collapseTimer = null;
+  }
+  host.classList.remove("achievement-overlay--visible");
+  host.classList.add("achievement-overlay--leaving");
+  achievementOverlayState.cleanupTimer = window.setTimeout(() => {
+    if (host.dataset.activeId === entryId) {
+      host.innerHTML = "";
+      host.removeAttribute("data-active-id");
+      host.setAttribute("aria-hidden", "true");
+    }
+    host.classList.remove("achievement-overlay--leaving");
+    host.classList.remove("achievement-overlay--blink", "achievement-overlay--collapsing");
+    achievementOverlayState.active = null;
+    achievementOverlayState.cleanupTimer = null;
+    processAchievementQueue();
+  }, ACHIEVEMENT_EXIT_MS);
+}
+
+function displayAchievement(entry) {
+  const host = ensureAchievementHost();
+  if (!host) {
+    achievementOverlayState.active = null;
+    return;
+  }
+  clearAchievementTimers();
+  host.innerHTML = renderAchievementContent(entry);
+  host.dataset.activeId = entry.id;
+  host.setAttribute("aria-hidden", "false");
+  host.classList.remove("achievement-overlay--leaving");
+  // Force layout so the transition applies when the visible class is added.
+  void host.offsetWidth;
+  host.classList.add("achievement-overlay--visible");
+  scheduleAchievementTimeline(entry);
+  achievementOverlayState.hideTimer = window.setTimeout(() => {
+    hideAchievement(entry.id);
+  }, entry.displayMs);
+}
+
+function scheduleAchievementTimeline(entry) {
+  const host = achievementOverlayState.host;
+  if (!host) return;
+  if (ACHIEVEMENT_BLINK_DELAY > 0) {
+    achievementOverlayState.blinkTimer = window.setTimeout(() => {
+      if (host.dataset.activeId === entry.id) {
+        host.classList.add("achievement-overlay--blink");
+      }
+    }, ACHIEVEMENT_BLINK_DELAY);
+  }
+  const collapseDelay = Math.max(0, entry.displayMs - ACHIEVEMENT_COLLAPSE_LEAD_MS);
+  achievementOverlayState.collapseTimer = window.setTimeout(() => {
+    if (host.dataset.activeId === entry.id) {
+      host.classList.add("achievement-overlay--collapsing");
+    }
+  }, collapseDelay);
+}
+
+function queueAchievementToast(entry) {
+  const normalized = normalizeAchievementEntry(entry);
+  if (!normalized) return;
+  achievementOverlayState.queue.push(normalized);
+  if (!achievementOverlayState.active) {
+    processAchievementQueue();
+  }
+}
+
+function queueBadgeAchievements(badgeInput, options = {}) {
+  const list = Array.isArray(badgeInput) ? badgeInput : [badgeInput];
+  if (!list || list.length === 0) return;
+  const contextLabel =
+    typeof options.context === "string" && options.context.trim().length > 0
+      ? options.context.trim()
+      : "";
+  const forcedSubtitle =
+    typeof options.subtitle === "string" && options.subtitle.trim().length > 0
+      ? options.subtitle.trim()
+      : "";
+  const eyebrow =
+    typeof options.eyebrow === "string" && options.eyebrow.trim().length > 0
+      ? options.eyebrow.trim()
+      : ACHIEVEMENT_EYEBROW;
+  list.forEach((badge, index) => {
+    if (!badge) return;
+    const resolvedBadge =
+      typeof badge === "string" ? (typeof badgeById === "function" ? badgeById(badge) : null) : badge;
+    if (!resolvedBadge) return;
+    const description =
+      typeof resolvedBadge.description === "string" && resolvedBadge.description.trim().length > 0
+        ? resolvedBadge.description.trim()
+        : "";
+    const subtitle = forcedSubtitle || [contextLabel, description].filter(Boolean).join(" • ");
+    queueAchievementToast({
+      id:
+        typeof resolvedBadge.id === "string" && resolvedBadge.id.trim().length > 0
+          ? `${resolvedBadge.id}-${index}-${Date.now()}`
+          : undefined,
+      eyebrow,
+      title: resolvedBadge.title || "Badge unlocked",
+      subtitle,
+      points: resolvedBadge.points,
+      icon: resolvedBadge.icon || "medal",
+      tone: resolvedBadge.tone || "emerald"
+    });
+  });
+}
+
+const WeldAchievements = {
+  queue: queueAchievementToast,
+  queueBadgeUnlocks: queueBadgeAchievements,
+  queueBadgeAchievements,
+  isActive() {
+    return Boolean(achievementOverlayState.active);
+  }
+};
+
+window.WeldAchievements = Object.assign(window.WeldAchievements || {}, WeldAchievements);
+
+function unlockHubWelcomeAchievement() {
+  if (hasAchievementFlag(ACHIEVEMENT_FLAG_KEYS.HUB_WELCOME)) {
+    return;
+  }
+  const badge =
+    typeof badgeById === "function" ? badgeById(HUB_WELCOME_BADGE_ID) : null;
+  setAchievementFlag(ACHIEVEMENT_FLAG_KEYS.HUB_WELCOME);
+  if (badge && window.WeldAchievements?.queueBadgeUnlocks) {
+    window.WeldAchievements.queueBadgeUnlocks([badge], {
+      context: "Reporter hub",
+      subtitle: "First visit"
+    });
+    return;
+  }
+  if (window.WeldAchievements?.queue) {
+    window.WeldAchievements.queue({
+      title: "Reporter hub unlocked",
+      subtitle: "First visit",
+      points: 20,
+      icon: "spark",
+      tone: "emerald"
+    });
+  }
+}
+
+function handleRouteAchievements(route) {
+  if (route === "customer") {
+    unlockHubWelcomeAchievement();
+  }
+}
+
 function rewardById(id) {
   const rewards = Array.isArray(state.rewards) ? state.rewards : [];
   const target = String(id);
@@ -1259,6 +1600,10 @@ function reportMessage(payload) {
   state.meta.lastBadgeId = badgeBundle.length > 0 ? badgeBundle[0].id : null;
   state.meta.lastBadgeIds = badgeBundle.map(badge => badge.id);
   state.meta.lastTotalAwarded = totalAwarded;
+  if (badgeBundle.length > 0 && window.WeldAchievements?.queueBadgeUnlocks) {
+    const badgeContext = origin === "addin" ? "Outlook add-in" : "Reporter hub";
+    window.WeldAchievements.queueBadgeUnlocks(badgeBundle, { context: badgeContext });
+  }
   if (origin === "addin") {
     state.meta.addinScreen = "success";
   }
@@ -2567,6 +2912,7 @@ function renderApp() {
 
   const app = document.getElementById("app");
   const route = state.meta.route;
+  handleRouteAchievements(route);
 
   if (route !== "addin") {
     teardownBadgeShowcase();

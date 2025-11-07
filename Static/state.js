@@ -101,6 +101,45 @@
     return base;
   }
 
+  function normalizeAchievementFlags(source, fallback = {}) {
+    const base =
+      fallback && typeof fallback === "object" && !Array.isArray(fallback) ? { ...fallback } : {};
+    if (!source || typeof source !== "object") {
+      return base;
+    }
+    Object.keys(source).forEach(key => {
+      if (typeof key !== "string") return;
+      const trimmedKey = key.trim();
+      if (!trimmedKey) return;
+      const value = source[key];
+      if (value === null || value === undefined || value === false) {
+        return;
+      }
+      if (value === true) {
+        base[trimmedKey] = true;
+        return;
+      }
+      if (typeof value === "string") {
+        const trimmedValue = value.trim();
+        base[trimmedKey] = trimmedValue.length > 0 ? trimmedValue : true;
+        return;
+      }
+      if (Number.isFinite(value)) {
+        base[trimmedKey] = Number(value);
+        return;
+      }
+      if (value && typeof value === "object" && typeof value.timestamp === "string") {
+        const stamp = value.timestamp.trim();
+        if (stamp.length > 0) {
+          base[trimmedKey] = stamp;
+        }
+        return;
+      }
+      base[trimmedKey] = Boolean(value);
+    });
+    return base;
+  }
+
   const FALLBACK_BASE = {
     meta: {
       role: null,
@@ -131,6 +170,7 @@
         departmentId: null,
         teamId: null
       },
+      achievementFlags: {},
       featureToggles: { ...DEFAULT_FEATURE_TOGGLES },
       guidedTour: { ...DEFAULT_GUIDED_TOUR_META }
     },
@@ -203,6 +243,10 @@
       ...metaFeatureToggles
     };
     meta.guidedTour = normalizeGuidedTourMeta(meta.guidedTour || DEFAULT_GUIDED_TOUR_META);
+    meta.achievementFlags = normalizeAchievementFlags(
+      metaSource.achievementFlags || FALLBACK_BASE.meta.achievementFlags,
+      FALLBACK_BASE.meta.achievementFlags
+    );
 
     const reporterSettingsBase =
       base.settings && base.settings.reporter && typeof base.settings.reporter === "object"
@@ -833,10 +877,14 @@
             };
           });
       const mergedMeta = {
-      ...baseState.meta,
-      ...parsed.meta
-    };
-    mergedMeta.guidedTour = normalizeGuidedTourMeta(mergedMeta.guidedTour);
+        ...baseState.meta,
+        ...parsed.meta
+      };
+      mergedMeta.guidedTour = normalizeGuidedTourMeta(mergedMeta.guidedTour);
+      mergedMeta.achievementFlags = normalizeAchievementFlags(
+        mergedMeta.achievementFlags,
+        FALLBACK_BASE.meta.achievementFlags
+      );
       if (mergedMeta.lastMessageId === null || mergedMeta.lastMessageId === undefined) {
         mergedMeta.lastMessageId = null;
       } else if (typeof mergedMeta.lastMessageId === "string") {
