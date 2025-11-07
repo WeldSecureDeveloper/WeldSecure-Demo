@@ -88,6 +88,15 @@ egistry.js with a human-friendly label and default route pointer.
 5. **Scoped naming** - Use predictable prefixes (.landing__, .customer-, .quest-card__) to keep selectors isolated. Utilities that affect multiple screens belong in base/component files, not features.
 6. **Workflow for new styles** - Decide the layer, create/extend the appropriate file, add its import, delete temporary selectors from the aggregator, test the affected feature(s) (desktop plus at least one responsive breakpoint), and update docs/backlog entries if the structure changes. Always smoke-test the badge gallery and customer hub when badge styles move.
 
+### 5.1 Cascade Layer Snapshot (Nov 2025)
+
+- `@layer base, components, features;` lives at the top of `styles.css`, and **every** file under `styles/base`, `styles/components`, and `styles/features` is wrapped in the appropriate layer.
+- Badge styles were split into `styles/components/badges/{tokens,cards,spotlight,grids}.css` and `styles/features/badges.css`, so the old `styles/badges.css` file is gone. When adding new badge UI, extend these files instead of creating another legacy sheet.
+- Regression expectations:
+  - **Phase B–E complete:** tokens/base/layout, reusable components, feature files, and badge gallery layers migrated and verified in both themes.
+  - **Phase F outstanding:** whenever you touch layered CSS, load the key personas (landing, customer, client, admin, badges, reporter) and watch console output. Record any regressions in the fix backlog.
+- To validate the stack quickly, run `rg "@layer" Static/styles -g "*.css"`; the command should report every CSS file once. If it misses a file, wrap it before committing.
+
 ---
 
 ## 6. Adding New Functionality
@@ -132,8 +141,7 @@ egistry.js.
 
 ## 9. Useful References
 
-- Static/docs/styles-css-refactor-plan.md - migration status for the stylesheet split.
-- Static/docs/fix-log.md + Static/docs/feature-backlog.md - track work in/out.
+- Static/docs/fix-backlog.md + Static/docs/feature-backlog.md - track work in/out.
 - Static/tools/ - scripts for sanity checks or data resets.
 
 When in doubt, check this guide before coding. If you need to bend a rule, document it and plan a cleanup so the architecture stays predictable for the next contributor (and Codex).

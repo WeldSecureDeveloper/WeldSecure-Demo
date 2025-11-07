@@ -58,10 +58,10 @@ Reload `Static/index.html` after changes to see the updates. Use "Reset demo dat
 
 ## Validation helpers
 - Run `pwsh ./Static/tools/sanity-check.ps1` to confirm shell delegates remain unique.
-- Review `Static/docs/fix-log.md` for the latest verified fixes before sharing builds.
+- Review `Static/docs/fix-backlog.md` for the latest verified fixes before sharing builds.
 
 ## Ongoing work
 - Track enhancements in `Static/docs/feature-backlog.md`.
-- Record fixes and follow-ups in `Static/docs/fix-log.md`.
+- Record fixes and follow-ups in `Static/docs/fix-backlog.md`.
 
 
