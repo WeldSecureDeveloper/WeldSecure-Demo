@@ -1,3 +1,4 @@
+@layer components {
 /* Filter pill controls */
 .badge-filter {
   margin-top: 1.5rem;
@@ -43,3 +44,5 @@
   border-color: rgba(126, 87, 194, 0.45);
   color: #fff;
 }
+}
+

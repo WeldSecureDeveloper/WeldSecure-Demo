@@ -1,3 +1,4 @@
+@layer components {
 /* Quest catalogue and cards */
 .quest-grid {
   display: grid;
@@ -479,3 +480,5 @@
   font-weight: 600;
   color: var(--color-text-primary);
 }
+}
+

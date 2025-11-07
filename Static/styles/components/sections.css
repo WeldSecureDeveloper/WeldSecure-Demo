@@ -1,3 +1,4 @@
+@layer components {
 /* Shared section headers */
 .section-header {
   display: flex;
@@ -15,3 +16,5 @@
   margin: 0.4rem 0 0;
   color: var(--color-text-muted);
 }
+}
+

@@ -54,5 +54,5 @@ Goal: split the monolithic `Static/styles.css` (~7k lines) into focused, maintai
 - [ ] Commit the changes when satisfied.
 
 ## Optional Follow-Ups
-- [ ] Introduce CSS cascade layers (`@layer base, components, features;`) once the split stabilises.
+- [ ] Introduce CSS cascade layers (`@layer base, components, features;`) once the split stabilises (see `Static/docs/css-cascade-layers.md` for the rollout plan).
 - [ ] Consider a lightweight concatenation script (PowerShell or npm) if bundle size or request count becomes an issue.

@@ -1,3 +1,4 @@
+@layer components {
 .global-nav {
   display: flex;
   flex-wrap: wrap;
@@ -336,3 +337,5 @@
 [data-theme='dark'] .global-nav__item--active {
   color: var(--color-text-primary);
 }
+}
+

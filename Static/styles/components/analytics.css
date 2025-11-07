@@ -1,3 +1,4 @@
+@layer components {
 /* Data visualisation components */
 .timeline {
   background: #111827;
@@ -107,3 +108,5 @@
     rgba(16, 185, 129, 0.65)
   );
 }
+}
+

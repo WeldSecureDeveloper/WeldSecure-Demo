@@ -1,3 +1,4 @@
+@layer components {
 .button-pill,
 .journey-card__action,
 .addin-primary,
@@ -233,3 +234,5 @@
   color: #b91c1c;
   font-weight: 600;
 }
+}
+

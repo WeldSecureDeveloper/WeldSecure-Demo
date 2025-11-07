@@ -1,3 +1,4 @@
+@layer base, components, features;
 /* Stylesheet aggregator
    Order: tokens → base structure/layout → components → features → legacy (badges) */
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
