@@ -1,0 +1,17 @@
+/* Shared section headers */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.section-header h2 {
+  margin: 0;
+}
+
+.section-header p {
+  margin: 0.4rem 0 0;
+  color: var(--color-text-muted);
+}
