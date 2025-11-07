@@ -1,3 +1,4 @@
+@layer features {
 /* Landing feature */
 .landing {
   width: 100%;
@@ -182,3 +183,5 @@
     gap: 1.5rem;
   }
 }
+}
+

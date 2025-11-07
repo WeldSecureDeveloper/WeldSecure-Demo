@@ -1,3 +1,4 @@
+@layer features {
 /* User configuration feature */
 .user-config__intro {
   margin: 3rem 0 2.5rem;
@@ -210,3 +211,5 @@
     align-items: stretch;
   }
 }
+}
+

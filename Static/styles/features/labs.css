@@ -1,3 +1,4 @@
+@layer features {
 /* Labs feature */
 .weld-labs {
   display: flex;
@@ -277,5 +278,6 @@
 }
 [data-theme='dark'] .weld-labs__empty p {
   color: var(--color-text-subtle);
+}
 }
 

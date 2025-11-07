@@ -1,3 +1,4 @@
+@layer features {
 /* Settings feature */
 .settings-shell {
   position: fixed;
@@ -438,5 +439,6 @@
 }
 [data-theme='dark'] .settings-theme__description {
   color: var(--color-text-soft);
+}
 }
 

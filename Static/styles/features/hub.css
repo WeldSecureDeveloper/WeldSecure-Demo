@@ -1,3 +1,4 @@
+@layer features {
 /* Customer hub feature */
 .customer-section--rewards .reward-card__meta {
   gap: 0.5rem;
@@ -407,3 +408,5 @@
 .reward-card__actions .reward-card__cta {
   margin-left: auto;
 }
+}
+

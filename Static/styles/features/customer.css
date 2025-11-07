@@ -1,3 +1,4 @@
+@layer features {
 /* Customer feature */
 
 .customer-hero {
@@ -1142,5 +1143,6 @@
 
 .customer-section--badges-all {
   margin-top: 2rem;
+}
 }
 

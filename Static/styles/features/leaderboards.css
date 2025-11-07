@@ -1,3 +1,4 @@
+@layer features {
 /* Leaderboards feature */
 .department-leaderboard {
   display: flex;
@@ -222,3 +223,5 @@
   color: var(--color-text-subtle);
   font-size: 0.95rem;
 }
+}
+

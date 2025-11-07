@@ -1,3 +1,4 @@
+@layer features {
 /* Org Hub feature */
 .engagement-programs {
   display: flex;
@@ -216,3 +217,5 @@
   color: var(--color-text-subtle);
   background: rgba(226, 232, 240, 0.35);
   border-radius: 18px;
+}
+

@@ -1,3 +1,4 @@
+@layer features {
 /* Client feature */
 .client-catalogue__intro {
   display: flex;
@@ -209,3 +210,5 @@
 .client-badges__grid .catalogue-badge__footer .button-pill {
   flex-shrink: 0;
 }
+}
+

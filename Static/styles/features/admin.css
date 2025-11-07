@@ -1,3 +1,4 @@
+@layer features {
 /* Admin feature */
 .clients-grid {
   display: grid;
@@ -44,3 +45,5 @@
   min-width: 240px;
   max-width: 300px;
 }
+}
+
