@@ -6,6 +6,7 @@
 - Align add-in celebration pop animation timing with badge showcase (pending visual QA).
 
 ## Recently Fixed
+- Badge catalogue now fully layered: badges split into component/feature CSS, grid tightened to 5 columns, and right-edge popovers flip inward (2025-11-07).
 - Themes hub gains a persisted light/dark toggle, covering nav chrome and settings surfaces.
 - Catalogue, quest, and reward cards plus dialog shells now adopt themed tokens so dark mode matches the light layout.
 - Reporter hub quests no longer render the catalogue configuration cog; CTA keeps the walkthrough invitational.

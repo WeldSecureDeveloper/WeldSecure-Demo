@@ -54,13 +54,13 @@ Every feature stylesheet is now wrapped with `@layer features { ... }`. Persona 
 
 ## Phase E - Legacy / Badges (Next Up)
 - [x] Split `styles/badges.css` into component + feature files. *Done: `styles/components/badges/{tokens,cards,spotlight,grids}.css` + `styles/features/badges.css`.*
-- [ ] After the badges layer is applied, re-test badge gallery + badge showcase in both themes. *Pending manual UI pass.*
+- [x] After the badges layer is applied, re-test badge gallery + badge showcase in both themes. *Manual check 2025-11-07 after spacing + popover fixes; both light/dark catalogue views verified.*
 
 **Split plan (recommended)**
 - [x] Extract reusable badge pieces (tokens, cards, spotlights, grids) into `styles/components/badges/*.css` with `@layer components { ... }`.
 - [x] Create `styles/features/badges.css` for the gallery/showcase layouts under `@layer features { ... }`.
 - [x] Update `Static/styles.css` imports accordingly; remove the old `styles/badges.css` import once empty.
-- [ ] After each extraction, smoke-test customer hub badges and the badge gallery (light + dark).
+- [x] After each extraction, smoke-test customer hub badges and the badge gallery (light + dark). *Latest pass covered 5-column layout + right-edge popover flip.*
 - [x] Delete the legacy `styles/badges.css` once replaced.
 
 ## Phase F - Final QA
