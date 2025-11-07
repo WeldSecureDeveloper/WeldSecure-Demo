@@ -22,7 +22,6 @@
   function renderAddIn() {
     const screen = state.meta.addinScreen;
     const reporterSettings = state?.settings?.reporter || {};
-    const guidedTourEnabled = isGuidedTourEnabled();
     const reasonPrompt =
       typeof reporterSettings.reasonPrompt === "string" &&
       reporterSettings.reasonPrompt.trim().length > 0
@@ -187,7 +186,6 @@
       screen === "success"
         ? tickerMarkup
         : `<span class="addin-points__value">${formatNumber(state.customer.currentPoints)}</span>`;
-    const guidedTourToggleMarkup = renderGuidedTourToggle(guidedTourEnabled);
     const showBackNav = screen === "success";
     const backButtonMarkup = showBackNav
       ? `<button type="button" class="addin-header__back" data-addin-back aria-label="Back to report form">
@@ -237,7 +235,6 @@
                   </span>
                   ${headerPointsDisplay}
                 </div>
-                ${guidedTourToggleMarkup}
               </div>
             </div>
             <div class="addin-header__body">
@@ -334,15 +331,6 @@
       }
     }
 
-    const guidedTourToggle = container.querySelector("[data-guided-tour-toggle]");
-    if (guidedTourToggle && guidedTourToggle.dataset.guidedTourBound !== "true") {
-      guidedTourToggle.dataset.guidedTourBound = "true";
-      guidedTourToggle.addEventListener("click", () => {
-        if (window.WeldGuidedTour && typeof window.WeldGuidedTour.toggle === "function") {
-          window.WeldGuidedTour.toggle();
-        }
-      });
-    }
   }
 
   function applyAddInShellSizing(container) {
@@ -392,27 +380,10 @@
     });
   }
 
-  function renderGuidedTourToggle(isEnabled) {
-    if (!window.WeldGuidedTour || typeof window.WeldGuidedTour.toggle !== "function") {
-      return "";
-    }
-    const pressed = isEnabled ? "true" : "false";
-    const statusLabel = isEnabled ? "On" : "Off";
-    return `
-      <button
-        type="button"
-        class="guided-tour-toggle"
-        data-guided-tour-toggle
-        data-variant="inverse"
-        aria-pressed="${pressed}"
-      >
-        <span class="guided-tour-toggle__label">Guided tour</span>
-        <span class="guided-tour-toggle__pill">${statusLabel}</span>
-      </button>
-    `;
-  }
-
   function isGuidedTourEnabled() {
+    if (window.WeldGuidedTour && typeof window.WeldGuidedTour.isEnabled === "function") {
+      return window.WeldGuidedTour.isEnabled();
+    }
     const guidedMeta = state?.meta?.guidedTour;
     if (!guidedMeta || typeof guidedMeta !== "object") {
       return true;

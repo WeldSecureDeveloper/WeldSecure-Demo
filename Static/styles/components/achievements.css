@@ -118,28 +118,31 @@
 
   .achievement-toast__score {
     display: inline-flex;
-    flex-direction: column;
-    align-items: flex-end;
-    justify-content: center;
-    padding: 8px 10px;
-    border-radius: 12px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.35rem;
+    padding: 0.4rem 0.85rem;
+    border-radius: 999px;
     background: var(--badge-points-gradient);
-    box-shadow: var(--badge-points-shadow);
-    text-align: right;
-    min-width: 64px;
+    box-shadow: 0 12px 24px rgba(249, 115, 22, 0.35), var(--badge-points-shadow);
     color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    min-width: auto;
   }
 
   .achievement-toast__score-value {
-    font-weight: 600;
-    font-size: 1rem;
+    font-weight: 700;
+    font-size: 0.95rem;
+    line-height: 1;
   }
 
   .achievement-toast__score-unit {
     font-size: 0.7rem;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
-    opacity: 0.85;
+    letter-spacing: 0.14em;
+    opacity: 0.9;
+    line-height: 1;
   }
 
   @media (max-width: 720px) {

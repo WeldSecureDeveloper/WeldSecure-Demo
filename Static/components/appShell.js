@@ -72,6 +72,38 @@
       `;
     }
 
+    function isGuidedTourEnabled(state) {
+      if (window.WeldGuidedTour && typeof window.WeldGuidedTour.isEnabled === "function") {
+        try {
+          return window.WeldGuidedTour.isEnabled();
+        } catch {
+          // fall through to state meta
+        }
+      }
+      const guidedMeta = state?.meta?.guidedTour;
+      if (!guidedMeta || typeof guidedMeta !== "object") {
+        return true;
+      }
+      return guidedMeta.enabled !== false;
+    }
+
+    function renderGuidedTourButton(state) {
+      const enabled = isGuidedTourEnabled(state);
+      const label = enabled ? "Turn guided tour off" : "Turn guided tour on";
+      return `
+        <button
+          type="button"
+          class="global-nav__icon-button global-nav__icon-button--tour${enabled ? " global-nav__icon-button--tour-active" : ""}"
+          data-guided-tour-toggle
+          aria-pressed="${enabled ? "true" : "false"}"
+          aria-label="${label}"
+          title="${label}"
+        >
+          <span class="global-nav__icon global-nav__icon--tour" aria-hidden="true">?</span>
+        </button>
+      `;
+    }
+
     const getFormatNumber = () => {
       if (typeof window.formatNumber === "function") {
         return window.formatNumber;
@@ -368,6 +400,7 @@
           Reset
         </button>
         ${renderThemeToggle(currentTheme)}
+        ${renderGuidedTourButton(state)}
         <button
         type="button"
         class="global-nav__icon-button"
@@ -588,6 +621,28 @@
           closeGroups();
           if (typeof window.toggleTheme === "function") {
             window.toggleTheme();
+          }
+        });
+      }
+
+      const guidedTourToggle = globalNav.querySelector("[data-guided-tour-toggle]");
+      if (guidedTourToggle) {
+        const applyGuidedTourState = enabled => {
+          const isOn = enabled !== false;
+          const label = isOn ? "Turn guided tour off" : "Turn guided tour on";
+          guidedTourToggle.setAttribute("aria-pressed", isOn ? "true" : "false");
+          guidedTourToggle.setAttribute("aria-label", label);
+          guidedTourToggle.setAttribute("title", label);
+          guidedTourToggle.classList.toggle("global-nav__icon-button--tour-active", isOn);
+        };
+        applyGuidedTourState(isGuidedTourEnabled(state));
+        guidedTourToggle.addEventListener("click", event => {
+          event.preventDefault();
+          event.stopPropagation();
+          closeGroups();
+          if (window.WeldGuidedTour && typeof window.WeldGuidedTour.toggle === "function") {
+            const next = window.WeldGuidedTour.toggle();
+            applyGuidedTourState(next);
           }
         });
       }

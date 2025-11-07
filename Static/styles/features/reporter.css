@@ -121,10 +121,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 0.75rem;
-  flex-wrap: wrap;
-}
-.addin-header__meta .guided-tour-toggle {
-  pointer-events: auto;
+  flex-wrap: nowrap;
 }
 .addin-header__title {
   display: inline-flex;
