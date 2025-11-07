@@ -322,7 +322,16 @@
       return `
     <nav class="global-nav" aria-label="Primary navigation" data-theme="${currentTheme}">
       <button type="button" class="brand global-nav__brand" id="brand-button">
-        <span class="brand__glyph">W</span>
+        <span class="brand__glyph" aria-hidden="true">
+          <img
+            src="./WeldSecure_logo.svg"
+            alt=""
+            class="brand__logo"
+            width="40"
+            height="40"
+            decoding="async"
+          />
+        </span>
         <span>WeldSecure</span>
       </button>
       <div class="global-nav__groups">

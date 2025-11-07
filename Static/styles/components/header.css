@@ -30,9 +30,19 @@
 }
 
 .brand__glyph {
-  font-size: 1.9rem;
-  color: #5d3bff;
-  transform: translateY(-1px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  line-height: 0;
+}
+
+.brand__glyph img,
+.brand__glyph svg {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 .brand__descriptor {

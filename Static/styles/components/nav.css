@@ -63,14 +63,24 @@
 }
 
 .global-nav__brand .brand__glyph {
-  font-size: 1.5rem;
-  color: #5d3bff;
-  transition: color 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  line-height: 0;
 }
 
-.global-nav__brand:hover .brand__glyph,
-.global-nav__brand:focus-visible .brand__glyph {
-  color: inherit;
+.global-nav__brand .brand__logo {
+  display: block;
+  width: 100%;
+  height: auto;
+  transition: transform 0.18s ease;
+}
+
+.global-nav__brand:hover .brand__logo,
+.global-nav__brand:focus-visible .brand__logo {
+  transform: scale(1.05);
 }
 
 .global-nav__groups {
@@ -311,14 +321,6 @@
   color: var(--color-text-primary);
 }
 
-[data-theme='dark'] .global-nav__brand .brand__glyph {
-  color: #a78bfa;
-}
-
-[data-theme='dark'] .global-nav__brand:hover .brand__glyph,
-[data-theme='dark'] .global-nav__brand:focus-visible .brand__glyph {
-  color: inherit;
-}
 
 [data-theme='dark'] .global-nav__icon-button {
   background: rgba(31, 45, 68, 0.7);

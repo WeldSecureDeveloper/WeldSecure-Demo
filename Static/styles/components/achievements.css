@@ -316,3 +316,10 @@
     border-color: rgba(15, 23, 42, 0.45);
   }
 }
+
+.achievement-overlay--paused .achievement-toast,
+.achievement-overlay--paused .achievement-toast__pulse,
+.achievement-overlay--paused .achievement-toast__icon,
+.achievement-overlay--paused .achievement-toast__body {
+  animation-play-state: paused !important;
+}
