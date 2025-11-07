@@ -47,8 +47,8 @@ Goal: split the monolithic `Static/styles.css` (~7k lines) into focused, maintai
 - [ ] Document the final import order within a short comment block for future maintainers.
 
 ## Phase 8 - Regression & Cleanup
-- [ ] Run through critical flows (landing, customer, client, admin, settings) noting any styling regressions.
-- [ ] Validate dark theme (if applicable) since tokens moved first.
+- [x] Run through critical flows (landing, customer, client, admin, settings) noting any styling regressions.
+- [x] Validate dark theme (if applicable) since tokens moved first.
 - [ ] Remove any temporary comments or TODO markers added during extraction.
 - [ ] Update `Static/docs/fix-log.md` or relevant documentation with a summary of the refactor.
 - [ ] Commit the changes when satisfied.
