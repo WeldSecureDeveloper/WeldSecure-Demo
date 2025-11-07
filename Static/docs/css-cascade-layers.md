@@ -1,15 +1,13 @@
 ﻿# CSS Cascade Layers Rollout
 
-We are ready to adopt `@layer base, components, features`. Use the checklist below so any future Codex conversation can resume the work mid-stream.
+We are adopting `@layer base, components, features` so the cascade order is explicit even as we reorganise files. This checklist keeps the effort resumable for future Codex sessions.
 
 ## Phase A - Setup
-- [x] Add `@layer base, components, features;` at the very top of `Static/styles.css` (before the comment/imports).
-- [x] Confirm browsers under test support cascade layers (Edge/Chrome ≥ 99, Firefox ≥ 97, Safari ≥ 15.4). *Status: ✅ modern browsers only.*
+- [x] Add `@layer base, components, features;` at the top of `Static/styles.css` (before the import comment).
+- [x] Confirm browser support (Edge/Chrome ≥ 99, Firefox ≥ 97, Safari ≥ 15.4). *Status: ✅ modern browsers only.*
 
 ## Phase B - Base Files
-For each file in `styles/base/`:
-1. Wrap the entire contents in `@layer base { ... }` (retain internal comments/media queries).
-2. Run a quick smoke test (load landing + customer hub) and note completion.
+Wrap every file in `styles/base/` with `@layer base { ... }`, then sanity check landing + customer flows.
 
 | File | Wrapped? | Smoke Test |
 |------|----------|------------|
@@ -18,8 +16,7 @@ For each file in `styles/base/`:
 | `base/layout.css` | [x] | [x] |
 
 ## Phase C - Component Files
-Repeat for every file under `styles/components/`, wrapping with `@layer components { ... }`.
-After each batch (e.g., nav/header + forms + analytics), run a quick UI sweep (global nav, cards, dialogs, timeline components).
+All component styles now live inside `@layer components { ... }`. Notes capture the smoke test scope.
 
 | File | Wrapped? | Smoke Test Notes |
 |------|----------|------------------|
@@ -36,10 +33,8 @@ After each batch (e.g., nav/header + forms + analytics), run a quick UI sweep (g
 | `components/dialog.css` | [x] | ✅ dialogs OK |
 | `components/quests.css` | [x] | ✅ quest cards OK |
 
-(If new component files appear later, add rows as needed.)
-
 ## Phase D - Feature Files
-Wrap each `styles/features/<name>.css` with `@layer features { ... }`. Group work by persona so it's easy to regression test.
+Every feature stylesheet is now wrapped with `@layer features { ... }`. Persona tests describe the area to smoke when changes land.
 
 | Feature CSS | Wrapped? | Persona Test |
 |-------------|----------|--------------|
@@ -57,14 +52,21 @@ Wrap each `styles/features/<name>.css` with `@layer features { ... }`. Group wor
 | `admin.css` | [x] | Multi-tenant admin |
 | `client.css` | [x] | Client catalogue |
 
-## Phase E - Legacy / Badges
-- [ ] Decide whether to split `styles/badges.css` into components/features before layering. Otherwise wrap the whole file with `@layer features { ... }`.
-- [ ] After wrapping, smoke-test badge gallery + badge showcase in both themes.
+## Phase E - Legacy / Badges (Next Up)
+- [ ] Decide whether to split `styles/badges.css` into component + feature files or wrap the whole file with `@layer features { ... }`.
+- [ ] After the badges layer is applied, re-test badge gallery + badge showcase in both themes.
+
+**Split plan (recommended)**
+1. Extract reusable badge pieces (tokens, cards, spotlights, grids) into `styles/components/badges/*.css` with `@layer components { ... }`.
+2. Create `styles/features/badges.css` for the gallery/showcase layouts under `@layer features { ... }`.
+3. Update `Static/styles.css` imports accordingly; remove the old `styles/badges.css` import once empty.
+4. After each extraction, smoke-test customer hub badges and the badge gallery (light + dark).
+5. When finished, delete or leave a thin wrapper in `styles/badges.css` and check the bullets above.
 
 ## Phase F - Final QA
-- [ ] Run `rg "@layer" Static/styles -g "*.css"` to ensure every file has the correct wrapper (and no typos).
-- [ ] Load the app, toggle between personas, and check the console for any cascade warnings.
+- [ ] Run `rg "@layer" Static/styles -g "*.css"` to verify every file is layered and there are no typos.
+- [ ] Load all personas (landing, customer, client, admin, badges, reporter) and watch for console warnings.
 - [ ] Update `Static/docs/styles-css-refactor-plan.md` optional follow-up to "Completed".
-- [ ] Add a short note in `Static/docs/fix-log.md` summarizing the layer rollout.
+- [ ] Add an entry to `Static/docs/fix-log.md` describing the cascade-layer rollout.
 
-Keep this checklist updated as you progress. If a future Codex session resumes the work, it can read this file, see which boxes remain unchecked, and continue without re-reading the entire history.
+Keep this document updated as you progress. If a future Codex session picks up the work, it can read this checklist and resume from the remaining unchecked boxes without replaying history.
