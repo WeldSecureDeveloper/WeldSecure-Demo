@@ -1,4 +1,4 @@
-const ROLE_LABELS = window.AppData.ROLE_LABELS;
+ï»¿const ROLE_LABELS = window.AppData.ROLE_LABELS;
 const ROUTES = window.AppData.ROUTES;
 const MessageStatus = window.AppData.MessageStatus;
 const NAV_GROUPS = window.AppData.NAV_GROUPS;
@@ -267,18 +267,11 @@ function renderAchievementContent(entry) {
         ? formatNumber(entry.points)
         : Number(entry.points).toLocaleString("en-GB");
   }
-  const detailParts = [];
-  if (entry.subtitle) {
-    detailParts.push(entry.subtitle);
-  } else if (entry.eyebrow) {
-    detailParts.push(entry.eyebrow);
-  }
-  if (formattedPoints) {
-    detailParts.push(`+${formattedPoints} pts`);
-  }
   const detailMarkup =
-    detailParts.length > 0
-      ? `<p class="achievement-subtext">${detailParts.map(part => escapeHtml(part)).join(" - ")}</p>`
+    formattedPoints !== null
+      ? `<p class="achievement-subtext">
+          <span class="achievement-subtext__points">+${escapeHtml(formattedPoints)} pts</span>
+        </p>`
       : "";
   return `
     <div class="achievement-wrapper animation" data-achievement-toast>
@@ -295,6 +288,52 @@ function renderAchievementContent(entry) {
   `;
 }
 
+const ACHIEVEMENT_SUBTEXT_FIT_ATTEMPTS = 5;
+const ACHIEVEMENT_SUBTEXT_FIT_DELAY = 220;
+
+function scheduleAchievementDescriptionFit(host) {
+  if (!host) return;
+  let attempt = 0;
+  const runFit = () => {
+    if (!host.isConnected || host.getAttribute("aria-hidden") === "true") {
+      return;
+    }
+    if (!host.dataset.activeId) {
+      return;
+    }
+    fitAchievementDescription(host);
+    attempt += 1;
+    if (attempt < ACHIEVEMENT_SUBTEXT_FIT_ATTEMPTS) {
+      window.setTimeout(runFit, ACHIEVEMENT_SUBTEXT_FIT_DELAY);
+    }
+  };
+  runFit();
+}
+
+function fitAchievementDescription(host) {
+  if (!host || typeof window === "undefined" || typeof window.getComputedStyle !== "function") {
+    return;
+  }
+  const body = host.querySelector(".achievement-body");
+  if (!body) return;
+  const detail = body.querySelector(".achievement-subtext");
+  if (!detail) return;
+  detail.style.removeProperty("--achievement-subtext-size");
+  detail.classList.remove("achievement-subtext--scaled");
+  const availableWidth = Math.max(body.clientWidth - 24, 0);
+  if (availableWidth <= 0) {
+    return;
+  }
+  const contentWidth = detail.scrollWidth;
+  if (contentWidth <= availableWidth) {
+    return;
+  }
+  const baseSize = parseFloat(window.getComputedStyle(detail).fontSize) || 14;
+  const ratio = Math.max(0.6, availableWidth / contentWidth);
+  const nextSize = Math.max(10, baseSize * ratio);
+  detail.style.setProperty("--achievement-subtext-size", `${nextSize.toFixed(2)}px`);
+  detail.classList.add("achievement-subtext--scaled");
+}
 function processAchievementQueue() {
   if (achievementOverlayState.active || achievementOverlayState.queue.length === 0) return;
   const nextEntry = achievementOverlayState.queue.shift();
@@ -406,6 +445,7 @@ function displayAchievement(entry) {
   host.setAttribute("aria-hidden", "false");
   host.tabIndex = 0;
   host.classList.add("achievement-overlay--visible");
+  scheduleAchievementDescriptionFit(host);
   scheduleAchievementTimeline(entry);
 }
 
@@ -597,7 +637,7 @@ function queueBadgeAchievements(badgeInput, options = {}) {
       typeof resolvedBadge.description === "string" && resolvedBadge.description.trim().length > 0
         ? resolvedBadge.description.trim()
         : "";
-    const subtitle = forcedSubtitle || [contextLabel, description].filter(Boolean).join(" • ");
+    const subtitle = forcedSubtitle || [contextLabel, description].filter(Boolean).join(" ï¿½ ");
     queueAchievementToast({
       id:
         typeof resolvedBadge.id === "string" && resolvedBadge.id.trim().length > 0
@@ -3182,5 +3222,9 @@ function renderAppPreservingScroll() {
     }
   }
 }
+
+
+
+
 
 
