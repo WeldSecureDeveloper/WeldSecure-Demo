@@ -1,328 +1,525 @@
 @layer components {
   .achievement-overlay {
     position: fixed;
-    top: clamp(88px, 11vh, 140px);
-    left: 50%;
+    bottom: -100px;
+    left: 0;
+    right: 0;
     z-index: 1200;
     pointer-events: none;
-    opacity: 0;
-    transform: translate(-50%, -12px) scale(0.98);
-    max-width: min(520px, calc(100vw - 32px));
-    outline: none;
   }
 
   .achievement-overlay--visible {
-    opacity: 1;
-    transform: translate(-50%, 0) scale(1);
     pointer-events: auto;
-    animation: achievementOverlayEnter 220ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
   }
 
-  .achievement-overlay--leaving {
+  .achievement-overlay--leaving,
+  .achievement-overlay--collapsing {
     pointer-events: none;
-    animation: achievementOverlayExit 180ms cubic-bezier(0.4, 0, 1, 1) forwards;
   }
 
   .achievement-overlay:focus-visible {
-    outline: 2px solid rgba(99, 102, 241, 0.7);
-    outline-offset: 6px;
+    outline: 2px solid rgba(255, 255, 255, 0.6);
+    outline-offset: 10px;
   }
 
-  .achievement-toast {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 10px 20px 10px 12px;
-    border-radius: 999px;
-    background: var(--surface-gradient-accent);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    box-shadow: var(--shadow-popover);
-    color: var(--color-text-on-accent);
-    overflow: hidden;
-  }
-
-  .achievement-toast__pulse {
-    position: absolute;
-    inset: 4px;
-    border-radius: 999px;
-    background: radial-gradient(circle at 30% 40%, rgba(255, 255, 255, 0.45), transparent 55%);
-    opacity: 0.35;
-    filter: blur(16px);
-    animation: achievementPulse 2.4s ease-out infinite;
+  .achievement-overlay > * {
     pointer-events: none;
-    z-index: 0;
   }
+.achievement-wrapper {
+  position: fixed;
+  bottom: -100px;
+  left: 0;
+  right: 0;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+}
 
-  .achievement-toast__icon {
-    position: relative;
-    z-index: 1;
-    flex-shrink: 0;
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #0c1a0a;
-    animation: achievementBadgePop 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+.achievement-super {
+  position: relative;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+.achievement-body {
+  position: relative;
+  -webkit-transform: translateY(64px);
+  transform: translateY(64px);
+  margin: 0 auto;
+  width: 64px;
+  overflow: hidden;
+  height: 64px;
+  line-height: 24px;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  text-align: center;
+  border-radius: 32px;
+  background-color: #00aeef;
+  background-image: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.2) 40%,
+    rgba(255, 255, 255, 0.2) 60%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 50% 100%;
+  background-position: -100%;
+  -webkit-box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.achievement-body .achievement-text {
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+  opacity: 0;
+  margin: 0;
+}
+
+.achievement-body .achievement-subtext {
+  color: #f5f5f5;
+  font-size: 14px;
+  font-weight: 300;
+  opacity: 0;
+  margin: 0;
+}
+
+.achievement-title {
+  background: rgba(255, 255, 255, 0);
+  width: 64px;
+  height: 64px;
+  border-radius: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  margin: 0 auto;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  padding: 12px;
+  line-height: 1;
+}
+.achievement-title .icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.achievement-wrapper.animation {
+  animation: slideUp 750ms cubic-bezier(0.75, -0.5, 0, 1.75) 0s 1 forwards,
+    slideDown 750ms cubic-bezier(0.75, -0.5, 0, 1.75) 5450ms 1 forwards;
+  -webkit-animation: slideUp 750ms cubic-bezier(0.75, -0.5, 0, 1.75) 0s 1
+      forwards,
+    slideDown 750ms cubic-bezier(0.75, -0.5, 0, 1.75) 5450ms 1 forwards;
+}
+
+.achievement-wrapper.animation .achievement-title {
+  animation: slideLeft 750ms ease 650ms 1 forwards,
+    setColor 750ms ease 650ms 1 forwards, ripple 500ms ease 1200ms 1,
+    slideRight 750ms ease 4750ms 1 forwards,
+    removeColor 750ms ease 4750ms 1 forwards;
+  -webkit-animation: slideLeft 750ms ease 650ms 1 forwards,
+    setColor 750ms ease 650ms 1 forwards, ripple 500ms ease 1200ms 1,
+    slideRight 750ms ease 4750ms 1 forwards,
+    removeColor 750ms ease 4750ms 1 forwards;
+}
+
+.achievement-wrapper.animation .achievement-body {
+  animation: expand 750ms ease 650ms 1 forwards,
+    contract 750ms ease 4750ms 1 forwards, shimmer 1500ms linear 1400ms 2;
+  -webkit-animation: expand 750ms ease 650ms 1 forwards,
+    contract 750ms ease 4750ms 1 forwards, shimmer 1500ms linear 1400ms 2;
+}
+
+.achievement-wrapper.animation .achievement-text {
+  animation: fadeInUp 550ms ease 1250ms 1 forwards,
+    fadeOutUp 550ms ease 4250ms 1 forwards;
+  -webkit-animation: fadeInUp 550ms ease 1250ms 1 forwards,
+    fadeOutUp 550ms ease 4250ms 1 forwards;
+}
+
+.achievement-wrapper.animation .achievement-subtext {
+  animation: fadeInUp 550ms ease 1350ms 1 forwards,
+    fadeOutUp 550ms ease 4350ms 1 forwards;
+  -webkit-animation: fadeInUp 550ms ease 1350ms 1 forwards,
+    fadeOutUp 550ms ease 4350ms 1 forwards;
+}
+
+@-webkit-keyframes slideUp {
+  0% {
+    transform: translateY(0);
+    -webkit-transform: translateY(0);
   }
-
-  .achievement-toast__icon svg {
-    width: 28px;
-    height: 28px;
-  }
-
-  .achievement-toast__body {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    flex: 0 1 420px;
-    min-width: 0;
-    max-width: 0;
-    overflow: hidden;
-    opacity: 0;
-    transform: translateX(-18px) scaleX(0.35);
-    transform-origin: left center;
-    animation: achievementDetailsReveal 520ms cubic-bezier(0.22, 1, 0.36, 1) 220ms both;
-  }
-
-  .achievement-toast__text {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-  }
-
-  .achievement-toast__eyebrow {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: rgba(241, 255, 242, 0.82);
-  }
-
-  .achievement-toast__title {
-    font-size: 1.05rem;
-    font-weight: 600;
-    color: #ffffff;
-    line-height: 1.2;
-  }
-
-  .achievement-toast__meta {
-    font-size: 0.85rem;
-    color: rgba(241, 255, 242, 0.85);
-  }
-
-  .achievement-toast__score {
-    display: inline-flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 0.35rem;
-    padding: 0.4rem 0.85rem;
-    border-radius: 999px;
-    background: var(--badge-points-gradient);
-    box-shadow: 0 12px 24px rgba(249, 115, 22, 0.35), var(--badge-points-shadow);
-    color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    min-width: auto;
-  }
-
-  .achievement-toast__score-value {
-    font-weight: 700;
-    font-size: 0.95rem;
-    line-height: 1;
-  }
-
-  .achievement-toast__score-unit {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    opacity: 0.9;
-    line-height: 1;
-  }
-
-  @media (max-width: 720px) {
-    .achievement-overlay {
-      left: 50%;
-      transform: translate(-50%, -24px);
-      max-width: calc(100vw - 32px);
-    }
-
-    .achievement-toast {
-      border-radius: 24px;
-      padding-right: 16px;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .achievement-overlay {
-      transition: opacity 220ms ease;
-      transform: translate(-50%, 0) scale(1) !important;
-      opacity: 0;
-    }
-
-    .achievement-overlay--visible {
-      animation: none !important;
-      opacity: 1;
-    }
-
-    .achievement-overlay--leaving {
-      animation: none !important;
-      opacity: 0;
-      transition-duration: 180ms;
-      transition-timing-function: cubic-bezier(0.4, 0, 1, 1);
-    }
-
-    .achievement-toast__pulse,
-    .achievement-toast__icon,
-    .achievement-toast__body,
-    .achievement-overlay--blink .achievement-toast,
-    .achievement-overlay--collapsing .achievement-toast__body,
-    .achievement-overlay--collapsing .achievement-toast__icon {
-      animation: none !important;
-      transition: none !important;
-    }
-
-    .achievement-toast__body {
-      opacity: 1 !important;
-      transform: none !important;
-      max-width: 100% !important;
-    }
-  }
-
-  @keyframes achievementOverlayEnter {
-    0% {
-      opacity: 0;
-      transform: translate(-50%, -12px) scale(0.98);
-    }
-    100% {
-      opacity: 1;
-      transform: translate(-50%, 0) scale(1);
-    }
-  }
-
-  @keyframes achievementOverlayExit {
-    0% {
-      opacity: 1;
-      transform: translate(-50%, 0) scale(1);
-    }
-    100% {
-      opacity: 0;
-      transform: translate(-50%, -20px) scale(0.97);
-    }
-  }
-
-  @keyframes achievementPulse {
-    0% {
-      opacity: 0.45;
-      transform: scale(0.9);
-    }
-    70% {
-      opacity: 0.1;
-      transform: scale(1.1);
-    }
-    100% {
-      opacity: 0;
-      transform: scale(1.2);
-    }
-  }
-
-  @keyframes achievementBadgePop {
-    0% {
-      transform: scale(0.65) rotate(-8deg);
-      opacity: 0;
-    }
-    60% {
-      transform: scale(1.08) rotate(2deg);
-      opacity: 1;
-    }
-    100% {
-      transform: scale(1) rotate(0deg);
-      opacity: 1;
-    }
-  }
-
-  @keyframes achievementDetailsReveal {
-    0% {
-      opacity: 0;
-      transform: translateX(-18px) scaleX(0.35);
-      max-width: 0%;
-    }
-    70% {
-      opacity: 1;
-      transform: translateX(2px) scaleX(1.02);
-      max-width: 90%;
-    }
-    100% {
-      opacity: 1;
-      transform: translateX(0) scaleX(1);
-      max-width: 100%;
-    }
-  }
-
-  .achievement-overlay--blink .achievement-toast {
-    animation: achievementBlink 1.4s ease-in-out 2;
-  }
-
-  @keyframes achievementBlink {
-    0% {
-      box-shadow: var(--shadow-popover);
-      filter: brightness(1);
-    }
-    40% {
-      box-shadow: 0 30px 80px rgba(99, 102, 241, 0.45);
-      filter: brightness(1.06);
-    }
-    100% {
-      box-shadow: var(--shadow-popover);
-      filter: brightness(1);
-    }
-  }
-
-  .achievement-overlay--collapsing .achievement-toast__body {
-    animation: achievementDetailsCollapse 0.58s cubic-bezier(0.55, 0, 0.1, 1) forwards;
-  }
-
-  @keyframes achievementDetailsCollapse {
-    0% {
-      opacity: 1;
-      transform: translateX(0) scaleX(1);
-      max-width: 100%;
-    }
-    100% {
-      opacity: 0;
-      transform: translateX(-18px) scaleX(0.2);
-      max-width: 0%;
-    }
-  }
-
-  .achievement-overlay--collapsing .achievement-toast__icon {
-    animation: achievementBadgeExit 0.5s cubic-bezier(0.55, 0, 0.1, 1) 500ms forwards;
-  }
-
-  @keyframes achievementBadgeExit {
-    0% {
-      transform: scale(1);
-      opacity: 1;
-    }
-    100% {
-      transform: scale(0.65);
-      opacity: 0;
-    }
-  }
-
-  [data-theme='dark'] .achievement-toast {
-    border-color: rgba(15, 23, 42, 0.45);
+  100% {
+    transform: translateY(-135px);
+    -webkit-transform: translateY(-135px);
   }
 }
 
-.achievement-overlay--paused .achievement-toast,
-.achievement-overlay--paused .achievement-toast__pulse,
-.achievement-overlay--paused .achievement-toast__icon,
-.achievement-overlay--paused .achievement-toast__body {
+@keyframes slideUp {
+  0% {
+    transform: translateY(0);
+    -webkit-transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-135px);
+    -webkit-transform: translateY(-135px);
+  }
+}
+
+@-webkit-keyframes slideDown {
+  100% {
+    transform: translateY(0);
+    -webkit-transform: translateY(0);
+  }
+  0% {
+    transform: translateY(-135px);
+    -webkit-transform: translateY(-135px);
+  }
+}
+
+@keyframes slideDown {
+  100% {
+    transform: translateY(0);
+    -webkit-transform: translateY(0);
+  }
+  0% {
+    transform: translateY(-135px);
+    -webkit-transform: translateY(-135px);
+  }
+}
+
+@-webkit-keyframes setColor {
+  0% {
+    background: rgba(255, 255, 255, 0);
+  }
+  100% {
+    background: rgba(255, 255, 255, 0.2);
+  }
+}
+
+@keyframes setColor {
+  0% {
+    background: rgba(255, 255, 255, 0);
+  }
+  100% {
+    background: rgba(255, 255, 255, 0.2);
+  }
+}
+
+@-webkit-keyframes removeColor {
+  100% {
+    background: rgba(255, 255, 255, 0);
+  }
+  0% {
+    background: rgba(255, 255, 255, 0.2);
+  }
+}
+
+@keyframes removeColor {
+  100% {
+    background: rgba(255, 255, 255, 0);
+  }
+  0% {
+    background: rgba(255, 255, 255, 0.2);
+  }
+}
+
+@-webkit-keyframes slideLeft {
+  0% {
+    -webkit-transform: translateX(0);
+    transform: translateX(0);
+  }
+  100% {
+    -webkit-transform: translate(calc(-48vw + 32px));
+    transform: translate(calc(-48vw + 32px));
+  }
+}
+
+@keyframes slideLeft {
+  0% {
+    -webkit-transform: translateX(0);
+    transform: translateX(0);
+  }
+  100% {
+    -webkit-transform: translate(calc(-48vw + 32px));
+    transform: translate(calc(-48vw + 32px));
+  }
+}
+
+@-webkit-keyframes slideRight {
+  100% {
+    -webkit-transform: translateX(0);
+    transform: translateX(0);
+  }
+  0% {
+    -webkit-transform: translate(calc(-48vw + 32px));
+    transform: translate(calc(-48vw + 32px));
+  }
+}
+
+@keyframes slideRight {
+  100% {
+    -webkit-transform: translateX(0);
+    transform: translateX(0);
+  }
+  0% {
+    -webkit-transform: translate(calc(-48vw + 32px));
+    transform: translate(calc(-48vw + 32px));
+  }
+}
+
+@-webkit-keyframes expand {
+  0% {
+    width: 64px;
+  }
+  100% {
+    width: 96vw;
+    padding: 8px 40px;
+  }
+}
+
+@keyframes expand {
+  0% {
+    width: 64px;
+  }
+  100% {
+    width: 96vw;
+    padding: 8px 40px;
+  }
+}
+
+@-webkit-keyframes contract {
+  100% {
+    width: 64px;
+  }
+  0% {
+    width: 96vw;
+    padding: 8px 40px;
+  }
+}
+
+@keyframes contract {
+  100% {
+    width: 64px;
+  }
+  0% {
+    width: 96vw;
+    padding: 8px 40px;
+  }
+}
+
+@-webkit-keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    -webkit-transform: translateY(10px);
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    -webkit-transform: translateY(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    -webkit-transform: translateY(10px);
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    -webkit-transform: translateY(0);
+    transform: translateY(0);
+  }
+}
+
+@-webkit-keyframes fadeOutUp {
+  0% {
+    opacity: 1;
+    -webkit-transform: translateY(0px);
+    transform: translateY(0px);
+  }
+  100% {
+    opacity: 0;
+    -webkit-transform: translateY(-10px);
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes fadeOutUp {
+  0% {
+    opacity: 1;
+    -webkit-transform: translateY(0px);
+    transform: translateY(0px);
+  }
+  100% {
+    opacity: 0;
+    -webkit-transform: translateY(-10px);
+    transform: translateY(-10px);
+  }
+}
+
+@-webkit-keyframes ripple {
+  100% {
+    box-shadow: inset 0 0 5px 0 rgba(0, 0, 0, 0.08);
+  }
+  0% {
+    box-shadow: inset 0 0 5px 50px rgba(0, 0, 0, 0);
+  }
+}
+
+@keyframes ripple {
+  100% {
+    box-shadow: inset 0 0 5px 0 rgba(0, 0, 0, 0.08);
+  }
+  0% {
+    box-shadow: inset 0 0 5px 50px rgba(0, 0, 0, 0);
+  }
+}
+
+@-webkit-keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@media only screen and (min-width: 480px) {
+  @-webkit-keyframes slideLeft {
+    0% {
+      -webkit-transform: translateX(0);
+      transform: translateX(0);
+    }
+    100% {
+      -webkit-transform: translate(-150px);
+      transform: translate(-150px);
+    }
+  }
+
+  @keyframes slideLeft {
+    0% {
+      -webkit-transform: translateX(0);
+      transform: translateX(0);
+    }
+    100% {
+      -webkit-transform: translate(-150px);
+      transform: translate(-150px);
+    }
+  }
+
+  @-webkit-keyframes slideRight {
+    100% {
+      -webkit-transform: translateX(0);
+      transform: translateX(0);
+    }
+    0% {
+      -webkit-transform: translate(-150px);
+      transform: translate(-150px);
+    }
+  }
+
+  @keyframes slideRight {
+    100% {
+      -webkit-transform: translateX(0);
+      transform: translateX(0);
+    }
+    0% {
+      -webkit-transform: translate(-150px);
+      transform: translate(-150px);
+    }
+  }
+
+  @-webkit-keyframes expand {
+    0% {
+      width: 64px;
+    }
+    100% {
+      width: 364px;
+      padding: 8px 40px;
+    }
+  }
+
+  @keyframes expand {
+    0% {
+      width: 64px;
+    }
+    100% {
+      width: 364px;
+      padding: 8px 40px;
+    }
+  }
+
+  @-webkit-keyframes contract {
+    100% {
+      width: 64px;
+    }
+    0% {
+      width: 364px;
+      padding: 8px 40px;
+    }
+  }
+
+  @keyframes contract {
+    100% {
+      width: 64px;
+    }
+    0% {
+      width: 364px;
+      padding: 8px 40px;
+    }
+  }
+}
+
+  .achievement-title svg,
+  .achievement-title .icon svg {
+    width: 32px;
+    height: 32px;
+    display: inline-block;
+  }
+
+  .achievement-overlay--blink .achievement-body {
+    animation: shimmer 1500ms linear infinite;
+  }
+
+  .achievement-overlay--collapsing .achievement-wrapper,
+  .achievement-overlay--leaving .achievement-wrapper {
+    animation: slideDown 550ms cubic-bezier(0.75, -0.5, 0, 1.75) 0s 1 forwards !important;
+  }
+
+  .achievement-overlay--collapsing .achievement-body,
+  .achievement-overlay--leaving .achievement-body {
+    animation: contract 550ms ease 0s 1 forwards !important;
+  }
+
+  .achievement-overlay--collapsing .achievement-title,
+  .achievement-overlay--leaving .achievement-title {
+    animation: slideRight 550ms ease 0s 1 forwards !important;
+  }
+
+  .achievement-overlay--collapsing .achievement-text,
+  .achievement-overlay--collapsing .achievement-subtext,
+  .achievement-overlay--leaving .achievement-text,
+  .achievement-overlay--leaving .achievement-subtext {
+    animation: fadeOutUp 350ms ease 0s 1 forwards !important;
+  }
+}
+
+.achievement-overlay--paused .achievement-wrapper,
+.achievement-overlay--paused .achievement-wrapper * {
   animation-play-state: paused !important;
 }

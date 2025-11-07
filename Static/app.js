@@ -1,4 +1,4 @@
-﻿const ROLE_LABELS = window.AppData.ROLE_LABELS;
+const ROLE_LABELS = window.AppData.ROLE_LABELS;
 const ROUTES = window.AppData.ROUTES;
 const MessageStatus = window.AppData.MessageStatus;
 const NAV_GROUPS = window.AppData.NAV_GROUPS;
@@ -258,37 +258,38 @@ function renderAchievementContent(entry) {
   const iconMarkup =
     typeof WeldUtil?.renderIcon === "function"
       ? WeldUtil.renderIcon(entry.icon || "medal", "md")
-      : `<span class="achievement-toast__icon-placeholder">★</span>`;
+      : `<span class="achievement-toast__icon-placeholder">?</span>`;
   const toneStyles = achievementToneStyles(entry.tone);
-  const subtitleMarkup = entry.subtitle
-    ? `<span class="achievement-toast__meta">${escapeHtml(entry.subtitle)}</span>`
-    : "";
-  let scoreMarkup = "";
+  let formattedPoints = null;
   if (Number.isFinite(entry.points) && entry.points > 0) {
-    const formattedPoints =
+    formattedPoints =
       typeof formatNumber === "function"
         ? formatNumber(entry.points)
         : Number(entry.points).toLocaleString("en-GB");
-    scoreMarkup = `
-      <div class="achievement-toast__score" aria-label="+${escapeHtml(formattedPoints)} points">
-        <span class="achievement-toast__score-value">+${escapeHtml(formattedPoints)}</span>
-        <span class="achievement-toast__score-unit">pts</span>
-      </div>
-    `;
   }
+  const detailParts = [];
+  if (entry.subtitle) {
+    detailParts.push(entry.subtitle);
+  } else if (entry.eyebrow) {
+    detailParts.push(entry.eyebrow);
+  }
+  if (formattedPoints) {
+    detailParts.push(`+${formattedPoints} pts`);
+  }
+  const detailMarkup =
+    detailParts.length > 0
+      ? `<p class="achievement-subtext">${detailParts.map(part => escapeHtml(part)).join(" - ")}</p>`
+      : "";
   return `
-    <div class="achievement-toast" data-achievement-toast>
-      <span class="achievement-toast__pulse"></span>
-      <div class="achievement-toast__icon" style="background:${toneStyles.background}; box-shadow:0 18px 36px ${toneStyles.shadow};">
-        ${iconMarkup}
-      </div>
-      <div class="achievement-toast__body">
-        <div class="achievement-toast__text">
-          <span class="achievement-toast__eyebrow">${escapeHtml(entry.eyebrow)}</span>
-          <span class="achievement-toast__title">${escapeHtml(entry.title)}</span>
-          ${subtitleMarkup}
+    <div class="achievement-wrapper animation" data-achievement-toast>
+      <div class="achievement-super">
+        <div class="achievement-body">
+          <p class="achievement-text">${escapeHtml(entry.title)}</p>
+          ${detailMarkup}
         </div>
-        ${scoreMarkup}
+        <div class="achievement-title" style="box-shadow:0 0 18px ${toneStyles.shadow || "rgba(0, 0, 0, 0.3)"};">
+          ${iconMarkup}
+        </div>
       </div>
     </div>
   `;
@@ -596,7 +597,7 @@ function queueBadgeAchievements(badgeInput, options = {}) {
       typeof resolvedBadge.description === "string" && resolvedBadge.description.trim().length > 0
         ? resolvedBadge.description.trim()
         : "";
-    const subtitle = forcedSubtitle || [contextLabel, description].filter(Boolean).join(" • ");
+    const subtitle = forcedSubtitle || [contextLabel, description].filter(Boolean).join(" � ");
     queueAchievementToast({
       id:
         typeof resolvedBadge.id === "string" && resolvedBadge.id.trim().length > 0
@@ -3181,3 +3182,5 @@ function renderAppPreservingScroll() {
     }
   }
 }
+
+
