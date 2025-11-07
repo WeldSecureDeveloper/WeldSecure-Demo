@@ -42,10 +42,10 @@
   .catalogue-badge-grid,
   .catalogue-badge-grid--hub {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 260px));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 220px));
     justify-content: flex-start;
     align-items: start;
-    gap: 1.5rem;
+    gap: 1.1rem;
   }
 
   .catalogue-badge-group__grid {
@@ -64,7 +64,21 @@
   .catalogue-badge-group__grid .catalogue-badge,
   .catalogue-badge-grid .catalogue-badge {
     width: 100%;
-    max-width: 260px;
+    max-width: 220px;
     justify-self: flex-start;
+  }
+
+  @media (min-width: 1200px) {
+    .catalogue-badge-group__grid,
+    .catalogue-badge-grid,
+    .catalogue-badge-grid--hub {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .catalogue-badge-group__grid .catalogue-badge,
+    .catalogue-badge-grid .catalogue-badge {
+      max-width: none;
+    }
   }
 }

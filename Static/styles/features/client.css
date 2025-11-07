@@ -136,8 +136,8 @@
 
 .client-badges__groups .client-badges__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 260px));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 220px));
+  gap: 1.1rem;
   justify-content: flex-start;
   justify-items: flex-start;
   align-items: start;
@@ -157,7 +157,8 @@
 
 .client-badges__grid .catalogue-badge {
   justify-self: start;
-  width: min(100%, 260px);
+  width: 100%;
+  max-width: 220px;
   transition: none;
   box-shadow: none;
 }
@@ -218,6 +219,17 @@
 
 .client-badges__grid .catalogue-badge__footer .button-pill {
   flex-shrink: 0;
+}
+
+@media (min-width: 1200px) {
+  .client-badges__groups .client-badges__grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .client-badges__grid .catalogue-badge {
+    max-width: none;
+  }
 }
 }
 
