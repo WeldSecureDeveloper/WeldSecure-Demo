@@ -3078,6 +3078,14 @@ function badgeById(id) {
 
 window.badgeById = badgeById;
 
+let lastRenderedRoute = null;
+
+function clearGuidedTourOverlay() {
+  if (window.WeldGuidedTour && typeof window.WeldGuidedTour.clear === "function") {
+    window.WeldGuidedTour.clear();
+  }
+}
+
 
 
 
@@ -3098,6 +3106,9 @@ function renderApp() {
 
   const app = document.getElementById("app");
   const route = state.meta.route;
+  if (lastRenderedRoute && lastRenderedRoute !== route) {
+    clearGuidedTourOverlay();
+  }
   handleRouteAchievements(route);
 
   if (route !== "addin") {
@@ -3139,6 +3150,7 @@ function renderApp() {
   if (typeof routeConfig.attach === "function") {
     routeConfig.attach(attachTarget, state);
   }
+  lastRenderedRoute = route;
 }
 
 function renderAppPreservingScroll() {

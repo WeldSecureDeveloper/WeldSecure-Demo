@@ -207,7 +207,9 @@
                 ${
                   showBackNav
                     ? ""
-                    : `<div class="addin-logo">W</div>`
+                    : `<div class="addin-logo">
+                        <img src="./WeldSecure_logo.svg" alt="WeldSecure logo" loading="lazy" decoding="async" />
+                      </div>`
                 }
               </div>
               <div class="addin-header__meta">
