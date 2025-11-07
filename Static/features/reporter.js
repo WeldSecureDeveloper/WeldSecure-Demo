@@ -485,6 +485,16 @@
 
   function buildSuccessGuidedTourSteps(container) {
     const steps = [];
+    const headerPoints = container.querySelector(".addin-points");
+    if (headerPoints) {
+      steps.push({
+        id: "success-points-total",
+        element: headerPoints,
+        placement: "bottom",
+        title: "Watch your points climb",
+        description: "This ticker shows the total points awarded for the report plus bonus badges."
+      });
+    }
     const celebration = container.querySelector(".points-celebration__bubble") || container.querySelector(".points-celebration");
     if (celebration) {
       steps.push({
