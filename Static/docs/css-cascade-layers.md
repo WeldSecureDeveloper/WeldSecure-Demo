@@ -64,7 +64,7 @@ Every feature stylesheet is now wrapped with `@layer features { ... }`. Persona 
 - [x] Delete the legacy `styles/badges.css` once replaced.
 
 ## Phase F - Final QA
-- [ ] Run `rg "@layer" Static/styles -g "*.css"` to verify every file is layered and there are no typos.
+- [x] Run `rg "@layer" Static/styles -g "*.css"` to verify every file is layered and there are no typos. *Pass: all base/components/features files returned an `@layer` block.*
 - [ ] Load all personas (landing, customer, client, admin, badges, reporter) and watch for console warnings.
 - [ ] Update `Static/docs/styles-css-refactor-plan.md` optional follow-up to "Completed".
 - [ ] Add an entry to `Static/docs/fix-log.md` describing the cascade-layer rollout.

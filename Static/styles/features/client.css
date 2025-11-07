@@ -134,10 +134,19 @@
   color: var(--color-text-muted);
 }
 
-.client-badges__grid {
+.client-badges__groups .client-badges__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 260px));
+  gap: 1.5rem;
+  justify-content: flex-start;
+  justify-items: flex-start;
+  align-items: start;
+}
+
+.catalogue-badge-grid.client-badges__grid:not(.catalogue-badge-group__grid) {
+  display: block;
+  padding-bottom: 0;
+  gap: 0;
 }
 
 .client-badges__grid .badge-empty {
