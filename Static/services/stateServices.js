@@ -9,6 +9,10 @@
   const DEFAULT_REPORTER_PROMPT = AppData.DEFAULT_REPORTER_PROMPT || "";
   const DEFAULT_EMERGENCY_LABEL = AppData.DEFAULT_EMERGENCY_LABEL || "";
   const DEFAULT_REPORTER_REASONS = AppData.DEFAULT_REPORTER_REASONS || [];
+  const DEFAULT_GUIDED_TOUR_META = {
+    enabled: true,
+    dismissedRoutes: {}
+  };
 
   function resolveState(providedState) {
     if (providedState && typeof providedState === "object") return providedState;
@@ -54,6 +58,23 @@
     if (typeof window.applyTheme === "function") {
       window.applyTheme(theme);
     }
+  }
+
+  function ensureGuidedTourMeta(state) {
+    if (!state.meta) {
+      state.meta = {};
+    }
+    if (!state.meta.guidedTour || typeof state.meta.guidedTour !== "object") {
+      state.meta.guidedTour = { ...DEFAULT_GUIDED_TOUR_META };
+    }
+    state.meta.guidedTour.enabled = state.meta.guidedTour.enabled !== false;
+    if (
+      !state.meta.guidedTour.dismissedRoutes ||
+      typeof state.meta.guidedTour.dismissedRoutes !== "object"
+    ) {
+      state.meta.guidedTour.dismissedRoutes = {};
+    }
+    return state.meta.guidedTour;
   }
 
   WeldServices.navigate = function navigate(route, providedState) {
@@ -144,6 +165,25 @@
     const current = normalizeTheme(state.meta.theme);
     const next = current === "dark" ? "light" : "dark";
     WeldServices.setTheme(next, state);
+  };
+
+  WeldServices.setGuidedTourEnabled = function setGuidedTourEnabled(enabled, providedState) {
+    const state = resolveState(providedState);
+    if (!state) return;
+    const guidedMeta = ensureGuidedTourMeta(state);
+    const next = enabled !== false;
+    if (guidedMeta.enabled === next) return;
+    guidedMeta.enabled = next;
+    syncGlobalState(state);
+    saveState(state);
+    renderShell();
+  };
+
+  WeldServices.toggleGuidedTour = function toggleGuidedTour(providedState) {
+    const state = resolveState(providedState);
+    if (!state) return;
+    const guidedMeta = ensureGuidedTourMeta(state);
+    WeldServices.setGuidedTourEnabled(!guidedMeta.enabled, state);
   };
 
   WeldServices.completeQuest = function completeQuest(questId, options = {}, providedState) {

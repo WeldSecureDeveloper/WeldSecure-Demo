@@ -4,6 +4,10 @@
   const DEFAULT_ADDIN_SHELL_HEIGHT = 760;
   const MIN_ADDIN_SHELL_HEIGHT = 640;
   const features = window.Weld.features || (window.Weld.features = {});
+  const REPORTER_GUIDED_TOUR_KEYS = {
+    report: "reporter:addin:report",
+    success: "reporter:addin:success"
+  };
 
   features.reporter = {
     render(container) {
@@ -11,12 +15,14 @@
       container.innerHTML = renderAddIn();
       applyAddInShellSizing(container);
       attachAddInEvents(container);
+      syncReporterGuidedTour(container);
     },
   };
 
   function renderAddIn() {
     const screen = state.meta.addinScreen;
     const reporterSettings = state?.settings?.reporter || {};
+    const guidedTourEnabled = isGuidedTourEnabled();
     const reasonPrompt =
       typeof reporterSettings.reasonPrompt === "string" &&
       reporterSettings.reasonPrompt.trim().length > 0
@@ -181,6 +187,7 @@
       screen === "success"
         ? tickerMarkup
         : `<span class="addin-points__value">${formatNumber(state.customer.currentPoints)}</span>`;
+    const guidedTourToggleMarkup = renderGuidedTourToggle(guidedTourEnabled);
     const showBackNav = screen === "success";
     const backButtonMarkup = showBackNav
       ? `<button type="button" class="addin-header__back" data-addin-back aria-label="Back to report form">
@@ -203,29 +210,32 @@
                     : `<div class="addin-logo">W</div>`
                 }
               </div>
-              <div class="addin-points" aria-live="polite">
-                <span class="addin-points__star" aria-hidden="true">
-                  <svg
-                    class="badge"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 360 360"
-                    preserveAspectRatio="xMidYMid meet"
-                    focusable="false"
-                  >
-                    <circle class="outer" fill="#F9D535" stroke="#fff" stroke-width="8" stroke-linecap="round" cx="180" cy="180" r="157"></circle>
-                    <circle class="inner" fill="#DFB828" stroke="#fff" stroke-width="8" cx="180" cy="180" r="108.3"></circle>
-                    <path class="inline" d="M89.4 276.7c-26-24.2-42.2-58.8-42.2-97.1 0-22.6 5.6-43.8 15.5-62.4m234.7.1c9.9 18.6 15.4 39.7 15.4 62.2 0 38.3-16.2 72.8-42.1 97" stroke="#CAA61F" stroke-width="7" stroke-linecap="round" fill="none"></path>
-                    <g class="star">
-                      <path fill="#F9D535" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="M180 107.8l16.9 52.1h54.8l-44.3 32.2 16.9 52.1-44.3-32.2-44.3 32.2 16.9-52.1-44.3-32.2h54.8z"></path>
-                      <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="180" cy="107.8" r="4.4"></circle>
-                      <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="223.7" cy="244.2" r="4.4"></circle>
-                      <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="135.5" cy="244.2" r="4.4"></circle>
-                      <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="108.3" cy="160.4" r="4.4"></circle>
-                      <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="251.7" cy="160.4" r="4.4"></circle>
-                    </g>
-                  </svg>
-                </span>
-                ${headerPointsDisplay}
+              <div class="addin-header__meta">
+                <div class="addin-points" aria-live="polite">
+                  <span class="addin-points__star" aria-hidden="true">
+                    <svg
+                      class="badge"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 360 360"
+                      preserveAspectRatio="xMidYMid meet"
+                      focusable="false"
+                    >
+                      <circle class="outer" fill="#F9D535" stroke="#fff" stroke-width="8" stroke-linecap="round" cx="180" cy="180" r="157"></circle>
+                      <circle class="inner" fill="#DFB828" stroke="#fff" stroke-width="8" cx="180" cy="180" r="108.3"></circle>
+                      <path class="inline" d="M89.4 276.7c-26-24.2-42.2-58.8-42.2-97.1 0-22.6 5.6-43.8 15.5-62.4m234.7.1c9.9 18.6 15.4 39.7 15.4 62.2 0 38.3-16.2 72.8-42.1 97" stroke="#CAA61F" stroke-width="7" stroke-linecap="round" fill="none"></path>
+                      <g class="star">
+                        <path fill="#F9D535" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="M180 107.8l16.9 52.1h54.8l-44.3 32.2 16.9 52.1-44.3-32.2-44.3 32.2 16.9-52.1-44.3-32.2h54.8z"></path>
+                        <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="180" cy="107.8" r="4.4"></circle>
+                        <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="223.7" cy="244.2" r="4.4"></circle>
+                        <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="135.5" cy="244.2" r="4.4"></circle>
+                        <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="108.3" cy="160.4" r="4.4"></circle>
+                        <circle fill="#DFB828" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" cx="251.7" cy="160.4" r="4.4"></circle>
+                      </g>
+                    </svg>
+                  </span>
+                  ${headerPointsDisplay}
+                </div>
+                ${guidedTourToggleMarkup}
               </div>
             </div>
             <div class="addin-header__body">
@@ -321,6 +331,16 @@
         });
       }
     }
+
+    const guidedTourToggle = container.querySelector("[data-guided-tour-toggle]");
+    if (guidedTourToggle && guidedTourToggle.dataset.guidedTourBound !== "true") {
+      guidedTourToggle.dataset.guidedTourBound = "true";
+      guidedTourToggle.addEventListener("click", () => {
+        if (window.WeldGuidedTour && typeof window.WeldGuidedTour.toggle === "function") {
+          window.WeldGuidedTour.toggle();
+        }
+      });
+    }
   }
 
   function applyAddInShellSizing(container) {
@@ -368,6 +388,135 @@
       shell.style.setProperty("--addin-shell-height", `${sanitized}px`);
       commitHeight(sanitized);
     });
+  }
+
+  function renderGuidedTourToggle(isEnabled) {
+    if (!window.WeldGuidedTour || typeof window.WeldGuidedTour.toggle !== "function") {
+      return "";
+    }
+    const pressed = isEnabled ? "true" : "false";
+    const statusLabel = isEnabled ? "On" : "Off";
+    return `
+      <button
+        type="button"
+        class="guided-tour-toggle"
+        data-guided-tour-toggle
+        data-variant="inverse"
+        aria-pressed="${pressed}"
+      >
+        <span class="guided-tour-toggle__label">Guided tour</span>
+        <span class="guided-tour-toggle__pill">${statusLabel}</span>
+      </button>
+    `;
+  }
+
+  function isGuidedTourEnabled() {
+    const guidedMeta = state?.meta?.guidedTour;
+    if (!guidedMeta || typeof guidedMeta !== "object") {
+      return true;
+    }
+    return guidedMeta.enabled !== false;
+  }
+
+  function syncReporterGuidedTour(container) {
+    if (!window.WeldGuidedTour || typeof window.WeldGuidedTour.mount !== "function") {
+      return;
+    }
+    if (!container || !isGuidedTourEnabled()) {
+      window.WeldGuidedTour.clear(REPORTER_GUIDED_TOUR_KEYS.report);
+      window.WeldGuidedTour.clear(REPORTER_GUIDED_TOUR_KEYS.success);
+      return;
+    }
+    const screen = state.meta.addinScreen === "success" ? "success" : "report";
+    const steps =
+      screen === "success" ? buildSuccessGuidedTourSteps(container) : buildReportGuidedTourSteps(container);
+    window.WeldGuidedTour.mount({
+      id: REPORTER_GUIDED_TOUR_KEYS[screen],
+      steps,
+      root: container
+    });
+  }
+
+  function buildReportGuidedTourSteps(container) {
+    const steps = [];
+    const reasonList = container.querySelector(".addin-checkbox-list");
+    if (reasonList) {
+      steps.push({
+        id: "reporter-reasons",
+        element: reasonList,
+        placement: "right",
+        title: "Explain what looks risky",
+        description: "Pick every pattern you spotted so the security team gets instant context.",
+        gap: 20
+      });
+    }
+    const urgentToggle = container.querySelector(".addin-emergency");
+    if (urgentToggle) {
+      steps.push({
+        id: "reporter-urgent",
+        element: urgentToggle,
+        placement: "bottom",
+        title: "Flag urgent clicks",
+        description: "Toggle this if someone interacted with the email so security can fast-track it."
+      });
+    }
+    const notesField = container.querySelector(".addin-field--notes");
+    if (notesField) {
+      steps.push({
+        id: "reporter-notes",
+        element: notesField,
+        placement: "left",
+        title: "Add extra context",
+        description: "Link threads, share quotes, or add anything else reviewers should see."
+      });
+    }
+    const submitButton = container.querySelector("#addin-submit");
+    if (submitButton) {
+      steps.push({
+        id: "reporter-submit",
+        element: submitButton,
+        placement: "top",
+        title: "Report and earn points",
+        description: "Send everything to security, trigger automation, and claim instant recognition."
+      });
+    }
+    return steps;
+  }
+
+  function buildSuccessGuidedTourSteps(container) {
+    const steps = [];
+    const celebration = container.querySelector(".points-celebration__bubble") || container.querySelector(".points-celebration");
+    if (celebration) {
+      steps.push({
+        id: "success-celebration",
+        element: celebration,
+        placement: "left",
+        title: "Replay the celebration",
+        description: "Tap the bubble anytime to replay the award animation and ticker.",
+        gap: 24
+      });
+    }
+    const badgeShowcase = container.querySelector("[data-badge-showcase]");
+    if (badgeShowcase) {
+      steps.push({
+        id: "success-badges",
+        element: badgeShowcase,
+        placement: "top",
+        title: "See badges you unlocked",
+        description: "Badge cards highlight the latest recognition triggered by this report."
+      });
+    }
+    const rewardsCta = container.querySelector(".addin-actions");
+    if (rewardsCta) {
+      steps.push({
+        id: "success-rewards",
+        element: rewardsCta,
+        placement: "top",
+        title: "Spend new points",
+        description: "Jump straight into the rewards gallery to redeem what you just earned."
+      });
+    }
+    return steps;
   }
 })();
 

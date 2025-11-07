@@ -51,6 +51,10 @@
     quests: true,
     rewards: true
   };
+  const DEFAULT_GUIDED_TOUR_META = {
+    enabled: true,
+    dismissedRoutes: {}
+  };
 
   function storageAvailable() {
     try {
@@ -61,6 +65,40 @@
     } catch {
       return false;
     }
+  }
+
+  function normalizeGuidedTourMeta(source) {
+    const base = {
+      enabled: DEFAULT_GUIDED_TOUR_META.enabled,
+      dismissedRoutes: { ...DEFAULT_GUIDED_TOUR_META.dismissedRoutes }
+    };
+    if (!source || typeof source !== "object") {
+      return { ...base };
+    }
+    base.enabled = source.enabled !== false;
+    if (source.dismissedRoutes && typeof source.dismissedRoutes === "object") {
+      const dismissed = {};
+      Object.keys(source.dismissedRoutes).forEach(key => {
+        if (typeof key !== "string") return;
+        const trimmedKey = key.trim();
+        if (!trimmedKey) return;
+        const value = source.dismissedRoutes[key];
+        if (value === false || value === null || value === undefined) {
+          return;
+        }
+        if (Number.isFinite(value)) {
+          dismissed[trimmedKey] = Number(value);
+          return;
+        }
+        if (typeof value === "string" && value.trim().length > 0) {
+          dismissed[trimmedKey] = value.trim();
+          return;
+        }
+        dismissed[trimmedKey] = Date.now();
+      });
+      base.dismissedRoutes = dismissed;
+    }
+    return base;
   }
 
   const FALLBACK_BASE = {
@@ -93,7 +131,8 @@
         departmentId: null,
         teamId: null
       },
-      featureToggles: { ...DEFAULT_FEATURE_TOGGLES }
+      featureToggles: { ...DEFAULT_FEATURE_TOGGLES },
+      guidedTour: { ...DEFAULT_GUIDED_TOUR_META }
     },
     settings: {
       reporter: {}
@@ -163,6 +202,7 @@
       ...DEFAULT_FEATURE_TOGGLES,
       ...metaFeatureToggles
     };
+    meta.guidedTour = normalizeGuidedTourMeta(meta.guidedTour || DEFAULT_GUIDED_TOUR_META);
 
     const reporterSettingsBase =
       base.settings && base.settings.reporter && typeof base.settings.reporter === "object"
@@ -793,9 +833,10 @@
             };
           });
       const mergedMeta = {
-        ...baseState.meta,
-        ...parsed.meta
-      };
+      ...baseState.meta,
+      ...parsed.meta
+    };
+    mergedMeta.guidedTour = normalizeGuidedTourMeta(mergedMeta.guidedTour);
       if (mergedMeta.lastMessageId === null || mergedMeta.lastMessageId === undefined) {
         mergedMeta.lastMessageId = null;
       } else if (typeof mergedMeta.lastMessageId === "string") {
@@ -1056,5 +1097,3 @@
 
   window.WeldState = { initialState, loadState, saveState, storageAvailable, STORAGE_KEY };
 })();
-
-
