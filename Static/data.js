@@ -1038,6 +1038,25 @@ Object.assign(AppData, {
     focusNarrative: "Daily stand-ups highlight rapid approvals and rerun the crisis sprint.",
     tone: "emerald",
     published: true
+  },
+  {
+    id: "security-enablement",
+    departmentId: "security-enablement",
+    name: "Security Enablement",
+    department: "Security Enablement",
+    points: 1490,
+    trendDirection: "down",
+    trendValue: "-3%",
+    trendCaption: "exec briefing gap",
+    participationRate: 0.76,
+    streakWeeks: 4,
+    avgResponseMinutes: 9,
+    featuredBadgeId: "automation-ally",
+    featuredQuestId: "incident-escalation-sprint",
+    momentumTag: "Boardroom hygiene push",
+    focusNarrative: "Enablement network refocused on exec comms drills and hybrid collaboration checkpoints.",
+    tone: "slate",
+    published: true
   }
 ],
   ENGAGEMENT_PROGRAMS: [

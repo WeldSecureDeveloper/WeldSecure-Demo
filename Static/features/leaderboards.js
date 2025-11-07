@@ -26,13 +26,6 @@
       title: "Reporter heroes",
       description: "Highlight the reporters fueling the programme and who deserves the next shout-out.",
       builder: buildIndividualView
-    },
-    {
-      id: "organisation",
-      label: "Organisation",
-      title: "Client impact",
-      description: "Roll everything up by client to show execs where engagement is thriving or needs help.",
-      builder: buildOrganisationView
     }
   ];
 
@@ -379,78 +372,6 @@
     `;
   }
 
-  function buildOrganisationView(state, blueprint) {
-    const { entries, totals } = computeOrganisationEntries(state);
-    const summary =
-      entries.length > 0
-        ? `${formatNumberSafe(entries.length)} organisations | ${formatNumberSafe(totals.activeUsers)} active users`
-        : "Link a few client accounts to compare performance.";
-    const cardsMarkup = entries.length
-      ? entries.map((entry, index) => renderOrganisationCard(entry, index)).join("")
-      : `<li class="leaderboard-empty-card">No organisation data just yet.</li>`;
-
-    return {
-      ...blueprint,
-      summary,
-      tabMeta: entries.length ? `${formatNumberSafe(entries.length)} orgs` : "No data",
-      body: `<ul class="leaderboard-cards">${cardsMarkup}</ul>`,
-      actionsMarkup: "",
-      hasData: entries.length > 0
-    };
-  }
-
-  function renderOrganisationCard(entry, index) {
-    const healthScore = Number.isFinite(entry.healthScore) ? `${formatNumberSafe(entry.healthScore)}%` : "--";
-    const activeUsers = Number.isFinite(entry.activeUsers) ? formatNumberSafe(entry.activeUsers) : "--";
-    const openCases = Number.isFinite(entry.openCases) ? formatNumberSafe(entry.openCases) : "--";
-    const momentum = resolveOrganisationMomentum(entry.lastReportAt);
-    const payoutMeta = [
-      Number.isFinite(entry.pointsPerMessage) ? `${formatNumberSafe(entry.pointsPerMessage)} pts/report` : null,
-      Number.isFinite(entry.pointsOnApproval) ? `${formatNumberSafe(entry.pointsOnApproval)} pts/approval` : null
-    ].filter(Boolean);
-    const payoutLabel = payoutMeta.length ? payoutMeta.join(" • ") : "Programme defaults";
-
-    return `
-      <li class="leaderboard-card" data-tone="slate" data-leaderboard-card="${escapeHtml(String(entry.id))}">
-        <div class="leaderboard-card__summary">
-          <span class="leaderboard-card__rank" data-rank="${index + 1}">${formatNumberSafe(index + 1)}</span>
-          <div class="leaderboard-card__primary">
-            <strong>${escapeHtml(entry.name)}</strong>
-            <span class="leaderboard-card__meta">${escapeHtml(momentum.detail)}</span>
-          </div>
-          <div class="leaderboard-card__value" title="Health score based on signal coverage + participation">
-            <span class="leaderboard-card__value-label">Health</span>
-            <strong>${escapeHtml(healthScore)}</strong>
-            <span class="detail-table__meta">${escapeHtml(`Open cases ${openCases}`)}</span>
-          </div>
-          <button type="button" class="leaderboard-card__detail-toggle" aria-expanded="false">
-            Quick view
-          </button>
-        </div>
-        <div class="leaderboard-card__details" hidden>
-          <div class="leaderboard-card__detail-grid">
-            <div>
-              <span class="detail-table__meta">Active users</span>
-              <strong>${escapeHtml(activeUsers)}</strong>
-            </div>
-            <div>
-              <span class="detail-table__meta">Last report</span>
-              <strong>${escapeHtml(momentum.label)}</strong>
-            </div>
-            <div>
-              <span class="detail-table__meta">Points model</span>
-              <strong>${escapeHtml(payoutLabel)}</strong>
-            </div>
-          </div>
-          <div class="leaderboard-card__chips">
-            <span class="leaderboard-badge" data-variant="${escapeHtml(momentum.variant)}">${escapeHtml(momentum.status)}</span>
-            <span class="leaderboard-chip">Org ID: ${escapeHtml(entry.organizationId || "—")}</span>
-          </div>
-        </div>
-      </li>
-    `;
-  }
-
   function getDepartmentEntries(state, directorySnapshot) {
     const directory = directorySnapshot || getDirectorySnapshot(state);
     const departmentMap = directory.departmentMap || new Map();
@@ -554,10 +475,15 @@
       entry.shoutouts += 1;
       updateLastActivity(entry, recognition.createdAt, recognition.focus || recognition.message, "Recognition");
     });
+    baseMembers.forEach(member => {
+      if (!member) return;
+      const entry = ensureEntry(member.email, member.name, member.title);
+      if (!entry.specialty && member.specialty) entry.specialty = member.specialty;
+      if (!entry.location && member.location) entry.location = member.location;
+      if (!entry.tone && member.avatarTone) entry.tone = member.avatarTone;
+    });
 
-    const entries = Array.from(stats.values()).filter(
-      entry => entry.totalPoints > 0 || entry.reports > 0 || entry.shoutouts > 0
-    );
+    const entries = Array.from(stats.values());
     entries.sort((a, b) => {
       const pointsDiff = (b.totalPoints || 0) - (a.totalPoints || 0);
       if (pointsDiff !== 0) return pointsDiff;
@@ -566,7 +492,6 @@
       return (b.reports || 0) - (a.reports || 0);
     });
 
-    const limitedEntries = entries.slice(0, 6);
     const totals = entries.reduce(
       (acc, entry) => {
         acc.shoutouts += entry.shoutouts;
@@ -576,21 +501,7 @@
       { shoutouts: 0, reports: 0 }
     );
 
-    return { entries: limitedEntries, totals };
-  }
-
-  function computeOrganisationEntries(state) {
-    const clients = Array.isArray(state.clients) ? state.clients.slice() : [];
-    clients.sort((a, b) => (Number(b?.healthScore) || 0) - (Number(a?.healthScore) || 0));
-    const totals = clients.reduce(
-      (acc, client) => {
-        acc.activeUsers += Number(client?.activeUsers) || 0;
-        acc.openCases += Number(client?.openCases) || 0;
-        return acc;
-      },
-      { activeUsers: 0, openCases: 0 }
-    );
-    return { entries: clients, totals };
+    return { entries, totals };
   }
 
   function updateLastActivity(entry, isoDate, highlight, sourceLabel) {
@@ -616,40 +527,6 @@
       typeof entry.trendCaption === "string" && entry.trendCaption.trim().length > 0 ? entry.trendCaption.trim() : "";
     const label = caption ? `${trendValue} ${caption}` : trendValue;
     return { direction, value: trendValue, caption, label };
-  }
-
-  function resolveOrganisationMomentum(lastReportAt) {
-    if (!lastReportAt) {
-      return { label: "No reports yet", detail: "No activity captured", variant: "muted", status: "Awaiting data" };
-    }
-    const date = new Date(lastReportAt);
-    if (Number.isNaN(date.getTime())) {
-      return { label: lastReportAt, detail: "Reported", variant: "muted", status: "Unknown" };
-    }
-    const now = new Date();
-    const diffHours = (now.getTime() - date.getTime()) / 36e5;
-    if (diffHours <= 24) {
-      return {
-        label: formatRelativeTime(lastReportAt),
-        detail: "Fresh signal captured",
-        variant: "positive",
-        status: "Fresh signal"
-      };
-    }
-    if (diffHours <= 72) {
-      return {
-        label: formatRelativeTime(lastReportAt),
-        detail: "Recently engaged",
-        variant: "neutral",
-        status: "Active"
-      };
-    }
-    return {
-      label: formatRelativeTime(lastReportAt),
-      detail: "Nudge upcoming comms",
-      variant: "warning",
-      status: "Needs nudge"
-    };
   }
 
   function formatNumberSafe(value) {
