@@ -310,6 +310,7 @@
         });
       }
     } else {
+      teardownBadgeShowcase();
       if (state.meta.addinScreen === "success") {
         setupCelebrationReplay(container);
         setupBadgeShowcase(container);
@@ -320,8 +321,6 @@
             revertLastReportAward();
           });
         }
-      } else {
-        teardownBadgeShowcase();
       }
       const viewRewards = container.querySelector("#addin-view-rewards");
       if (viewRewards) {
@@ -501,6 +500,7 @@
     }
     return steps;
   }
+
 })();
 
 

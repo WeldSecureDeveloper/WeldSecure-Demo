@@ -1827,7 +1827,7 @@ function reportMessage(payload) {
   state.meta.lastBadgeId = badgeBundle.length > 0 ? badgeBundle[0].id : null;
   state.meta.lastBadgeIds = badgeBundle.map(badge => badge.id);
   state.meta.lastTotalAwarded = totalAwarded;
-  if (badgeBundle.length > 0 && window.WeldAchievements?.queueBadgeUnlocks) {
+  if (origin !== "addin" && badgeBundle.length > 0 && window.WeldAchievements?.queueBadgeUnlocks) {
     const badgeContext = origin === "addin" ? "Outlook add-in" : "Reporter hub";
     window.WeldAchievements.queueBadgeUnlocks(badgeBundle, { context: badgeContext });
   }
