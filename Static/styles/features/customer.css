@@ -1266,6 +1266,15 @@
   transform: none;
 }
 
+.customer-badge-grid__item[data-badge-state='locked'] .catalogue-badge__icon {
+  filter: saturate(0.65);
+  opacity: 0.75;
+}
+
+.customer-badge-grid__item[data-badge-state='locked'] .catalogue-badge__label {
+  color: var(--color-text-muted);
+}
+
 .customer-detail__empty--inline {
   text-align: left;
   padding: 1.5rem;

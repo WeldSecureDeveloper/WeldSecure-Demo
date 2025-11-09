@@ -115,8 +115,9 @@
 
     function renderBadgeGridItem(badge) {
       const statusMarkup = badge.unlocked && badge.achievedAt ? renderUnlockedStatus(badge.achievedAt) : renderLockedStatus();
+      const stateAttr = badge.unlocked ? "unlocked" : "locked";
       return `
-        <div class="customer-badge-grid__item" role="listitem">
+        <div class="customer-badge-grid__item" data-badge-state="${stateAttr}" role="listitem">
           ${renderHubBadgeCard(badge)}
           ${statusMarkup}
         </div>
