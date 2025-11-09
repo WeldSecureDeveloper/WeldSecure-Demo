@@ -44,6 +44,8 @@ Object.assign(AppData, {
   ROUTES: {
   landing: { requiresRole: false },
   customer: { requiresRole: "customer" },
+  "customer-hub-rewards": { requiresRole: "customer" },
+  "customer-hub-quests": { requiresRole: "customer" },
   "customer-reports": { requiresRole: "customer" },
   "customer-badges": { requiresRole: "customer" },
   "customer-redemptions": { requiresRole: "customer" },

@@ -119,6 +119,14 @@
       templateMethods: ["templateHub"],
       attachMethods: ["attachHub"]
     }),
+    "customer-hub-rewards": featureRoute("customer", {
+      templateMethods: ["templateHubRewards"],
+      attachMethods: ["attachHubRewards"]
+    }),
+    "customer-hub-quests": featureRoute("customer", {
+      templateMethods: ["templateHubQuests"],
+      attachMethods: ["attachHubQuests"]
+    }),
     "customer-badges": featureRoute("customer", {
       templateMethods: ["templateBadges"],
       attachMethods: ["attachBadges"]

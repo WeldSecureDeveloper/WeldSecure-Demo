@@ -36,7 +36,13 @@
   hydrateModule("features/customer/hub", {
     templateHub: "template",
     renderHub: "render",
-    attachHub: "attach"
+    attachHub: "attach",
+    templateHubRewards: "templateRewards",
+    renderHubRewards: "renderRewards",
+    attachHubRewards: "attachRewards",
+    templateHubQuests: "templateQuests",
+    renderHubQuests: "renderQuests",
+    attachHubQuests: "attachQuests"
   });
 
   hydrateModule("features/customer/badges", {

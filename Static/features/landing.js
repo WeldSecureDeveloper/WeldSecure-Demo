@@ -109,82 +109,24 @@
           ${journeyCards}
         </div>
       </section>
-      <section class="landing__section landing__section--features">
-        <header class="landing__section-header">
-          <div>
-            <span class="landing__section-eyebrow">Feature showcase</span>
-            <h2>Jump straight to the demo moments that resonate.</h2>
-            <p>Use these cards to spotlight the metrics, recognition, and automation flows that close deals.</p>
-          </div>
-        </header>
-        <div class="landing__tiles landing__tiles--features">
-          ${renderFeatureShowcase()}
-        </div>
-      </section>
     </div>
   `;
   }
 
-  function renderFeatureShowcase() {
-    const featureCards = [
-      {
-        title: "Reporter journey",
-        description: "Launch the task pane to demonstrate reporting, instant recognition, and success animations.",
-        icon: "outlook",
-        action: { label: "Launch add-in", route: "addin" }
-      },
-      {
-        title: "Badge gallery",
-        description: "Browse all 30 WeldSecure badges with filters, points, and storytelling angles.",
-        icon: "medal",
-        action: { label: "View badges", route: "client-badges", role: "customer" }
-      },
-      {
-        title: "Quest catalogue",
-        description: "Show how organisations curate and publish quest experiences directly into employee hubs.",
-        icon: "lightbulb",
-        action: { label: "Open quest catalogue", route: "client-quests", role: "client" }
-      },
-      {
-        title: "Recognition metrics",
-        description: "Preview reporter points, pending approvals, and redemption data in one glance.",
-        icon: "medal",
-        action: { label: "Open reporter profile", route: "customer", role: "customer" }
-      },
-      {
-        title: "Automation playbooks",
-        description: "Explain how Weld orchestrates cross-tenant interventions during risk spikes.",
-        icon: "gear",
-        action: { label: "Show admin controls", route: "weld-admin", role: "admin" }
-      },
-      {
-        title: "Reporting insights",
-        description: "Dive into dashboards and exports that give security teams weekly confidence.",
-        icon: "target",
-        action: { label: "Open security dashboard", route: "client-reporting", role: "client" }
-      }
-    ];
-
-    return featureCards
-      .map(card => {
-        const iconMarkup =
-          WeldUtil && typeof WeldUtil.renderIcon === "function"
-            ? WeldUtil.renderIcon(card.icon, "sm")
-            : "";
-        return `
-        <article class="feature-card">
-          <div class="feature-card__icon">${iconMarkup}</div>
-          <div class="feature-card__body">
-            <h3>${card.title}</h3>
-            <p>${card.description}</p>
-          </div>
-          <button type="button" class="feature-card__action" data-route="${card.action.route}" data-role="${card.action.role || ""}">
-            ${card.action.label}
-          </button>
-        </article>
-      `;
-      })
-      .join("");
+  function ensureGuidedTourMeta(state) {
+    if (!state || typeof state !== "object") return null;
+    if (!state.meta || typeof state.meta !== "object") {
+      state.meta = {};
+    }
+    const guided = state.meta.guidedTour;
+    if (!guided || typeof guided !== "object") {
+      state.meta.guidedTour = { enabled: true, dismissedRoutes: {} };
+      return state.meta.guidedTour;
+    }
+    if (!guided.dismissedRoutes || typeof guided.dismissedRoutes !== "object") {
+      guided.dismissedRoutes = {};
+    }
+    return guided;
   }
 
   function attachLandingEvents(container, appState) {
@@ -197,6 +139,15 @@
       if (!route) return;
       if (state && state.meta && route === "addin") {
         state.meta.addinScreen = "report";
+        if (element.classList && element.classList.contains("journey-card")) {
+          const guidedMeta = ensureGuidedTourMeta(state);
+          if (guidedMeta) {
+            guidedMeta.enabled = true;
+            if (guidedMeta.dismissedRoutes) {
+              delete guidedMeta.dismissedRoutes.addin;
+            }
+          }
+        }
       }
       if (role) {
         if (typeof window.setRole === "function") {
@@ -222,10 +173,6 @@
     };
 
     container.querySelectorAll(".journey-card[data-route]").forEach(button => {
-      button.addEventListener("click", () => handleRouteClick(button));
-    });
-
-    container.querySelectorAll(".feature-card__action[data-route]").forEach(button => {
       button.addEventListener("click", () => handleRouteClick(button));
     });
 

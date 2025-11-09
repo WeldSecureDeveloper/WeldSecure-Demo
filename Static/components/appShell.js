@@ -104,6 +104,22 @@
       `;
     }
 
+    function ensureGuidedTourMeta(state) {
+      if (!state || typeof state !== "object") return null;
+      if (!state.meta || typeof state.meta !== "object") {
+        state.meta = {};
+      }
+      const guided = state.meta.guidedTour;
+      if (!guided || typeof guided !== "object") {
+        state.meta.guidedTour = { enabled: true, dismissedRoutes: {} };
+        return state.meta.guidedTour;
+      }
+      if (!guided.dismissedRoutes || typeof guided.dismissedRoutes !== "object") {
+        guided.dismissedRoutes = {};
+      }
+      return guided;
+    }
+
     const getFormatNumber = () => {
       if (typeof window.formatNumber === "function") {
         return window.formatNumber;
@@ -553,6 +569,12 @@
             event.preventDefault();
             const route = item.dataset.route;
             const requiredRole = item.dataset.role;
+            if (route === "addin") {
+              const guidedMeta = ensureGuidedTourMeta(state);
+              if (guidedMeta) {
+                guidedMeta.enabled = false;
+              }
+            }
             closeGroups();
             if (requiredRole && typeof setRole === "function") {
               setRole(requiredRole, route);

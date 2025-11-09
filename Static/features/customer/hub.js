@@ -17,6 +17,108 @@
     }
 
     const { MessageStatus, WeldUtil, formatNumber, formatDateTime, relativeTime, getState } = shared;
+    const HUB_REWARD_PREVIEW_LIMIT = 3;
+    const HUB_QUEST_PREVIEW_LIMIT = 3;
+
+    function getPublishedRewards(state) {
+      const rewards = Array.isArray(state?.rewards) ? state.rewards : [];
+      return rewards.filter(reward => reward && reward.published);
+    }
+
+    function getPublishedQuests(state) {
+      const quests = Array.isArray(state?.quests) ? state.quests : [];
+      return quests
+        .filter(quest => quest && quest.published)
+        .sort(WeldUtil.compareQuestsByDifficulty);
+    }
+
+    function renderRewardCard(reward) {
+      if (!reward) return "";
+      const remainingLabel = rewardRemainingLabel(reward);
+      const pointsCost = Number(reward.pointsCost) || 0;
+      const rewardId = WeldUtil.escapeHtml(String(reward.id));
+      const artwork = reward.image || "";
+      const iconMarkup = WeldUtil.renderIcon(reward.icon || "gift", "lg");
+      const rewardName = reward.name || "Reward";
+      const description = reward.description || "";
+      const category = reward.category || "Reward";
+      const provider = reward.provider || "WeldSecure";
+      return `
+        <article class="reward-card reward-card--catalogue reward-card--hub" data-reward="${rewardId}">
+          <div class="reward-card__artwork" style="background:${artwork};">
+            ${iconMarkup}
+          </div>
+          <div class="reward-card__meta">
+            <span class="reward-card__chip reward-card__chip--category">${WeldUtil.escapeHtml(category)}</span>
+            <span class="reward-card__chip reward-card__chip--provider">${WeldUtil.escapeHtml(provider)}</span>
+          </div>
+          <h4 class="reward-card__title">${WeldUtil.escapeHtml(rewardName)}</h4>
+          <p class="reward-card__desc">${WeldUtil.escapeHtml(description)}</p>
+          <div class="reward-card__footer">
+            <span>${remainingLabel} left</span>
+          </div>
+          <div class="reward-card__actions">
+            <span class="reward-card__chip reward-card__chip--points">
+              <strong class="reward-card__points-value">${formatNumber(pointsCost)}</strong>
+              <span class="reward-card__points-unit">pts</span>
+            </span>
+            <button type="button" class="reward-card__cta button-pill button-pill--primary">Redeem reward</button>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderQuestCard(quest) {
+      if (!quest) return "";
+      const questId = WeldUtil.escapeHtml(String(quest.id));
+      const focusTags = Array.isArray(quest.focus)
+        ? quest.focus.slice(0, 2).map(item => `<span>${WeldUtil.escapeHtml(item)}</span>`).join("")
+        : "";
+      const focusBlock = focusTags
+        ? `<div class="quest-card__focus quest-card__focus--compact">${focusTags}</div>`
+        : "";
+      const difficultyChip = quest.difficulty
+        ? `<span class="quest-card__chip quest-card__chip--difficulty" data-difficulty="${WeldUtil.escapeHtml(
+            quest.difficulty
+          )}">${WeldUtil.escapeHtml(quest.difficulty)}</span>`
+        : "";
+      const difficultyRow = difficultyChip ? `<div class="quest-card__header-top">${difficultyChip}</div>` : "";
+      const headerTags = [];
+      if (quest.category) {
+        headerTags.push(`<span class="quest-card__chip">${WeldUtil.escapeHtml(quest.category)}</span>`);
+      }
+      const chipGroup = headerTags.length ? `<div class="quest-card__chip-group">${headerTags.join("")}</div>` : "";
+      const duration = quest.duration !== undefined ? String(quest.duration) : "";
+      const questions = quest.questions !== undefined ? String(quest.questions) : "";
+      const formatLabel = quest.format || "";
+      const pointsValue = formatNumber(quest.points || 0);
+
+      return `
+        <article class="quest-card quest-card--hub" data-quest="${questId}">
+          <header class="quest-card__header quest-card__header--hub">
+            ${difficultyRow}
+            ${chipGroup}
+          </header>
+          <h4 class="quest-card__title">${WeldUtil.escapeHtml(quest.title || "Quest")}</h4>
+          <p class="quest-card__description">${WeldUtil.escapeHtml(quest.description || "")}</p>
+          <ul class="quest-card__details quest-card__details--compact">
+            <li><span>Duration</span><strong>${WeldUtil.escapeHtml(duration)} min</strong></li>
+            <li><span>Questions</span><strong>${WeldUtil.escapeHtml(questions)}</strong></li>
+            <li><span>Format</span><strong>${WeldUtil.escapeHtml(formatLabel)}</strong></li>
+          </ul>
+          ${focusBlock}
+          <div class="quest-card__footer quest-card__footer--hub">
+            <span class="quest-card__points">
+              <strong class="quest-card__points-value">${pointsValue}</strong>
+              <span class="quest-card__points-unit">pts</span>
+            </span>
+            <button type="button" class="button-pill button-pill--primary quest-card__cta" data-quest="${questId}">
+              Take Quiz
+            </button>
+          </div>
+        </article>
+      `;
+    }
 
 function renderRecognitionCard(entry, currentEmail) {
   if (!entry) return "";
@@ -95,10 +197,8 @@ function renderCustomerHub(state) {
   const customerMessages = state.messages.filter(messageBelongsToCustomer);
   const pendingMessages = customerMessages.filter(message => message.status === MessageStatus.PENDING);
   const pendingApprovalPoints = pendingMessages.reduce((sum, message) => sum + (message.pointsOnApproval || 0), 0);
-  const publishedRewards = state.rewards.filter(reward => reward.published);
-  const publishedQuests = Array.isArray(state.quests)
-    ? state.quests.filter(quest => quest.published).sort(WeldUtil.compareQuestsByDifficulty)
-    : [];
+  const publishedRewards = getPublishedRewards(state);
+  const publishedQuests = getPublishedQuests(state);
   const publishedBadges = getBadges().filter(badge => badge.published);
   const bonusConfig = state.customer?.bonusPoints || {};
   const rawCap = Number(bonusConfig.weeklyCap);
@@ -437,78 +537,13 @@ function renderCustomerHub(state) {
   `;
 
   const rewardsHtml = publishedRewards
-    .map(reward => {
-      const remainingLabel = rewardRemainingLabel(reward);
-      const pointsCost = Number(reward.pointsCost) || 0;
-      return `
-      <article class="reward-card reward-card--catalogue reward-card--hub" data-reward="${WeldUtil.escapeHtml(String(reward.id))}">
-        <div class="reward-card__artwork" style="background:${reward.image};">
-          ${WeldUtil.renderIcon(reward.icon || "gift", "lg")}
-        </div>
-        <div class="reward-card__meta">
-          <span class="reward-card__chip reward-card__chip--category">${WeldUtil.escapeHtml(reward.category || "Reward")}</span>
-          <span class="reward-card__chip reward-card__chip--provider">${WeldUtil.escapeHtml(reward.provider || "WeldSecure")}</span>
-        </div>
-        <h4 class="reward-card__title">${WeldUtil.escapeHtml(reward.name || "Reward")}</h4>
-        <p class="reward-card__desc">${WeldUtil.escapeHtml(reward.description || "")}</p>
-        <div class="reward-card__footer">
-          <span>${remainingLabel} left</span>
-        </div>
-        <div class="reward-card__actions">
-          <span class="reward-card__chip reward-card__chip--points">
-            <strong class="reward-card__points-value">${formatNumber(pointsCost)}</strong>
-            <span class="reward-card__points-unit">pts</span>
-          </span>
-          <button type="button" class="reward-card__cta button-pill button-pill--primary">Redeem reward</button>
-        </div>
-      </article>
-    `;
-    })
+    .slice(0, HUB_REWARD_PREVIEW_LIMIT)
+    .map(renderRewardCard)
     .join("");
 
   const questsHtml = publishedQuests
-    .map(quest => {
-      const questId = WeldUtil.escapeHtml(String(quest.id));
-      const focusTags = Array.isArray(quest.focus)
-        ? quest.focus.slice(0, 2).map(item => `<span>${WeldUtil.escapeHtml(item)}</span>`).join("")
-        : "";
-      const focusBlock = focusTags ? `<div class="quest-card__focus quest-card__focus--compact">${focusTags}</div>` : "";
-      const difficultyChip = quest.difficulty
-        ? `<span class="quest-card__chip quest-card__chip--difficulty" data-difficulty="${WeldUtil.escapeHtml(
-            quest.difficulty
-          )}">${WeldUtil.escapeHtml(quest.difficulty)}</span>`
-        : "";
-      const difficultyRow = difficultyChip ? `<div class="quest-card__header-top">${difficultyChip}</div>` : "";
-      const headerTags = [];
-      if (quest.category) headerTags.push(`<span class="quest-card__chip">${WeldUtil.escapeHtml(quest.category)}</span>`);
-      const chipGroup = headerTags.length ? `<div class="quest-card__chip-group">${headerTags.join("")}</div>` : "";
-      const questLabel = quest.title ? WeldUtil.escapeHtml(quest.title) : "quest";
-      return `
-      <article class="quest-card quest-card--hub" data-quest="${questId}">
-        <header class="quest-card__header quest-card__header--hub">
-          ${difficultyRow}
-          ${chipGroup}
-        </header>
-        <h4 class="quest-card__title">${WeldUtil.escapeHtml(quest.title)}</h4>
-        <p class="quest-card__description">${WeldUtil.escapeHtml(quest.description)}</p>
-        <ul class="quest-card__details quest-card__details--compact">
-          <li><span>Duration</span><strong>${WeldUtil.escapeHtml(String(quest.duration))} min</strong></li>
-          <li><span>Questions</span><strong>${WeldUtil.escapeHtml(String(quest.questions))}</strong></li>
-          <li><span>Format</span><strong>${WeldUtil.escapeHtml(quest.format || "")}</strong></li>
-        </ul>
-        ${focusBlock}
-        <div class="quest-card__footer quest-card__footer--hub">
-          <span class="quest-card__points">
-            <strong class="quest-card__points-value">${formatNumber(quest.points || 0)}</strong>
-            <span class="quest-card__points-unit">pts</span>
-          </span>
-          <button type="button" class="button-pill button-pill--primary quest-card__cta" data-quest="${questId}">
-            Take Quiz
-          </button>
-        </div>
-      </article>
-    `;
-    })
+    .slice(0, HUB_QUEST_PREVIEW_LIMIT)
+    .map(renderQuestCard)
     .join("");
 
   const rarityOrder = ["Legendary", "Expert", "Skilled", "Rising", "Starter"];
@@ -862,7 +897,7 @@ function renderCustomerHub(state) {
         <button
           type="button"
           class="button-pill button-pill--primary section-header__action"
-          data-route="customer-rewards"
+          data-route="customer-hub-rewards"
           data-role="customer">
           All rewards
         </button>
@@ -878,9 +913,18 @@ function renderCustomerHub(state) {
     ${
       showQuests
         ? `<section class="customer-section customer-section--quests">
-      <div class="section-header">
-        <h2>Your quests</h2>
-        <p>Introduce squads to the latest WeldSecure quests. Only published quests from your organisation appear here.</p>
+      <div class="section-header section-header--with-action">
+        <div class="section-header__copy">
+          <h2>Your quests</h2>
+          <p>Introduce squads to the latest WeldSecure quests. Only published quests from your organisation appear here.</p>
+        </div>
+        <button
+          type="button"
+          class="button-pill button-pill--primary section-header__action"
+          data-route="customer-hub-quests"
+          data-role="customer">
+          All quests
+        </button>
       </div>
       ${
         questsHtml
@@ -1020,6 +1064,58 @@ function attachCustomerHubEvents(container, state) {
   }
 }
 
+  function renderRewardsCatalogueView(state) {
+    const publishedRewards = getPublishedRewards(state);
+    const rewardsMarkup = publishedRewards.length
+      ? `<div class="reward-grid reward-grid--catalogue reward-grid--hub">${publishedRewards.map(renderRewardCard).join("")}</div>`
+      : `<div class="reward-empty"><p>No rewards are currently published. Check back soon!</p></div>`;
+    return `
+      <header class="customer-detail-header">
+        <button type="button" class="customer-detail__back" data-action="back-to-hub">
+          Back to hub
+        </button>
+        <span class="customer-detail__eyebrow">Rewards</span>
+        <h1>All published rewards</h1>
+        <p>Show every reward currently live in this hub and drill into the redemption flow from each tile.</p>
+      </header>
+      ${rewardsMarkup}
+    `;
+  }
+
+  function renderQuestsCatalogueView(state) {
+    const publishedQuests = getPublishedQuests(state);
+    const questsMarkup = publishedQuests.length
+      ? `<div class="quest-grid quest-grid--hub">${publishedQuests.map(renderQuestCard).join("")}</div>`
+      : `<div class="reward-empty"><p>No quests are currently published. Check back soon!</p></div>`;
+    return `
+      <header class="customer-detail-header">
+        <button type="button" class="customer-detail__back" data-action="back-to-hub">
+          Back to hub
+        </button>
+        <span class="customer-detail__eyebrow">Quests</span>
+        <h1>All published quests</h1>
+        <p>Preview every quest that is currently published to this reporter hub.</p>
+      </header>
+      ${questsMarkup}
+    `;
+  }
+
+  function attachCatalogueNavigation(container) {
+    if (!container) return;
+    const backButton = container.querySelector("[data-action='back-to-hub']");
+    if (backButton) {
+      backButton.addEventListener("click", () => {
+        setRole("customer", "customer");
+      });
+    }
+  }
+
+  function attachCatalogueView(container, state) {
+    if (!container) return;
+    attachCatalogueNavigation(container);
+    attachCustomerHubEvents(container, state);
+  }
+
 
     function templateHub(appState) {
       const state = getState(appState);
@@ -1045,10 +1141,52 @@ function attachCustomerHubEvents(container, state) {
       }
     }
 
+    function templateRewards(appState) {
+      const state = getState(appState);
+      return renderRewardsCatalogueView(state);
+    }
+
+    function renderRewards(container, appState) {
+      if (!container) return;
+      const state = getState(appState);
+      container.innerHTML = renderRewardsCatalogueView(state);
+      attachCatalogueView(container, state);
+    }
+
+    function attachRewards(container, appState) {
+      if (!container) return;
+      const state = getState(appState);
+      attachCatalogueView(container, state);
+    }
+
+    function templateQuests(appState) {
+      const state = getState(appState);
+      return renderQuestsCatalogueView(state);
+    }
+
+    function renderQuests(container, appState) {
+      if (!container) return;
+      const state = getState(appState);
+      container.innerHTML = renderQuestsCatalogueView(state);
+      attachCatalogueView(container, state);
+    }
+
+    function attachQuests(container, appState) {
+      if (!container) return;
+      const state = getState(appState);
+      attachCatalogueView(container, state);
+    }
+
     return {
       template: templateHub,
       render: renderHub,
-      attach: attachHub
+      attach: attachHub,
+      templateRewards: templateRewards,
+      renderRewards: renderRewards,
+      attachRewards: attachRewards,
+      templateQuests: templateQuests,
+      renderQuests: renderQuests,
+      attachQuests: attachQuests
     };
   });
 })();
