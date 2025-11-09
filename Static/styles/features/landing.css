@@ -12,6 +12,31 @@
   flex-wrap: wrap;
 }
 
+.landing__visual {
+  flex: 1 1 340px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.landing__badge-sample {
+  width: min(262px, 100%);
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  cursor: default;
+  transition: none;
+}
+
+.landing__logo {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: none;
+}
+
 .landing__intro {
   max-width: 560px;
   display: flex;
