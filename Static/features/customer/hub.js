@@ -198,10 +198,10 @@ function renderCustomerHub(state) {
     }
     return `<div class="points-bonus__sources" role="list">${items.join("")}</div>`;
   })();
-  const bonusHoverNote =
-    bonusSourcesCount > 0
-      ? `<p class="points-bonus__note">Hover or focus a source to see this week's bonus story.</p>`
-      : "";
+  const hasBonusSources = bonusSourcesCount > 0;
+  const bonusHoverNote = hasBonusSources
+    ? `<p class="points-bonus__note">Hover or focus the points bar to see this week's bonus story.</p>`
+    : "";
   const remainingLabelMarkup =
     weeklyCap > 0
       ? remainingThisWeek === 0
@@ -209,6 +209,25 @@ function renderCustomerHub(state) {
         : `<span class="points-bonus__meter-remaining">${formatNumber(remainingThisWeek)} pts left</span>`
       : `<span class="points-bonus__meter-remaining">No cap set</span>`;
   const bonusCapLabel = weeklyCap > 0 ? `${formatNumber(weeklyCap)} pt cap` : "No cap set";
+  const meterFocusAttributes = hasBonusSources ? ' tabindex="0" data-bonus-meter="reveal"' : "";
+  const meterGroupAttributes = hasBonusSources ? ' data-has-sources="true"' : "";
+  const bonusMeterGroupMarkup = `
+        <div class="points-bonus__meter-group"${meterGroupAttributes}>
+          <div class="points-bonus__meter"${meterFocusAttributes} role="img" aria-label="${WeldUtil.escapeHtml(
+            bonusMeterLabel
+          )}">
+            <div class="points-bonus__meter-track">
+              <span class="points-bonus__meter-fill" style="--bonus-progress:${progressPercent}%;"></span>
+              ${boostMarkup}
+            </div>
+            <div class="points-bonus__meter-labels">
+              <span class="points-bonus__meter-value">+${formatNumber(earnedThisWeek)} pts</span>
+              ${remainingLabelMarkup}
+            </div>
+          </div>
+          ${bonusBreakdownMarkup}
+        </div>
+  `;
   const bonusScaleHtml = `
       <div class="points-bonus" role="region" aria-label="Weekly bonus points">
         <div class="points-bonus__header">
@@ -218,17 +237,7 @@ function renderCustomerHub(state) {
         <p class="points-bonus__summary">
           Earn extra points from quests and team boosts. Reporting suspicious emails always awards your core points outside this cap.
         </p>
-        <div class="points-bonus__meter" role="img" aria-label="${WeldUtil.escapeHtml(bonusMeterLabel)}">
-          <div class="points-bonus__meter-track">
-            <span class="points-bonus__meter-fill" style="--bonus-progress:${progressPercent}%;"></span>
-            ${boostMarkup}
-          </div>
-          <div class="points-bonus__meter-labels">
-            <span class="points-bonus__meter-value">+${formatNumber(earnedThisWeek)} pts</span>
-            ${remainingLabelMarkup}
-          </div>
-        </div>
-        ${bonusBreakdownMarkup}
+        ${bonusMeterGroupMarkup}
         ${bonusHoverNote}
       </div>
     `;
