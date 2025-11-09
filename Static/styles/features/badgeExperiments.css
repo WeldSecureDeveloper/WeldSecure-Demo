@@ -140,20 +140,26 @@
   }
 
   .badge-tier__icon {
-    width: 2.4rem;
-    height: 2.4rem;
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: badge-tier-pulse 2.5s ease-in-out infinite;
   }
 
-  .badge-tier__label {
-    position: absolute;
-    bottom: 0.55rem;
-    font-size: 0.55rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
+  .badge-tier__icon img {
+    width: 72%;
+    height: 72%;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 10px rgba(15, 23, 42, 0.25));
+    animation: badge-tier-pulse 2.6s ease-in-out infinite;
+  }
+
+  .badge-tier__icon-fallback {
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    animation: badge-tier-pulse 2.6s ease-in-out infinite;
   }
 
   .badge-tier__shine {
@@ -190,65 +196,11 @@
     animation: badge-tier-float 2.2s ease-in-out infinite;
   }
 
-  .badge-experiments__catalogue {
-    margin-top: 1.5rem;
-  }
-
   .badge-experiments__fallback {
     padding: 2rem;
     border-radius: 1rem;
     background: rgba(15, 23, 42, 0.08);
     text-align: center;
-  }
-
-  .badge-tier--diamond {
-    background: linear-gradient(135deg, #b3fffc 0%, #48aaad 100%);
-    box-shadow: 0 10px 20px rgba(72, 170, 173, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
-  }
-
-  .badge-tier--platinum {
-    background: linear-gradient(135deg, #e5e5e5 0%, #b7b7b7 100%);
-    box-shadow: 0 10px 20px rgba(183, 183, 183, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
-  }
-
-  .badge-tier--gold {
-    background: linear-gradient(135deg, #f9d423 0%, #e2a139 100%);
-    box-shadow: 0 10px 20px rgba(242, 185, 65, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
-  }
-
-  .badge-tier--silver {
-    background: linear-gradient(135deg, #e3e3e3 0%, #b8b8b8 100%);
-    box-shadow: 0 10px 20px rgba(184, 184, 184, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.1);
-  }
-
-  .badge-tier--bronze {
-    background: linear-gradient(135deg, #d1913c 0%, #a16522 100%);
-    box-shadow: 0 10px 20px rgba(161, 101, 34, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
-  }
-
-  .badge-tier--ruby {
-    background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
-    box-shadow: 0 10px 20px rgba(255, 75, 43, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
-  }
-
-  .badge-tier--sapphire {
-    background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
-    box-shadow: 0 10px 20px rgba(33, 147, 176, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
-  }
-
-  .badge-tier--emerald {
-    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-    box-shadow: 0 10px 20px rgba(17, 153, 142, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
-  }
-
-  .badge-tier--amethyst {
-    background: linear-gradient(135deg, #9d50bb 0%, #6e48aa 100%);
-    box-shadow: 0 10px 20px rgba(110, 72, 170, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
-  }
-
-  .badge-tier--obsidian {
-    background: linear-gradient(135deg, #434343 0%, #000000 100%);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3), inset 0 -3px 0 rgba(255, 255, 255, 0.1);
   }
 
   @keyframes badge-tier-float {

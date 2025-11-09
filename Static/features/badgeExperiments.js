@@ -2,47 +2,24 @@
   if (!window.Weld) return;
 
   const features = window.Weld.features || (window.Weld.features = {});
-  const baseBadgesFeature = () => window.Weld?.features?.badges || null;
+  const AppData = window.AppData || {};
   const { WeldUtil } = window;
-
-  const tierConfig = [
-    { id: "diamond", label: "Diamond", tier: 10, summary: "Powered users who unlocked every storyline", tone: "diamond" },
-    { id: "platinum", label: "Platinum", tier: 9, summary: "For squads that sustain perfect detection habits", tone: "platinum" },
-    { id: "gold", label: "Gold", tier: 8, summary: "Champions who keep phishing losses at zero", tone: "gold" },
-    { id: "silver", label: "Silver", tier: 7, summary: "Managers with 100% enablement completion", tone: "silver" },
-    { id: "bronze", label: "Bronze", tier: 6, summary: "Squads building early streak momentum", tone: "bronze" },
-    { id: "ruby", label: "Ruby", tier: 5, summary: "Change-makers who run quarterly playbooks", tone: "ruby" },
-    { id: "sapphire", label: "Sapphire", tier: 4, summary: "Specialists curating industry-specific threats", tone: "sapphire" },
-    { id: "emerald", label: "Emerald", tier: 3, summary: "Teams closing reports within hours", tone: "emerald" },
-    { id: "amethyst", label: "Amethyst", tier: 2, summary: "Creators experimenting with badge iconography", tone: "amethyst" },
-    { id: "obsidian", label: "Obsidian", tier: 1, summary: "Fresh squads exploring starter templates", tone: "obsidian" }
-  ];
+  const badgeIconBackdrops = AppData.BADGE_ICON_BACKDROPS || {};
+  const iconPaths = AppData.ICON_PATHS || {};
+  const difficultyOrder = ["Starter", "Rising", "Skilled", "Expert", "Legendary"];
 
   features.badgeExperiments = {
     render(container, appState) {
       if (!container) return;
-      const stateRef = appState || window.state || {};
+      const tieredBadges = getTieredBadges();
       container.innerHTML = `
         <section class="badge-experiments">
           ${renderLabHero()}
-          ${renderTierGrid()}
-          <div class="badge-experiments__catalogue" aria-label="Current badge catalogue"></div>
+          ${renderTierGrid(tieredBadges)}
         </section>
       `;
 
       initAnimatedTierBadges(container);
-
-      const catalogueTarget = container.querySelector(".badge-experiments__catalogue");
-      const baseFeature = baseBadgesFeature();
-      if (catalogueTarget && baseFeature && typeof baseFeature.render === "function") {
-        baseFeature.render(catalogueTarget, stateRef);
-      } else if (catalogueTarget) {
-        catalogueTarget.innerHTML = `
-          <div class="badge-experiments__fallback">
-            <p>Unable to load the badge catalogue preview right now.</p>
-          </div>
-        `;
-      }
     }
   };
 
@@ -52,12 +29,12 @@
         <div class="badge-experiments__intro">
           <span class="badge-experiments__eyebrow">Badge Lab</span>
           <h1>Experiment with cinematic badge animations.</h1>
-          <p>We're prototyping an animated ten-tier system that pairs gradients, motion and particles with the existing catalogue data. Explore the motion system below and keep the classic list handy right underneath.</p>
+          <p>We’ve replaced the legacy catalogue with level-based hero badges so you can preview motion, gradients, and iconography together without leaving the lab view.</p>
         </div>
         <div class="badge-experiments__stats">
           <article>
             <strong>10</strong>
-            <span>Tiers</span>
+            <span>Levels</span>
           </article>
           <article>
             <strong>4</strong>
@@ -72,44 +49,135 @@
     `;
   }
 
-  function renderTierGrid() {
+  function renderTierGrid(badges) {
+    if (!badges.length) {
+      return `
+        <div class="badge-experiments__fallback">
+          <p>No badges are published yet. Publish a few and check back to see them visualised.</p>
+        </div>
+      `;
+    }
+
     return `
       <section class="badge-experiments__grid" aria-label="Animated tier prototypes">
-        ${tierConfig.map(renderTierCard).join("")}
+        ${badges.map(renderTierCard).join("")}
       </section>
     `;
   }
 
   function renderTierCard(tier) {
-    const toneClass = `badge-tier badge-tier--${tier.tone}`;
-    const safeLabel = WeldUtil?.escapeHtml ? WeldUtil.escapeHtml(tier.label) : tier.label;
-    const safeSummary = WeldUtil?.escapeHtml ? WeldUtil.escapeHtml(tier.summary) : tier.summary;
-    const safeTier = WeldUtil?.escapeHtml ? WeldUtil.escapeHtml(String(tier.tier)) : tier.tier;
+    const safeTitle = escapeHtml(tier.title || "Badge prototype");
+    const safeSummary = escapeHtml(tier.description || "");
+    const safeDifficulty = escapeHtml(tier.difficulty || "");
+    const safeId = escapeHtml(tier.id || "");
+    const safeLevel = escapeHtml(String(tier.level));
+    const toneStyles = getToneStyles(tier.tone);
     return `
       <article class="badge-experiments__card">
-        <div class="${toneClass}" data-tier="${tier.id}">
+        <div
+          class="badge-tier"
+          data-tier="${safeId}"
+          style="background:${toneStyles.background};box-shadow:${toneStyles.shadow};">
           <span class="badge-tier__shine" aria-hidden="true"></span>
           <span class="badge-tier__particles" aria-hidden="true"></span>
-          ${renderBadgeIcon()}
-          <span class="badge-tier__label">${safeLabel.toUpperCase()}</span>
+          ${renderBadgeIconImage(tier)}
         </div>
         <footer>
-          <strong>${safeLabel}</strong>
-          <span class="badge-experiments__tier-label">Level ${safeTier}</span>
-          <p>${safeSummary}</p>
+          <strong>${safeTitle}</strong>
+          <span class="badge-experiments__tier-label">Level ${safeLevel} · ${safeDifficulty}</span>
+          ${safeSummary ? `<p>${safeSummary}</p>` : ""}
         </footer>
       </article>
     `;
   }
 
-  function renderBadgeIcon() {
+  function renderBadgeIconImage(badge) {
+    const iconKey = typeof badge.icon === "string" && iconPaths[badge.icon] ? badge.icon : "badge";
+    const iconSrc = iconPaths[iconKey] || iconPaths.badge || "";
+    const rawInitial =
+      typeof badge.title === "string" && badge.title.trim().length > 0 ? badge.title.trim().charAt(0) : "B";
+    const safeInitial = escapeHtml(rawInitial.toUpperCase());
+    if (!iconSrc) {
+      return `
+        <span class="badge-tier__icon" aria-hidden="true">
+          <span class="badge-tier__icon-fallback">${safeInitial}</span>
+        </span>
+      `;
+    }
+    const safeSrc = escapeHtml(iconSrc);
     return `
       <span class="badge-tier__icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="currentColor">
-          <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
-        </svg>
+        <img src="${safeSrc}" alt="" loading="lazy" decoding="async" />
       </span>
     `;
+  }
+
+  function getToneStyles(toneKey) {
+    const fallbackBackground = "linear-gradient(135deg, #c7d2fe, #818cf8)";
+    const fallbackShadow = "0 12px 24px rgba(79, 70, 229, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.18)";
+    if (!toneKey || !badgeIconBackdrops[toneKey]) {
+      return { background: fallbackBackground, shadow: fallbackShadow };
+    }
+    const tone = badgeIconBackdrops[toneKey];
+    const background = tone.background || fallbackBackground;
+    const shadowColor = tone.shadow || "rgba(79, 70, 229, 0.3)";
+    return {
+      background,
+      shadow: `0 12px 24px ${shadowColor}, inset 0 -3px 0 rgba(0, 0, 0, 0.18)`
+    };
+  }
+
+  function getTieredBadges() {
+    const publishedSource = Array.isArray(AppData.BADGES) ? AppData.BADGES : [];
+    const draftSource = Array.isArray(AppData.BADGE_DRAFTS) ? AppData.BADGE_DRAFTS : [];
+    const combined = [...publishedSource, ...draftSource];
+    const visibleBadges = combined.filter(badge => {
+      if (!badge || typeof badge !== "object") return false;
+      if (typeof badge.published === "boolean") {
+        return badge.published;
+      }
+      return true;
+    });
+
+    if (!visibleBadges.length) {
+      return [];
+    }
+
+    return visibleBadges
+      .sort((a, b) => {
+        const rankDiff = getDifficultyRank(a?.difficulty) - getDifficultyRank(b?.difficulty);
+        if (rankDiff !== 0) return rankDiff;
+        const pointsDiff = (Number(b?.points) || 0) - (Number(a?.points) || 0);
+        if (pointsDiff !== 0) return pointsDiff;
+        const titleA = typeof a?.title === "string" ? a.title : "";
+        const titleB = typeof b?.title === "string" ? b.title : "";
+        return titleA.localeCompare(titleB, undefined, { sensitivity: "base" });
+      })
+      .slice(0, 10)
+      .map((badge, index) => ({
+        ...badge,
+        level: index + 1
+      }));
+  }
+
+  function getDifficultyRank(value) {
+    if (typeof value !== "string") return difficultyOrder.length;
+    const normalized = value.trim();
+    const index = difficultyOrder.indexOf(normalized);
+    return index === -1 ? difficultyOrder.length : index;
+  }
+
+  function escapeHtml(value) {
+    if (!value) return "";
+    if (WeldUtil?.escapeHtml) {
+      return WeldUtil.escapeHtml(value);
+    }
+    return value
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
 
   function initAnimatedTierBadges(root) {
