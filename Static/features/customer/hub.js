@@ -19,6 +19,7 @@
     const { MessageStatus, WeldUtil, formatNumber, formatDateTime, relativeTime, getState } = shared;
     const HUB_REWARD_PREVIEW_LIMIT = 3;
     const HUB_QUEST_PREVIEW_LIMIT = 3;
+    const QUEST_PREVIEW_DIFFICULTY_ORDER = ["starter", "intermediate", "advanced"];
 
     function getPublishedRewards(state) {
       const rewards = Array.isArray(state?.rewards) ? state.rewards : [];
@@ -30,6 +31,37 @@
       return quests
         .filter(quest => quest && quest.published)
         .sort(WeldUtil.compareQuestsByDifficulty);
+    }
+
+    function selectQuestPreview(quests, limit = HUB_QUEST_PREVIEW_LIMIT) {
+      if (!Array.isArray(quests) || quests.length === 0) return [];
+      const normalized = quests.slice();
+      const selected = [];
+      const usedIds = new Set();
+
+      QUEST_PREVIEW_DIFFICULTY_ORDER.forEach(level => {
+        if (selected.length >= limit) return;
+        const quest = normalized.find(item => {
+          if (!item || usedIds.has(item.id)) return false;
+          const diff = typeof item.difficulty === "string" ? item.difficulty.trim().toLowerCase() : "";
+          return diff === level;
+        });
+        if (quest) {
+          selected.push(quest);
+          usedIds.add(quest.id);
+        }
+      });
+
+      if (selected.length < limit) {
+        normalized.forEach(quest => {
+          if (selected.length >= limit) return;
+          if (!quest || usedIds.has(quest.id)) return;
+          selected.push(quest);
+          usedIds.add(quest.id);
+        });
+      }
+
+      return selected.slice(0, limit);
     }
 
     function renderRewardCard(reward) {
@@ -71,6 +103,8 @@
     function renderQuestCard(quest) {
       if (!quest) return "";
       const questId = WeldUtil.escapeHtml(String(quest.id));
+      const questDifficulty = quest.difficulty ? String(quest.difficulty) : "Starter";
+      const questDifficultyAttr = WeldUtil.escapeHtml(questDifficulty);
       const focusTags = Array.isArray(quest.focus)
         ? quest.focus.slice(0, 2).map(item => `<span>${WeldUtil.escapeHtml(item)}</span>`).join("")
         : "";
@@ -94,7 +128,7 @@
       const pointsValue = formatNumber(quest.points || 0);
 
       return `
-        <article class="quest-card quest-card--hub" data-quest="${questId}">
+        <article class="quest-card quest-card--hub" data-quest="${questId}" data-difficulty="${questDifficultyAttr}">
           <header class="quest-card__header quest-card__header--hub">
             ${difficultyRow}
             ${chipGroup}
@@ -541,8 +575,8 @@ function renderCustomerHub(state) {
     .map(renderRewardCard)
     .join("");
 
-  const questsHtml = publishedQuests
-    .slice(0, HUB_QUEST_PREVIEW_LIMIT)
+  const questPreview = selectQuestPreview(publishedQuests);
+  const questsHtml = questPreview
     .map(renderQuestCard)
     .join("");
 

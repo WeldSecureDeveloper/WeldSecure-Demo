@@ -27,11 +27,12 @@
 }
 
 .reward-card--hub {
-  flex: 1 1 260px;
-  width: 100%;
+  flex: 0 1 var(--customer-hub-card-max-width, 320px);
+  width: min(100%, var(--customer-hub-card-max-width, 320px));
   max-width: var(--customer-hub-card-max-width, 320px);
   padding: var(--customer-hub-card-padding, 1.5rem);
   gap: var(--customer-hub-card-gap, 0.9rem);
+  min-height: 24rem;
 }
 
 .reward-card:hover {
@@ -84,9 +85,12 @@
 .reward-grid--hub {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
+  justify-content: center;
   align-items: stretch;
   gap: 1.5rem;
+  margin-top: 1.25rem;
+  width: 100%;
+  padding: 0 1rem;
 }
 
 .reward-grid--catalogue {
@@ -98,6 +102,13 @@
   width: 100%;
   max-width: 320px;
   justify-self: start;
+}
+
+.reward-grid--catalogue.reward-grid--hub {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
 }
 
 .reward-grid--catalogue {
@@ -309,11 +320,16 @@
 
 .reward-card__meta {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.16em;
   color: #6366f1;
+}
+
+.reward-card--hub .reward-card__meta {
+  min-height: 1.6rem;
 }
 
 .reward-card__chip {
@@ -389,10 +405,24 @@
   font-size: 1.25rem;
 }
 
+.reward-card--hub .reward-card__title {
+  min-height: 3rem;
+  display: flex;
+  align-items: flex-start;
+}
+
 .reward-card__desc {
   margin: 0;
   color: var(--color-text-muted);
   line-height: 1.5;
+}
+
+.reward-card--hub .reward-card__desc {
+  min-height: 3.3rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .reward-card__footer {

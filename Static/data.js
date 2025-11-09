@@ -936,7 +936,7 @@ Object.assign(AppData, {
     duration: 8,
     questions: 9,
     points: 180,
-    published: false,
+    published: true,
     format: "Scenario lab",
     focus: ["Detect sensitive prompts", "Classify training data", "Escalate AI misuse"],
     bonus: "+40 policy boost",
