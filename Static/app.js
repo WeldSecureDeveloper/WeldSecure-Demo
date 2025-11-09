@@ -283,12 +283,12 @@ function renderAchievementContent(entry) {
         ? formatNumber(entry.points)
         : Number(entry.points).toLocaleString("en-GB");
   }
-  const subtextValue =
+  const subtitleBase =
     typeof entry.subtitle === "string" && entry.subtitle.trim().length > 0
       ? entry.subtitle.trim()
-      : formattedPoints !== null
-        ? `+${formattedPoints} pts`
-        : "";
+      : "";
+  const pointsSuffix = formattedPoints !== null ? ` +${formattedPoints} pts` : "";
+  const subtextValue = `${subtitleBase}${pointsSuffix}`.trim();
   const detailMarkup = subtextValue
     ? `<p class="achievement-subtext">${escapeHtml(subtextValue)}</p>`
     : "";
