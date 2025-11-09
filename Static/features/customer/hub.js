@@ -854,9 +854,18 @@ function renderCustomerHub(state) {
     ${
       showRewards
         ? `<section id="customer-rewards" class="customer-section customer-section--rewards">
-      <div class="section-header">
-        <h2>Your rewards</h2>
-        <p>Select a reward to demonstrate the instant redemption flow. Only rewards published by your organisation appear here.</p>
+      <div class="section-header section-header--with-action">
+        <div class="section-header__copy">
+          <h2>Your rewards</h2>
+          <p>Select a reward to demonstrate the instant redemption flow. Only rewards published by your organisation appear here.</p>
+        </div>
+        <button
+          type="button"
+          class="button-pill button-pill--primary section-header__action"
+          data-route="customer-rewards"
+          data-role="customer">
+          All rewards
+        </button>
       </div>
       ${
         rewardsHtml

@@ -228,7 +228,7 @@
       "provider": "Selfridges & Co",
       "image": "linear-gradient(135deg, #ff8a80 0%, #ff416c 100%)",
       "remaining": 12,
-      "published": true
+      "published": false
     },
     {
       "id": 3,
