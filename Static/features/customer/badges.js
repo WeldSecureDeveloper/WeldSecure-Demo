@@ -150,7 +150,7 @@
 
     function renderPadlockIcon(variant) {
       const unlockedPaths =
-        '<g transform="translate(8 0) scale(-1 1) translate(-8 0)"><path d="M8 10V7a4 4 0 018 0" stroke-linecap="round" stroke-linejoin="round"/></g><rect x="6" y="10" width="12" height="10" rx="2" fill="none"/><path d="M12 14v2" stroke-linecap="round" stroke-linejoin="round"/>';
+        '<g transform="translate(8 0) scale(-1 1) translate(-8 0)"><path d="M8 10V7a4 4 0 018 0v3" stroke-linecap="round" stroke-linejoin="round"/></g><rect x="6" y="10" width="12" height="10" rx="2" fill="none"/><path d="M12 14v2" stroke-linecap="round" stroke-linejoin="round"/>';
       const lockedPaths =
         '<path d="M8 10V7a4 4 0 018 0v3" stroke-linecap="round" stroke-linejoin="round"/><rect x="6" y="10" width="12" height="10" rx="2" fill="none"/><path d="M12 14v2" stroke-linecap="round" stroke-linejoin="round"/>';
       const svgPaths = variant === "unlock" ? unlockedPaths : lockedPaths;
