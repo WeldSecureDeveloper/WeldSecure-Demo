@@ -1,4 +1,11 @@
 @layer features {
+:root {
+  --customer-hub-card-width: min(100%, 280px);
+  --customer-hub-card-max-width: 280px;
+  --customer-hub-card-padding: 1.5rem;
+  --customer-hub-card-gap: 0.9rem;
+}
+
 /* Customer hub feature */
 .customer-section--rewards .reward-card__meta {
   gap: 0.5rem;
@@ -20,8 +27,11 @@
 }
 
 .reward-card--hub {
-  width: min(100%, 280px);
-  max-width: 280px;
+  flex: 1 1 260px;
+  width: 100%;
+  max-width: var(--customer-hub-card-max-width, 320px);
+  padding: var(--customer-hub-card-padding, 1.5rem);
+  gap: var(--customer-hub-card-gap, 0.9rem);
 }
 
 .reward-card:hover {
@@ -72,8 +82,10 @@
 }
 
 .reward-grid--hub {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 280px));
-  justify-content: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: stretch;
   gap: 1.5rem;
 }
 

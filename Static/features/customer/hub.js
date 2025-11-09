@@ -928,7 +928,7 @@ function renderCustomerHub(state) {
       </div>
       ${
         questsHtml
-          ? `<div class="quest-grid quest-grid--hub">${questsHtml}</div>`
+          ? `<div class="quest-grid quest-grid--catalogue quest-grid--hub">${questsHtml}</div>`
           : `<div class="reward-empty"><p>No quests are currently published. Check back soon!</p></div>`
       }
     </section>`
@@ -1085,7 +1085,7 @@ function attachCustomerHubEvents(container, state) {
   function renderQuestsCatalogueView(state) {
     const publishedQuests = getPublishedQuests(state);
     const questsMarkup = publishedQuests.length
-      ? `<div class="quest-grid quest-grid--hub">${publishedQuests.map(renderQuestCard).join("")}</div>`
+      ? `<div class="quest-grid quest-grid--catalogue quest-grid--hub">${publishedQuests.map(renderQuestCard).join("")}</div>`
       : `<div class="reward-empty"><p>No quests are currently published. Check back soon!</p></div>`;
     return `
       <header class="customer-detail-header">

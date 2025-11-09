@@ -18,8 +18,10 @@
 }
 
 .quest-grid--hub {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 280px));
-  justify-content: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: stretch;
   gap: 1.5rem;
   margin-top: 1.25rem;
 }
@@ -46,10 +48,11 @@
 }
 
 .quest-card--hub {
-  gap: 0.9rem;
-  padding: 1.5rem;
-  width: min(100%, 280px);
-  max-width: 280px;
+  gap: var(--customer-hub-card-gap, 0.9rem);
+  padding: var(--customer-hub-card-padding, 1.5rem);
+  flex: 1 1 260px;
+  max-width: var(--customer-hub-card-max-width, 320px);
+  width: 100%;
 }
 
 .quest-card__header {
