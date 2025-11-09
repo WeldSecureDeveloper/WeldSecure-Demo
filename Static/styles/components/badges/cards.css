@@ -447,32 +447,30 @@
     transform: translate(-12px, -50%) scale(0.98);
   }
 
-  @media (min-width: 1200px) {
-    .catalogue-badge-grid .catalogue-badge:nth-child(5n) .catalogue-badge-card,
-    .catalogue-badge-group__grid .catalogue-badge:nth-child(5n) .catalogue-badge-card {
+  @media (min-width: 768px) {
+    .catalogue-badge.catalogue-badge--edge .catalogue-badge-card:not(.catalogue-badge-card--hub) {
       left: auto;
       right: 0;
       transform: translate(0, 16px) scale(0.98);
     }
 
-    .catalogue-badge-grid .catalogue-badge:nth-child(5n):hover .catalogue-badge-card:not(.catalogue-badge-card--hub),
-    .catalogue-badge-grid .catalogue-badge:nth-child(5n):focus-within .catalogue-badge-card:not(.catalogue-badge-card--hub),
-    .catalogue-badge-group__grid .catalogue-badge:nth-child(5n):hover .catalogue-badge-card:not(.catalogue-badge-card--hub),
-    .catalogue-badge-group__grid .catalogue-badge:nth-child(5n):focus-within .catalogue-badge-card:not(.catalogue-badge-card--hub) {
+    .catalogue-badge.catalogue-badge--edge:hover .catalogue-badge-card:not(.catalogue-badge-card--hub),
+    .catalogue-badge.catalogue-badge--edge:focus-within .catalogue-badge-card:not(.catalogue-badge-card--hub),
+    .catalogue-badge.catalogue-badge--edge .catalogue-badge-card:not(.catalogue-badge-card--hub):hover,
+    .catalogue-badge.catalogue-badge--edge .catalogue-badge-card:not(.catalogue-badge-card--hub):focus-within {
       transform: translate(0, 0) scale(1);
     }
 
-    .catalogue-badge-grid .catalogue-badge:nth-child(5n) .catalogue-badge-card--hub,
-    .catalogue-badge-group__grid .catalogue-badge:nth-child(5n) .catalogue-badge-card--hub {
+    .catalogue-badge.catalogue-badge--edge .catalogue-badge-card--hub {
       left: auto;
       right: calc(100% + 1.5rem);
       transform: translate(-12px, -50%) scale(0.98);
     }
 
-    .catalogue-badge-grid .catalogue-badge:nth-child(5n):hover .catalogue-badge-card--hub,
-    .catalogue-badge-grid .catalogue-badge:nth-child(5n):focus-within .catalogue-badge-card--hub,
-    .catalogue-badge-group__grid .catalogue-badge:nth-child(5n):hover .catalogue-badge-card--hub,
-    .catalogue-badge-group__grid .catalogue-badge:nth-child(5n):focus-within .catalogue-badge-card--hub {
+    .catalogue-badge.catalogue-badge--edge:hover .catalogue-badge-card--hub,
+    .catalogue-badge.catalogue-badge--edge:focus-within .catalogue-badge-card--hub,
+    .catalogue-badge.catalogue-badge--edge .catalogue-badge-card--hub:hover,
+    .catalogue-badge.catalogue-badge--edge .catalogue-badge-card--hub:focus-within {
       transform: translate(-12px, -50%) scale(0.98);
     }
   }

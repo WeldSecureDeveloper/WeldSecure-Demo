@@ -386,6 +386,39 @@
   max-width: 360px;
   margin: -0.25rem auto 0;
 }
+.addin-success__badge .badge-spotlight {
+  width: 100%;
+  justify-content: center;
+  gap: 1rem;
+}
+.addin-success__badge .badge-spotlight__primary {
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.addin-success__badge .badge-spotlight-tile {
+  background: transparent;
+  padding: 0;
+  min-height: 0;
+  width: auto;
+  gap: 0.4rem;
+  box-shadow: none;
+  border-radius: 0;
+  transform: none;
+}
+.addin-success__badge .badge-spotlight-tile:hover,
+.addin-success__badge .badge-spotlight-tile:focus-visible {
+  transform: none;
+  box-shadow: none;
+}
+.addin-success__badge .badge-spotlight-tile__icon {
+  width: 68px;
+  height: 68px;
+  border-radius: 20px;
+  box-shadow: none;
+}
+.addin-success__badge .badge-spotlight-tile__points {
+  box-shadow: none;
+}
 [data-badge-showcase]:empty {
   display: none;
 }

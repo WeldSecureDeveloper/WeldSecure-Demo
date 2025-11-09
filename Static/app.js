@@ -127,12 +127,15 @@ Object.entries(serviceWrappers).forEach(([key, fn]) => {
   window[key] = fn;
 });
 
-const ACHIEVEMENT_EYEBROW = "Badge unlocked";
+const ACHIEVEMENT_EYEBROW = "";
 const ACHIEVEMENT_TRIGGER_DELAY = 600;
-const ACHIEVEMENT_DISPLAY_MS = 5000;
-const ACHIEVEMENT_EXIT_MS = 180;
+const ACHIEVEMENT_DISPLAY_MS = 6200;
+const ACHIEVEMENT_EXIT_DURATION_MS = 750;
+const ACHIEVEMENT_LEAVE_CLEANUP_MS = 750;
 const ACHIEVEMENT_BLINK_DELAY = 1400;
-const ACHIEVEMENT_COLLAPSE_LEAD_MS = 620;
+const ACHIEVEMENT_COLLAPSE_LEAD_MS = 700;
+const ACHIEVEMENT_SUBTITLE_MAX_LENGTH = 54;
+const ACHIEVEMENT_SUBTITLE_TEXT = "View in the Hub";
 const ACHIEVEMENT_FLAG_KEYS = {
   HUB_WELCOME: "hub-welcome"
 };
@@ -228,20 +231,35 @@ function achievementToneStyles(toneKey) {
   };
 }
 
+function sanitizeAchievementText(value, maxLength = ACHIEVEMENT_SUBTITLE_MAX_LENGTH) {
+  if (typeof value !== "string") return "";
+  let normalized = value.replace(/[^\x20-\x7E]/g, " ").replace(/\s+/g, " ").trim();
+  if (!normalized) {
+    return "";
+  }
+  if (typeof maxLength === "number" && maxLength > 3 && normalized.length > maxLength) {
+    normalized = `${normalized.slice(0, maxLength - 3).trimEnd()}...`;
+  }
+  return normalized;
+}
+
 function normalizeAchievementEntry(entry) {
   if (!entry || typeof entry !== "object") return null;
   const escapeTitle = value =>
     typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
   const pointsValue = Number(entry.points);
+  const sanitizedSubtitle =
+    sanitizeAchievementText(entry.subtitle || ACHIEVEMENT_SUBTITLE_TEXT) ||
+    sanitizeAchievementText(ACHIEVEMENT_SUBTITLE_TEXT);
   return {
     id:
       (typeof entry.id === "string" && entry.id.trim().length > 0
         ? entry.id.trim()
         : (WeldUtil?.generateId?.("achievement") ||
             `achievement-${Date.now()}-${Math.random().toString(16).slice(2)}`)),
-    eyebrow: escapeTitle(entry.eyebrow) || ACHIEVEMENT_EYEBROW,
+    eyebrow: sanitizeAchievementText(entry.eyebrow || "") || ACHIEVEMENT_EYEBROW,
     title: escapeTitle(entry.title) || "Badge unlocked",
-    subtitle: escapeTitle(entry.subtitle) || "",
+    subtitle: sanitizedSubtitle,
     points: Number.isFinite(pointsValue) && pointsValue > 0 ? pointsValue : null,
     icon: escapeTitle(entry.icon) || "medal",
     tone: escapeTitle(entry.tone) || "emerald",
@@ -267,12 +285,15 @@ function renderAchievementContent(entry) {
         ? formatNumber(entry.points)
         : Number(entry.points).toLocaleString("en-GB");
   }
-  const detailMarkup =
-    formattedPoints !== null
-      ? `<p class="achievement-subtext">
-          <span class="achievement-subtext__points">+${escapeHtml(formattedPoints)} pts</span>
-        </p>`
-      : "";
+  const subtextValue =
+    typeof entry.subtitle === "string" && entry.subtitle.trim().length > 0
+      ? entry.subtitle.trim()
+      : formattedPoints !== null
+        ? `+${formattedPoints} pts`
+        : "";
+  const detailMarkup = subtextValue
+    ? `<p class="achievement-subtext">${escapeHtml(subtextValue)}</p>`
+    : "";
   return `
     <div class="achievement-wrapper animation" data-achievement-toast>
       <div class="achievement-super">
@@ -424,7 +445,7 @@ function hideAchievement(entryId) {
     achievementOverlayState.paused = false;
     achievementOverlayState.cleanupTimer = null;
     processAchievementQueue();
-  }, ACHIEVEMENT_EXIT_MS);
+  }, ACHIEVEMENT_LEAVE_CLEANUP_MS);
 }
 
 function displayAchievement(entry) {
@@ -453,16 +474,19 @@ function scheduleAchievementTimeline(entry) {
   const host = achievementOverlayState.host;
   if (!host) return;
   const now = performance.now();
-  const collapseDelay = Math.max(0, entry.displayMs - ACHIEVEMENT_COLLAPSE_LEAD_MS);
+  const hideDelay = Math.max(0, entry.displayMs - ACHIEVEMENT_EXIT_DURATION_MS);
+  const collapseDelay = Math.max(0, hideDelay - ACHIEVEMENT_COLLAPSE_LEAD_MS);
   const blinkDelay = Math.max(0, ACHIEVEMENT_BLINK_DELAY);
   const timeline = {
     entryId: entry.id,
-    hideRemaining: entry.displayMs,
+    totalDisplay: entry.displayMs,
+    hideRemaining: hideDelay,
     hideTimerStart: now,
     blinkRemaining: blinkDelay,
     blinkTimerStart: blinkDelay > 0 ? now : null,
     collapseRemaining: collapseDelay,
-    collapseTimerStart: collapseDelay > 0 ? now : null
+    collapseTimerStart: collapseDelay > 0 ? now : null,
+    exitDuration: ACHIEVEMENT_EXIT_DURATION_MS
   };
   achievementOverlayState.timeline = timeline;
   achievementOverlayState.paused = false;
@@ -616,28 +640,14 @@ function queueAchievementToast(entry) {
 function queueBadgeAchievements(badgeInput, options = {}) {
   const list = Array.isArray(badgeInput) ? badgeInput : [badgeInput];
   if (!list || list.length === 0) return;
-  const contextLabel =
-    typeof options.context === "string" && options.context.trim().length > 0
-      ? options.context.trim()
-      : "";
-  const forcedSubtitle =
-    typeof options.subtitle === "string" && options.subtitle.trim().length > 0
-      ? options.subtitle.trim()
-      : "";
   const eyebrow =
-    typeof options.eyebrow === "string" && options.eyebrow.trim().length > 0
-      ? options.eyebrow.trim()
-      : ACHIEVEMENT_EYEBROW;
+    sanitizeAchievementText(options.eyebrow || "") || ACHIEVEMENT_EYEBROW;
+  const hubSubtitle = sanitizeAchievementText(ACHIEVEMENT_SUBTITLE_TEXT);
   list.forEach((badge, index) => {
     if (!badge) return;
     const resolvedBadge =
       typeof badge === "string" ? (typeof badgeById === "function" ? badgeById(badge) : null) : badge;
     if (!resolvedBadge) return;
-    const description =
-      typeof resolvedBadge.description === "string" && resolvedBadge.description.trim().length > 0
-        ? resolvedBadge.description.trim()
-        : "";
-    const subtitle = forcedSubtitle || [contextLabel, description].filter(Boolean).join(" � ");
     queueAchievementToast({
       id:
         typeof resolvedBadge.id === "string" && resolvedBadge.id.trim().length > 0
@@ -645,7 +655,7 @@ function queueBadgeAchievements(badgeInput, options = {}) {
           : undefined,
       eyebrow,
       title: resolvedBadge.title || "Badge unlocked",
-      subtitle,
+      subtitle: hubSubtitle,
       points: resolvedBadge.points,
       icon: resolvedBadge.icon || "medal",
       tone: resolvedBadge.tone || "emerald"
@@ -3191,6 +3201,7 @@ function renderApp() {
   if (typeof routeConfig.attach === "function") {
     routeConfig.attach(attachTarget, state);
   }
+  scheduleBadgeEdgeAlignment(app);
   lastRenderedRoute = route;
 }
 
@@ -3223,8 +3234,76 @@ function renderAppPreservingScroll() {
   }
 }
 
+let badgeEdgeAlignmentFrame = null;
+let badgeEdgeAlignmentScope = null;
+let badgeEdgeResizeListenerAttached = false;
 
+function scheduleBadgeEdgeAlignment(scope) {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return;
+  }
+  const nextScope =
+    scope && typeof scope.querySelectorAll === "function" ? scope : document;
+  badgeEdgeAlignmentScope = nextScope;
+  if (badgeEdgeAlignmentFrame) return;
+  const requestFrame =
+    typeof window.requestAnimationFrame === "function"
+      ? window.requestAnimationFrame.bind(window)
+      : callback => window.setTimeout(callback, 16);
+  badgeEdgeAlignmentFrame = requestFrame(() => {
+    badgeEdgeAlignmentFrame = null;
+    const target =
+      badgeEdgeAlignmentScope && badgeEdgeAlignmentScope.isConnected
+        ? badgeEdgeAlignmentScope
+        : document;
+    applyBadgeEdgeAlignment(target);
+  });
+  if (!badgeEdgeResizeListenerAttached) {
+    badgeEdgeResizeListenerAttached = true;
+    window.addEventListener("resize", () => scheduleBadgeEdgeAlignment());
+  }
+}
 
+function applyBadgeEdgeAlignment(scope) {
+  if (!scope || typeof scope.querySelectorAll !== "function") return;
+  const containers = scope.querySelectorAll(
+    ".catalogue-badge-grid, .catalogue-badge-grid--hub, .catalogue-badge-group__grid"
+  );
+  containers.forEach(container => alignBadgeEdgesInContainer(container));
+}
 
-
+function alignBadgeEdgesInContainer(container) {
+  if (!container || typeof container.querySelectorAll !== "function") return;
+  const badges = Array.from(container.querySelectorAll(".catalogue-badge"));
+  if (badges.length === 0) return;
+  const edgeClass = "catalogue-badge--edge";
+  const rowTolerance = 12;
+  badges.forEach(badge => badge.classList.remove(edgeClass));
+  const rows = [];
+  badges.forEach(badge => {
+    const top = badge.offsetTop;
+    if (!Number.isFinite(top)) return;
+    let row = rows.find(entry => Math.abs(entry.top - top) <= rowTolerance);
+    if (!row) {
+      row = { top, badges: [] };
+      rows.push(row);
+    }
+    row.badges.push(badge);
+  });
+  rows.forEach(row => {
+    let edgeBadge = null;
+    let edgeRight = -Infinity;
+    row.badges.forEach(badge => {
+      const rect = typeof badge.getBoundingClientRect === "function" ? badge.getBoundingClientRect() : null;
+      if (!rect) return;
+      if (!edgeBadge || rect.right > edgeRight) {
+        edgeBadge = badge;
+        edgeRight = rect.right;
+      }
+    });
+    if (edgeBadge) {
+      edgeBadge.classList.add(edgeClass);
+    }
+  });
+}
 
