@@ -1,4 +1,4 @@
-﻿const ROLE_LABELS = window.AppData.ROLE_LABELS;
+const ROLE_LABELS = window.AppData.ROLE_LABELS;
 const ROUTES = window.AppData.ROUTES;
 const MessageStatus = window.AppData.MessageStatus;
 const NAV_GROUPS = window.AppData.NAV_GROUPS;
@@ -135,7 +135,7 @@ const ACHIEVEMENT_LEAVE_CLEANUP_MS = 750;
 const ACHIEVEMENT_BLINK_DELAY = 1400;
 const ACHIEVEMENT_COLLAPSE_LEAD_MS = 700;
 const ACHIEVEMENT_SUBTITLE_MAX_LENGTH = 54;
-const ACHIEVEMENT_SUBTITLE_TEXT = "View in the Hub";
+const ACHIEVEMENT_TITLE_TEXT = "Badge unlocked!";
 const ACHIEVEMENT_FLAG_KEYS = {
   HUB_WELCOME: "hub-welcome"
 };
@@ -248,9 +248,7 @@ function normalizeAchievementEntry(entry) {
   const escapeTitle = value =>
     typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
   const pointsValue = Number(entry.points);
-  const sanitizedSubtitle =
-    sanitizeAchievementText(entry.subtitle || ACHIEVEMENT_SUBTITLE_TEXT) ||
-    sanitizeAchievementText(ACHIEVEMENT_SUBTITLE_TEXT);
+  const sanitizedSubtitle = sanitizeAchievementText(entry.subtitle || "");
   return {
     id:
       (typeof entry.id === "string" && entry.id.trim().length > 0
@@ -258,7 +256,7 @@ function normalizeAchievementEntry(entry) {
         : (WeldUtil?.generateId?.("achievement") ||
             `achievement-${Date.now()}-${Math.random().toString(16).slice(2)}`)),
     eyebrow: sanitizeAchievementText(entry.eyebrow || "") || ACHIEVEMENT_EYEBROW,
-    title: escapeTitle(entry.title) || "Badge unlocked",
+    title: escapeTitle(entry.title) || ACHIEVEMENT_TITLE_TEXT,
     subtitle: sanitizedSubtitle,
     points: Number.isFinite(pointsValue) && pointsValue > 0 ? pointsValue : null,
     icon: escapeTitle(entry.icon) || "medal",
@@ -642,20 +640,25 @@ function queueBadgeAchievements(badgeInput, options = {}) {
   if (!list || list.length === 0) return;
   const eyebrow =
     sanitizeAchievementText(options.eyebrow || "") || ACHIEVEMENT_EYEBROW;
-  const hubSubtitle = sanitizeAchievementText(ACHIEVEMENT_SUBTITLE_TEXT);
+  const fallbackSubtitle = sanitizeAchievementText(ACHIEVEMENT_TITLE_TEXT);
   list.forEach((badge, index) => {
     if (!badge) return;
     const resolvedBadge =
       typeof badge === "string" ? (typeof badgeById === "function" ? badgeById(badge) : null) : badge;
     if (!resolvedBadge) return;
+    const badgeName =
+      typeof resolvedBadge.title === "string" && resolvedBadge.title.trim().length > 0
+        ? resolvedBadge.title.trim()
+        : "";
+    const subtitleText = sanitizeAchievementText(badgeName) || fallbackSubtitle;
     queueAchievementToast({
       id:
         typeof resolvedBadge.id === "string" && resolvedBadge.id.trim().length > 0
           ? `${resolvedBadge.id}-${index}-${Date.now()}`
           : undefined,
       eyebrow,
-      title: resolvedBadge.title || "Badge unlocked",
-      subtitle: hubSubtitle,
+      title: ACHIEVEMENT_TITLE_TEXT,
+      subtitle: subtitleText,
       points: resolvedBadge.points,
       icon: resolvedBadge.icon || "medal",
       tone: resolvedBadge.tone || "emerald"
@@ -3306,4 +3309,5 @@ function alignBadgeEdgesInContainer(container) {
     }
   });
 }
+
 
