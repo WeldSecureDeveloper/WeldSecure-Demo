@@ -14,7 +14,7 @@
     box-shadow: 0 30px 70px rgba(15, 23, 42, 0.15);
     display: flex;
     flex-direction: column;
-    gap: 2.5rem;
+    gap: 2rem;
   }
 
   .badge-experiments__hero {
@@ -78,10 +78,52 @@
     letter-spacing: 0;
   }
 
+  .badge-experiments__key {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    background: rgba(255, 255, 255, 0.85);
+    padding: 1.25rem;
+    border-radius: 1.25rem;
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+  }
+
+  .progression-key__item {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.75rem 0.25rem;
+  }
+
+  .progression-key__swatch {
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 999px;
+    display: inline-flex;
+  }
+
+  .progression-key__text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .progression-key__text strong {
+    font-size: 0.9rem;
+    color: #0f172a;
+  }
+
+  .progression-key__text span {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #475569;
+  }
+
   .badge-experiments__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.25rem;
   }
 
   .badge-experiments__card {
@@ -134,6 +176,22 @@
     transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
 
+  .badge-tier__arc {
+    position: absolute;
+    top: -0.15rem;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    fill: none;
+    pointer-events: none;
+  }
+
+  .badge-tier__arc text {
+    font-size: 0.6rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    fill: rgba(255, 255, 255, 0.95);
+  }
   .badge-tier:hover {
     transform: scale(1.08);
     box-shadow: 0 25px 45px rgba(79, 70, 229, 0.25);
