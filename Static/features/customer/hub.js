@@ -748,32 +748,7 @@ function renderCustomerHub(state) {
   `
     : "";
 
-  return `
-    <header class="customer-hero">
-      <h1>Good day, ${WeldUtil.escapeHtml(state.customer.name)}</h1>
-      <p>Your vigilance is fuelling a safer inbox for everyone at Evergreen Capital.</p>
-    </header>
-    <div class="customer-hero-actions">
-      ${leaderboardSnapshotCard}
-      <div class="customer-hero-actions__panel customer-hero-actions__panel--report">
-        <div class="customer-hero-actions__main">
-          <button class="button-pill button-pill--primary customer-hero-actions__button" id="customer-report-button">Report other suspicious activity</button>
-          <p class="customer-hero-actions__description">Log smishing, quishing, or any other suspicious behaviour you come across so the security team can jump on it.</p>
-        </div>
-        <div class="customer-hero-actions__meta">
-          <button
-            type="button"
-            class="button-pill customer-hero-actions__history"
-            id="customer-report-history-button"
-            data-route="customer-reports"
-            data-report-filter="other"
-          >
-            Other report history
-          </button>
-          <p class="customer-hero-actions__history-note">Each submission grants +20 pts immediately. Use Other report history to track how non-email incidents progress and when bonus points land.</p>
-        </div>
-      </div>
-    </div>
+  const pointsStripMarkup = `
     <section class="customer-section customer-section--points points-strip">
       <article class="points-card" style="background: linear-gradient(135deg, #6d28d9, #4338ca);">
         <div class="points-card__chip points-card__chip--interactive">
@@ -822,6 +797,35 @@ function renderCustomerHub(state) {
       </article>
       ${bonusScaleHtml}
     </section>
+  `;
+
+  return `
+    <header class="customer-hero">
+      <h1>Good day, ${WeldUtil.escapeHtml(state.customer.name)}</h1>
+      <p>Your vigilance is fuelling a safer inbox for everyone at Evergreen Capital.</p>
+    </header>
+    ${pointsStripMarkup}
+    <div class="customer-hero-actions">
+      ${leaderboardSnapshotCard}
+      <div class="customer-hero-actions__panel customer-hero-actions__panel--report">
+        <div class="customer-hero-actions__main">
+          <button class="button-pill button-pill--primary customer-hero-actions__button" id="customer-report-button">Report other suspicious activity</button>
+          <p class="customer-hero-actions__description">Log smishing, quishing, or any other suspicious behaviour you come across so the security team can jump on it.</p>
+        </div>
+        <div class="customer-hero-actions__meta">
+          <button
+            type="button"
+            class="button-pill customer-hero-actions__history"
+            id="customer-report-history-button"
+            data-route="customer-reports"
+            data-report-filter="other"
+          >
+            Other report history
+          </button>
+          <p class="customer-hero-actions__history-note">Each submission grants +20 pts immediately. Use Other report history to track how non-email incidents progress and when bonus points land.</p>
+        </div>
+      </div>
+    </div>
     ${
       showBadges
         ? `<section class="customer-section customer-section--badges">
