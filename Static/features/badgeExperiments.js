@@ -5,8 +5,21 @@
   const AppData = window.AppData || {};
   const { WeldUtil } = window;
   const badgeIconBackdrops = AppData.BADGE_ICON_BACKDROPS || {};
-  const iconPaths = AppData.ICON_PATHS || {};
   const difficultyOrder = ["Starter", "Rising", "Skilled", "Expert", "Legendary"];
+  const iconBasePath = "svg/Laura_Reen";
+  const lauraReenIcons = [
+    "activity",
+    "award",
+    "bottle",
+    "cup",
+    "finish",
+    "mountain",
+    "ok",
+    "podium",
+    "smartwatch",
+    "torch",
+    "watch"
+  ];
 
   features.badgeExperiments = {
     render(container, appState) {
@@ -92,8 +105,7 @@
   }
 
   function renderBadgeIconImage(badge) {
-    const iconKey = typeof badge.icon === "string" && iconPaths[badge.icon] ? badge.icon : "badge";
-    const iconSrc = iconPaths[iconKey] || iconPaths.badge || "";
+    const iconSrc = typeof badge.labIcon === "string" ? badge.labIcon : "";
     const rawInitial =
       typeof badge.title === "string" && badge.title.trim().length > 0 ? badge.title.trim().charAt(0) : "B";
     const safeInitial = escapeHtml(rawInitial.toUpperCase());
@@ -156,8 +168,15 @@
       .slice(0, 10)
       .map((badge, index) => ({
         ...badge,
-        level: index + 1
+        level: index + 1,
+        labIcon: getLabIconForLevel(index)
       }));
+  }
+
+  function getLabIconForLevel(levelIndex) {
+    if (!lauraReenIcons.length) return "";
+    const iconName = lauraReenIcons[levelIndex % lauraReenIcons.length];
+    return `${iconBasePath}/${iconName}.svg`;
   }
 
   function getDifficultyRank(value) {
