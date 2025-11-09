@@ -154,9 +154,10 @@
       const lockedPaths =
         '<path d="M8 10V7a4 4 0 018 0v3" stroke-linecap="round" stroke-linejoin="round"/><rect x="6" y="10" width="12" height="10" rx="2" fill="none"/><path d="M12 14v2" stroke-linecap="round" stroke-linejoin="round"/>';
       const svgPaths = variant === "unlock" ? unlockedPaths : lockedPaths;
+      const viewBox = variant === "unlock" ? "-2 0 26 24" : "0 0 24 24";
       return `
         <span class="customer-badge-grid__status-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <svg viewBox="${viewBox}" fill="none" stroke="currentColor" stroke-width="1.5">
             ${svgPaths}
           </svg>
         </span>
