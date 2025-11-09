@@ -1,0 +1,308 @@
+@layer features {
+  .badge-experiments {
+    font-family:
+      "Poppins",
+      "Rubik",
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+    border-radius: 1.5rem;
+    padding: 2.5rem;
+    box-shadow: 0 30px 70px rgba(15, 23, 42, 0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  .badge-experiments__hero {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    align-items: stretch;
+    justify-content: space-between;
+  }
+
+  .badge-experiments__intro {
+    flex: 1 1 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    color: var(--color-text-primary);
+  }
+
+  .badge-experiments__eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    font-size: 0.75rem;
+    color: #6366f1;
+  }
+
+  .badge-experiments__intro h1 {
+    margin: 0;
+    font-size: clamp(2.2rem, 3.4vw, 3rem);
+    line-height: 1.1;
+  }
+
+  .badge-experiments__intro p {
+    margin: 0;
+    color: var(--color-text-muted);
+    line-height: 1.65;
+  }
+
+  .badge-experiments__stats {
+    flex: 0 0 260px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+    background: rgba(255, 255, 255, 0.75);
+    border-radius: 1.2rem;
+    padding: 1.5rem;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  }
+
+  .badge-experiments__stats article {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #475569;
+  }
+
+  .badge-experiments__stats strong {
+    font-size: 2rem;
+    color: #111827;
+    letter-spacing: 0;
+  }
+
+  .badge-experiments__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .badge-experiments__card {
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 1.5rem;
+    padding: 1.75rem;
+    box-shadow: 0 25px 45px rgba(15, 23, 42, 0.12);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .badge-experiments__card footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .badge-experiments__card strong {
+    font-size: 1.1rem;
+    color: #0f172a;
+  }
+
+  .badge-experiments__card p {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .badge-experiments__tier-label {
+    font-size: 0.8rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #6366f1;
+  }
+
+  .badge-tier {
+    width: 6rem;
+    height: 6rem;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    color: #fff;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .badge-tier:hover {
+    transform: scale(1.08);
+    box-shadow: 0 25px 45px rgba(79, 70, 229, 0.25);
+  }
+
+  .badge-tier__icon {
+    width: 2.4rem;
+    height: 2.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: badge-tier-pulse 2.5s ease-in-out infinite;
+  }
+
+  .badge-tier__label {
+    position: absolute;
+    bottom: 0.55rem;
+    font-size: 0.55rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .badge-tier__shine {
+    position: absolute;
+    top: 0;
+    left: -150%;
+    width: 220%;
+    height: 100%;
+    background: linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.35) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    transform: skewX(-20deg);
+    animation: badge-tier-shine 6s linear infinite;
+  }
+
+  .badge-tier__particles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .badge-tier__particle {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.65);
+    opacity: 0;
+    animation: none;
+  }
+
+  .badge-tier:is(:hover, :focus-visible) .badge-tier__particle {
+    animation: badge-tier-float 2.2s ease-in-out infinite;
+  }
+
+  .badge-experiments__catalogue {
+    margin-top: 1.5rem;
+  }
+
+  .badge-experiments__fallback {
+    padding: 2rem;
+    border-radius: 1rem;
+    background: rgba(15, 23, 42, 0.08);
+    text-align: center;
+  }
+
+  .badge-tier--diamond {
+    background: linear-gradient(135deg, #b3fffc 0%, #48aaad 100%);
+    box-shadow: 0 10px 20px rgba(72, 170, 173, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
+  }
+
+  .badge-tier--platinum {
+    background: linear-gradient(135deg, #e5e5e5 0%, #b7b7b7 100%);
+    box-shadow: 0 10px 20px rgba(183, 183, 183, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
+  }
+
+  .badge-tier--gold {
+    background: linear-gradient(135deg, #f9d423 0%, #e2a139 100%);
+    box-shadow: 0 10px 20px rgba(242, 185, 65, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
+  }
+
+  .badge-tier--silver {
+    background: linear-gradient(135deg, #e3e3e3 0%, #b8b8b8 100%);
+    box-shadow: 0 10px 20px rgba(184, 184, 184, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  .badge-tier--bronze {
+    background: linear-gradient(135deg, #d1913c 0%, #a16522 100%);
+    box-shadow: 0 10px 20px rgba(161, 101, 34, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
+  }
+
+  .badge-tier--ruby {
+    background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+    box-shadow: 0 10px 20px rgba(255, 75, 43, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
+  }
+
+  .badge-tier--sapphire {
+    background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+    box-shadow: 0 10px 20px rgba(33, 147, 176, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
+  }
+
+  .badge-tier--emerald {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    box-shadow: 0 10px 20px rgba(17, 153, 142, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
+  }
+
+  .badge-tier--amethyst {
+    background: linear-gradient(135deg, #9d50bb 0%, #6e48aa 100%);
+    box-shadow: 0 10px 20px rgba(110, 72, 170, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
+  }
+
+  .badge-tier--obsidian {
+    background: linear-gradient(135deg, #434343 0%, #000000 100%);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3), inset 0 -3px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  @keyframes badge-tier-float {
+    0% {
+      transform: translateY(0) scale(1);
+      opacity: 0;
+    }
+    20% {
+      opacity: 1;
+    }
+    80% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(-20px) scale(0.9);
+      opacity: 0;
+    }
+  }
+
+  @keyframes badge-tier-pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.08);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes badge-tier-shine {
+    0% {
+      left: -150%;
+    }
+    60% {
+      left: 130%;
+    }
+    100% {
+      left: 130%;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .badge-experiments {
+      padding: 1.75rem;
+    }
+
+    .badge-experiments__hero {
+      flex-direction: column;
+    }
+
+    .badge-experiments__stats {
+      width: 100%;
+    }
+  }
+}
