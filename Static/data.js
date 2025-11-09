@@ -794,6 +794,15 @@ Object.assign(AppData, {
   "vanguard-veteran",
   "sentinel-summit"
 ],
+  CUSTOMER_BADGE_UNLOCKS: [
+  { id: "resilience-ranger", achievedAt: "2025-03-14T10:45:00Z" },
+  { id: "zero-day-zeal", achievedAt: "2025-03-02T09:10:00Z" },
+  { id: "automation-ally", achievedAt: "2025-02-21T16:30:00Z" },
+  { id: "bullseye-breaker", achievedAt: "2025-02-12T08:15:00Z" },
+  { id: "golden-signal", achievedAt: "2025-02-28T08:40:00Z" },
+  { id: "signal-sculptor", achievedAt: "2025-02-05T13:20:00Z" },
+  { id: "hub-hopper", achievedAt: "2025-03-18T12:05:00Z", highlight: "recent" }
+],
   DEFAULT_QUESTS: [
   {
     id: "phish-flash",

@@ -16,8 +16,17 @@
       return null;
     }
 
-    const { MessageStatus, WeldUtil, formatNumber, formatDateTime, relativeTime, getState } = shared;
+    const { AppData, MessageStatus, WeldUtil, formatNumber, formatDateTime, relativeTime, getState } = shared;
     const HUB_REWARD_PREVIEW_LIMIT = 3;
+
+    function formatShowcaseDate(timestamp) {
+      if (!timestamp) return "";
+      const date = new Date(timestamp);
+      if (Number.isNaN(date.getTime())) {
+        return formatDateTime(timestamp);
+      }
+      return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+    }
     const HUB_QUEST_PREVIEW_LIMIT = 3;
     const QUEST_PREVIEW_DIFFICULTY_ORDER = ["starter", "intermediate", "advanced"];
 
@@ -581,16 +590,8 @@ function renderCustomerHub(state) {
     .join("");
 
   const rarityOrder = ["Legendary", "Expert", "Skilled", "Rising", "Starter"];
-  const demoBadgeAchievements = [
-    { id: "resilience-ranger", achievedAt: "2025-03-14T10:45:00Z" },
-    { id: "zero-day-zeal", achievedAt: "2025-03-02T09:10:00Z" },
-    { id: "automation-ally", achievedAt: "2025-02-21T16:30:00Z" },
-    { id: "bullseye-breaker", achievedAt: "2025-02-12T08:15:00Z" },
-    { id: "golden-signal", achievedAt: "2025-02-28T08:40:00Z" },
-    { id: "signal-sculptor", achievedAt: "2025-02-05T13:20:00Z" },
-    { id: "hub-hopper", achievedAt: "2025-03-18T12:05:00Z", highlight: "recent" }
-  ];
-  const demoBadges = demoBadgeAchievements
+  const badgeUnlockEntries = Array.isArray(AppData?.CUSTOMER_BADGE_UNLOCKS) ? AppData.CUSTOMER_BADGE_UNLOCKS : [];
+  const demoBadges = badgeUnlockEntries
     .map(entry => {
       const badge = publishedBadges.find(item => item.id === entry.id);
       if (!badge) return null;
@@ -628,11 +629,9 @@ function renderCustomerHub(state) {
     : publishedBadges.slice();
   const displayTopBadges = topRarityBadges.length > 0 ? topRarityBadges : fallbackTopBadges.slice(0, 5);
   const renderBadgeShowcaseItem = (badge, extraClass = "") => {
-    const achievedDate = badge?.achievedAt ? new Date(badge.achievedAt) : null;
+    const displayDate = badge?.achievedAt ? formatShowcaseDate(badge.achievedAt) : "";
     const metaMarkup =
-      achievedDate && !Number.isNaN(achievedDate.getTime())
-        ? `<span class="badge-showcase__meta">Unlocked ${WeldUtil.escapeHtml(formatDateTime(badge.achievedAt))}</span>`
-        : "";
+      displayDate ? `<span class="badge-showcase__meta">Unlocked ${WeldUtil.escapeHtml(displayDate)}</span>` : "";
     return `
       <div class="badge-showcase__item${extraClass ? ` ${extraClass}` : ""}" role="listitem">
         ${renderHubBadgeCard(badge)}

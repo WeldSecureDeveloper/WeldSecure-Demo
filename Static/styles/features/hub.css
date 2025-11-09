@@ -83,14 +83,21 @@
 }
 
 .reward-grid--hub {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, var(--customer-hub-card-max-width, 280px)));
+  justify-content: flex-start;
+  justify-items: start;
   align-items: stretch;
   gap: 1.5rem;
   margin-top: 1.25rem;
   width: 100%;
   padding: 0 1rem;
+}
+
+@media (max-width: 1200px) {
+  .reward-grid--hub {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
 }
 
 .reward-grid--catalogue {
@@ -105,10 +112,9 @@
 }
 
 .reward-grid--catalogue.reward-grid--hub {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: stretch;
+  display: grid;
+  justify-content: flex-start;
+  justify-items: start;
 }
 
 .reward-grid--catalogue {

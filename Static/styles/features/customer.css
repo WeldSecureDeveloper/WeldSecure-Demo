@@ -403,11 +403,35 @@
     linear-gradient(135deg, rgba(251, 191, 36, 0.18), rgba(249, 115, 22, 0.12));
   border: none;
 }
+.customer-section--rewards .reward-grid--hub {
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(
+      min(220px, var(--customer-hub-card-max-width, 280px)),
+      var(--customer-hub-card-max-width, 280px)
+    )
+  );
+  justify-content: flex-start;
+  justify-items: start;
+  width: 100%;
+}
 .customer-section--quests {
   background:
     linear-gradient(180deg, rgba(240, 249, 255, 0.7) 0%, rgba(255, 255, 255, 0.98) 26%),
     linear-gradient(135deg, rgba(110, 231, 183, 0.28), rgba(56, 189, 248, 0.2));
   border: none;
+}
+.customer-section--quests .quest-grid--hub {
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(
+      min(220px, var(--customer-hub-card-max-width, 280px)),
+      var(--customer-hub-card-max-width, 280px)
+    )
+  );
+  justify-content: flex-start;
+  justify-items: start;
+  width: 100%;
 }
 .customer-section--badges {
   background:
@@ -1139,16 +1163,112 @@
 }
 
 .customer-section--badges-all {
+  margin-top: 2rem;
   overflow: visible;
+  background: var(--color-bg-surface);
+  background-image: none;
+  border: 1px solid var(--color-border-mid);
+  box-shadow: var(--shadow-elevated);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.customer-section--badges-all::after {
+  content: none;
+}
+
+.customer-badge-filter {
+  margin-top: 0;
+  gap: 0.65rem;
+}
+
+.customer-badge-filter .badge-filter__item[disabled] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.customer-badge-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.customer-badge-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.customer-badge-group__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.customer-badge-group__title {
+  margin: 0;
+  font-size: 1.28rem;
+  color: var(--color-text-primary);
+}
+
+.badge-progress-filter__label {
+  text-transform: capitalize;
+}
+
+.badge-progress-filter__count {
+  font-size: 0.95rem;
+  color: var(--color-text-primary);
 }
 
 .customer-badge-grid__item {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
+  gap: 0.85rem;
 }
 
-.customer-section--badges-all {
-  margin-top: 2rem;
+.customer-badge-grid__status {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-soft);
+  background: rgba(148, 163, 184, 0.16);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.customer-badge-grid__status time,
+.customer-badge-grid__status-detail {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.customer-badge-grid__status-icon {
+  display: inline-flex;
+  width: 1.25rem;
+  height: 1.25rem;
+  align-items: center;
+  justify-content: center;
+  color: #4338ca;
+  margin-left: 0.45rem;
+}
+
+.customer-badge-grid__status-icon svg {
+  width: 100%;
+  height: 100%;
+  transform: translateX(4px);
+}
+
+.customer-detail__empty--inline {
+  text-align: left;
+  padding: 1.5rem;
 }
 }
 

@@ -164,6 +164,7 @@
       questStatusFilter: null,
       badgeFilter: null,
       badgeStatusFilter: null,
+      customerBadgeAvailabilityFilter: null,
       settingsOpen: false,
       settingsCategory: "reporter",
       directorySelection: {
@@ -900,6 +901,10 @@
         const normalized = normalizeFilter(value);
         return normalized === "published" || normalized === "unpublished" ? normalized : null;
       };
+      const normalizeAvailabilityFilter = value => {
+        const normalized = normalizeFilter(value);
+        return normalized === "unlocked" || normalized === "locked" ? normalized : null;
+      };
       const normalizeReportFilter = value => {
         const normalized = normalizeFilter(value);
         return normalized === "other" ? "other" : null;
@@ -911,6 +916,9 @@
       mergedMeta.questStatusFilter = normalizeStatusFilter(mergedMeta.questStatusFilter);
       mergedMeta.badgeFilter = normalizeFilter(mergedMeta.badgeFilter);
       mergedMeta.badgeStatusFilter = normalizeStatusFilter(mergedMeta.badgeStatusFilter);
+      mergedMeta.customerBadgeAvailabilityFilter = normalizeAvailabilityFilter(
+        mergedMeta.customerBadgeAvailabilityFilter
+      );
       if (Array.isArray(mergedMeta.lastBadgeIds)) {
         mergedMeta.lastBadgeIds = mergedMeta.lastBadgeIds
           .map(id => {

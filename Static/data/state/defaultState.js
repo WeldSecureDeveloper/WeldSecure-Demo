@@ -96,6 +96,7 @@
     "questStatusFilter": null,
     "badgeFilter": null,
     "badgeStatusFilter": null,
+    "customerBadgeAvailabilityFilter": null,
     "settingsOpen": false,
     "settingsCategory": "reporter",
     "directorySelection": {

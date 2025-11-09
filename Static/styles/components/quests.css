@@ -18,12 +18,20 @@
 }
 
 .quest-grid--hub {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, var(--customer-hub-card-max-width, 280px)));
+  justify-content: flex-start;
+  justify-items: start;
   align-items: stretch;
   gap: 1.5rem;
   margin-top: 1.25rem;
+  width: 100%;
+}
+
+@media (max-width: 1200px) {
+  .quest-grid--hub {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
 }
 
 .quest-card {
