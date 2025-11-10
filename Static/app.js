@@ -133,6 +133,7 @@ const ACHIEVEMENT_TRIGGER_DELAY = 600;
 const ACHIEVEMENT_DISPLAY_MS = 6200;
 const ACHIEVEMENT_EXIT_DURATION_MS = 750;
 const ACHIEVEMENT_LEAVE_CLEANUP_MS = 750;
+const ACHIEVEMENT_EXIT_CLEANUP_BUFFER_MS = 120;
 const ACHIEVEMENT_BLINK_DELAY = 1400;
 const ACHIEVEMENT_COLLAPSE_LEAD_MS = 700;
 const ACHIEVEMENT_SUBTITLE_MAX_LENGTH = 54;
@@ -154,7 +155,9 @@ const achievementOverlayState = {
   timeline: null,
   paused: false,
   blinkFired: false,
-  collapseFired: false
+  collapseFired: false,
+  exitAnimationTarget: null,
+  exitAnimationHandler: null
 };
 
 function ensureAchievementFlags() {
@@ -495,6 +498,7 @@ function clearAchievementTimers() {
     window.clearTimeout(achievementOverlayState.cleanupTimer);
     achievementOverlayState.cleanupTimer = null;
   }
+  unbindAchievementExitListener();
   if (achievementOverlayState.blinkTimer) {
     window.clearTimeout(achievementOverlayState.blinkTimer);
     achievementOverlayState.blinkTimer = null;
@@ -509,11 +513,82 @@ function clearAchievementTimers() {
   achievementOverlayState.collapseFired = false;
   if (host) {
     host.classList.remove(
+      "achievement-overlay--leaving",
       "achievement-overlay--blink",
       "achievement-overlay--collapsing",
       "achievement-overlay--paused"
     );
   }
+}
+
+function unbindAchievementExitListener() {
+  const { exitAnimationTarget, exitAnimationHandler } = achievementOverlayState;
+  if (exitAnimationTarget && exitAnimationHandler) {
+    exitAnimationTarget.removeEventListener("animationend", exitAnimationHandler);
+  }
+  achievementOverlayState.exitAnimationTarget = null;
+  achievementOverlayState.exitAnimationHandler = null;
+}
+
+function finalizeAchievementExit(entryId) {
+  const host = achievementOverlayState.host;
+  if (!host) return;
+  if (!entryId || host.dataset.activeId === entryId) {
+    host.innerHTML = "";
+    host.removeAttribute("data-active-id");
+    host.setAttribute("aria-hidden", "true");
+    host.tabIndex = -1;
+  }
+  host.classList.remove(
+    "achievement-overlay--leaving",
+    "achievement-overlay--visible",
+    "achievement-overlay--blink",
+    "achievement-overlay--collapsing",
+    "achievement-overlay--paused"
+  );
+  achievementOverlayState.active = null;
+  achievementOverlayState.timeline = null;
+  achievementOverlayState.paused = false;
+  achievementOverlayState.cleanupTimer = null;
+  processAchievementQueue();
+}
+
+function scheduleAchievementExitCleanup(entryId) {
+  // Wait for the slideDown exit animation to finish before tearing down the DOM.
+  const host = achievementOverlayState.host;
+  if (!host) return;
+  const fallbackDelay = Math.max(
+    0,
+    ACHIEVEMENT_LEAVE_CLEANUP_MS + ACHIEVEMENT_EXIT_CLEANUP_BUFFER_MS
+  );
+  let resolved = false;
+  const complete = () => {
+    if (resolved) return;
+    resolved = true;
+    if (achievementOverlayState.cleanupTimer) {
+      window.clearTimeout(achievementOverlayState.cleanupTimer);
+      achievementOverlayState.cleanupTimer = null;
+    }
+    unbindAchievementExitListener();
+    finalizeAchievementExit(entryId);
+  };
+  const wrapper = host.querySelector("[data-achievement-toast]");
+  if (wrapper) {
+    const handler = event => {
+      if (event.animationName !== "slideDown") {
+        return;
+      }
+      complete();
+    };
+    unbindAchievementExitListener();
+    wrapper.addEventListener("animationend", handler);
+    achievementOverlayState.exitAnimationTarget = wrapper;
+    achievementOverlayState.exitAnimationHandler = handler;
+  }
+  achievementOverlayState.cleanupTimer = window.setTimeout(() => {
+    achievementOverlayState.cleanupTimer = null;
+    complete();
+  }, fallbackDelay);
 }
 
 function hideAchievement(entryId) {
@@ -542,26 +617,7 @@ function hideAchievement(entryId) {
     achievementOverlayState.collapseTimer = null;
   }
   host.classList.add("achievement-overlay--leaving");
-  achievementOverlayState.cleanupTimer = window.setTimeout(() => {
-    if (host.dataset.activeId === entryId) {
-      host.innerHTML = "";
-      host.removeAttribute("data-active-id");
-      host.setAttribute("aria-hidden", "true");
-      host.tabIndex = -1;
-    }
-    host.classList.remove(
-      "achievement-overlay--leaving",
-      "achievement-overlay--visible",
-      "achievement-overlay--blink",
-      "achievement-overlay--collapsing",
-      "achievement-overlay--paused"
-    );
-    achievementOverlayState.active = null;
-    achievementOverlayState.timeline = null;
-    achievementOverlayState.paused = false;
-    achievementOverlayState.cleanupTimer = null;
-    processAchievementQueue();
-  }, ACHIEVEMENT_LEAVE_CLEANUP_MS);
+  scheduleAchievementExitCleanup(entryId);
 }
 
 function displayAchievement(entry) {
