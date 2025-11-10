@@ -1,31 +1,31 @@
 # Phishing Simulation Module (WeldSecure Demo)
 
-Reference checklist for wiring a phishing simulation persona route into the static demo without violating the layered architecture rules. Treat this as the blueprint before writing any code.
+Reference blueprint for wiring a phishing simulation persona route into the static demo while honoring the layered architecture. Use this doc before implementing any code so the feature slots cleanly into the existing structure.
 
 ---
 
 ## 1. Scenario & Outcomes
-- **Audience:** Admin persona reviewing campaign telemetry plus department-level readiness.
-- **Narrative hook:** Show how WeldSecure auto-targets departments (see `Static/data/directory/orgStructure.js`) and turns campaign insights into next actions (badge drops, reset scripts, service desk requests).
-- **Desired interactions:**
+- **Audience:** Admin persona reviewing simulation telemetry plus department readiness.
+- **Narrative hook:** WeldSecure auto-targets org units from `Static/data/directory/orgStructure.js` and turns campaign insights into next steps (badges, reset scripts, service desk follow ups).
+- **Key interactions:**
   1. Campaign list with status, launch date, delivery coverage, and completion percentages.
-  2. Department drill-in panel with recent phish templates, click rates, and follow-up tasks.
-  3. "Simulate now" CTA that stages a mock launch (no real mutation yet; just queue state changes for the future implementation).
+  2. Department drill-in panel showing click/report rates, template history, and follow up tasks.
+  3. "Simulate now" CTA that stages a mock launch (no real side effects yet; future work will consume the queued entry).
 
 ---
 
 ## 2. Files & Contracts to Touch
 | Layer | Action |
 | --- | --- |
-| `Static/features/phishingSimulation.js` | New feature module exporting `{ render, attach, destroy }`, registered through `registry.js`. Keep DOM hooks scoped to `.phish-sim__*`. |
-| `Static/styles/features/phishingSimulation.css` | Route-scoped selectors wrapped in `@layer features`. Import via the features block in `Static/styles.css`. |
-| `Static/data/phishingSimulations.js` | Immutable dataset describing campaigns, templates, and department outcomes. Expose via `window.AppData.phishingSimulations`. |
-| `Static/state.js` | Add defaults for `activeCampaignId`, `selectedDepartmentId`, `simLaunchQueue`, etc. |
-| `Static/services/stateServices.js` | Mutators such as `selectPhishingCampaign`, `selectPhishingDepartment`, `queuePhishingLaunch`. |
-| `Static/components/appShell.js` | Add route entry in nav (label: "Phishing Sims"). Respect existing nav patterns. |
-| `Static/registry.js` | Register route slug `phishing-sims` -> module. Set default route if needed for demos. |
+| `Static/features/phishingSimulation.js` | New feature exposing `{ render, attach, destroy }`. Scope selectors to `.phish-sim__*` utilities and read data/state from injected args only. |
+| `Static/styles/features/phishingSimulation.css` | Route-scoped styles under `@layer features`. Import via the features block in `Static/styles.css` (after other feature sheets, before legacy fallbacks if any). |
+| `Static/data/phishingSimulations.js` | Immutable dataset describing campaigns, templates, and derived insights. Export through `window.AppData.phishingSimulations`. |
+| `Static/state.js` | Add default keys like `activeCampaignId`, `selectedDepartmentId`, `simLaunchQueue`, `lastSimFeedback`. |
+| `Static/services/stateServices.js` | Add declarative mutators such as `selectPhishingCampaign`, `selectPhishingDepartment`, `queuePhishingLaunch`. Each should set state via the shared helpers. |
+| `Static/components/appShell.js` | Register a nav link labeled "Phishing Sims" that routes via the registry entry. Follow existing nav data structure. |
+| `Static/registry.js` | Register slug `phishing-sims` -> feature module. Optionally set as default route for specific demos when needed. |
 
-**Guardrails honored:** No direct state mutation, no data literals inside the feature, CSS kept in scoped file, and registry-based routing per `architecture-overview.md`.
+Guardrails per `Static/docs/architecture-overview.md`: no direct state mutation, no inline data literals inside features, routing goes through the registry, CSS stays layered.
 
 ---
 
@@ -43,69 +43,92 @@ window.AppData.phishingSimulations = {
       engagement: { reported: 198, clicked: 22, ignored: 60 },
       followUps: ["reward-badge:finance-assurance", "reset-script:opsres"]
     },
-    ...
+    {
+      id: "sim-hr-benefits",
+      name: "Benefits Renewal Alert",
+      launchDate: "2025-11-06",
+      templateId: "template-benefits-refresh",
+      targets: ["people-experience"],
+      delivery: { sent: 95, delivered: 94, failed: 1 },
+      engagement: { reported: 70, clicked: 8, ignored: 16 },
+      followUps: ["training-module:people-experience"]
+    }
   ],
   templates: [
     { id: "template-wire-fraud", subject: "Treasury URGENT: Wire validation", vector: "email" },
+    { id: "template-benefits-refresh", subject: "Action required: renew benefits", vector: "email" },
     { id: "template-vendor-portal", subject: "Vendor portal MFA refresh", vector: "sms" }
-  ]
+  ],
+  historyByDepartment: {
+    "finance-assurance": [{ campaignId: "sim-q4-finance", clicked: 5, reported: 42 }],
+    "people-experience": [{ campaignId: "sim-hr-benefits", clicked: 8, reported: 70 }]
+  }
 };
 ```
-- Departments referenced by `targets` should match IDs in `DirectoryData.departments`. Use that file for friendly names and owners.
-- State defaults (all optional strings/arrays): `activeCampaignId`, `selectedDepartmentId`, `simLaunchQueue` (array of campaign IDs awaiting execution), `lastSimFeedback` (summary text shown after a mock launch).
-- Derive computed view models inside the feature (no global caches). Example: `const activeCampaign = WeldUtil.lookupById(AppData.phishingSimulations.campaigns, state.activeCampaignId || campaigns[0].id);`
+- Department IDs align with `DirectoryData.departments`. Reuse that file for labels, owners, and sync metadata.
+- Suggested state defaults in `state.js`:
+  ```js
+  phishingSimulation: {
+    activeCampaignId: null,
+    selectedDepartmentId: null,
+    simLaunchQueue: [],
+    lastSimFeedback: null
+  }
+  ```
+- In the feature, derive computed objects on the fly (e.g., `const campaigns = AppData.phishingSimulations.campaigns; const active = campaigns.find(...)`).
 
 ---
 
 ## 4. UI Structure (Render Plan)
-1. **Hero/status strip** - summarise live campaign count, average report rate, queued launches. Static HTML sourced from AppData + state.
-2. **Campaign list** - table or stacked cards sorted by launch date. Each entry exposes:
-   - Launch meta (date, template, owner).
+1. **Hero/status strip** - summarise active campaign count, average report rate, queued launches. Source numbers from AppData + current state.
+2. **Campaign list** - table or stacked cards sorted by launch date with:
+   - Launch meta (date, template, owner/department).
    - KPIs (delivered %, clicked %, reported %).
-   - Action buttons: "View Departments", "Simulate Again".
-3. **Department drill-in panel** - conditional block that renders when a campaign + department are both selected:
-   - Pull department metadata from `DirectoryData.departments`.
-   - Show template run history (AppData templates + synthetic history field).
+   - Actions: "View departments" (selects campaign) and "Simulate now" (queues launch).
+3. **Department drill-in panel** - shows when both campaign and department are selected:
+   - Department metadata (name, owner, sync type).
+   - Latest template runs plus sparkline placeholder for future charts.
    - CTA to trigger `queuePhishingLaunch`.
-4. **Insights drawer** - optional aside summarising follow-up tasks (badge drops, reset requests) to align with badges/customer modules later.
+4. **Insights drawer** - optional aside summarising follow up tasks from `followUps` plus placeholders for integration hooks (badges, reset scripts, service tickets).
 
-**Rendering rules:** Build strings with template literals, no direct DOM manipulation besides container injection. Keep copy centralised near dataset constants so translations live in one place.
+Render via template literals only. Inject markup as one string in `render()` and rely on `attach()` for DOM wiring. Keep copy centralised in the dataset or small helper maps near the top of the feature file.
 
 ---
 
 ## 5. Event Wiring & Services
 - `attach(container, state)` should:
-  - Bind click handlers via delegation on `.phish-sim__campaign` & `.phish-sim__department` elements.
-  - Call the new state services rather than mutating `window.Weld.state`.
-  - Dispatch a custom event `phishSim:queued` when a simulation is staged; useful for future cross-feature badges.
-- `destroy(container)` cleans up delegated listeners (store references on module scope to stay consistent with other features).
+  - Use event delegation on `.phish-sim__campaign` and `.phish-sim__department` elements.
+  - Call the new services (`selectPhishingCampaign`, `selectPhishingDepartment`, `queuePhishingLaunch`) rather than mutating `window.Weld.state`.
+  - Dispatch a custom event `phishSim:queued` after queueing a launch to keep future badge integrations simple.
+- `destroy(container)` removes delegated listeners, matching the pattern used in other features.
 
-Future gesture plan:
+Interaction plan:
 1. Selecting a campaign -> `stateServices.selectPhishingCampaign(id)`.
 2. Selecting a department row -> `stateServices.selectPhishingDepartment(id)`.
-3. Clicking "Simulate now" -> `stateServices.queuePhishingLaunch(id)` + push a toast-style alert into `lastSimFeedback`.
+3. Clicking "Simulate now" -> `stateServices.queuePhishingLaunch(id)` and store a short explainer string in `lastSimFeedback` for any toast/banner component.
 
 ---
 
 ## 6. Copy & Visual Hooks
-- Use badge colour tokens for status pills: success (reported), warning (clicked), neutral (ignored). Tokens live in `styles/base/tokens.css`.
-- Keep spacing consistent with `.card` component styles; reuse `.stat-pill` if available in `styles/components`.
-- When referencing departments, show owner display name from Directory data (ownerId -> person lookup) once people dataset exists; for now, render owner IDs plainly.
+- Status pills should use color tokens from `styles/base/tokens.css` (success for reported, warning for clicked, neutral for ignored).
+- Card shells can reuse `.card`, `.stat-pill`, and any shared grid helpers under `styles/components/`.
+- Department rows should display owner IDs until a people dataset exists; keep helper ready to map owner IDs once `DirectoryData.people` ships.
+- If tooltips or alerts are required, reuse existing utility components instead of creating new global styles.
 
 ---
 
 ## 7. Implementation Phases
-1. **Scaffold (Docs -> Data)** - Create dataset + state defaults + services + registry entry. Validate route loads with placeholder markup.
-2. **Render loop** - Build campaign list + drill-in UI, ensuring data flows only from AppData/state.
-3. **Event plumbing** - Wire handlers, queue-state interactions, toast copy.
-4. **Visual polish** - Finalise CSS layer, tokens, and responsive tweaks.
-5. **Cross-feature touchpoints** - Hook queued simulations into future badge/quest logic once their APIs exist.
+1. **Scaffold (Docs -> Data)** - Create dataset + state defaults + service methods + registry/nav entries. Render placeholder markup to validate routing.
+2. **Render loop** - Build campaign list, drill-in panel, and insights drawer using AppData/state only.
+3. **Event plumbing** - Wire click handlers, service calls, and custom events. Update `lastSimFeedback` for toast placeholder.
+4. **Visual polish** - Finalise CSS layer, tokens, and responsive tweaks across desktop/tablet breakpoints.
+5. **Cross-feature hooks** - Once badge or quest APIs exist, consume `simLaunchQueue` to trigger rewards or notifications.
 
 ---
 
 ## 8. Open Questions / Assumptions
-- Do we need historical trend graphs (sparklines) or is tabular data enough for the first iteration?
-- Should queued simulations surface under the Admin persona landing page or stay isolated here until automation is built?
-- Are we reusing the existing toast system from another feature, or do we need a lightweight inline alert component?
+- Do we need historical trend charts (e.g., sparklines) on day one, or can we start with textual summaries?
+- Should queued simulations appear on the Admin landing feature, or remain isolated until automation work lands?
+- Are we reusing an existing toast/alert component for `lastSimFeedback`, or should this module ship an inline banner?
 
-Document any answers here before implementing to keep Codex prompts scoped.
+Capture answers here before coding so prompts stay scoped and implementation stays predictable.
