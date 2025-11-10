@@ -183,6 +183,10 @@
     "phishing-sims": featureRoute("phishingSimulation", {
       templateMethods: ["render"],
       attachMethods: ["attach"]
+    }),
+    "phishing-designer": featureRoute("phishingDesigner", {
+      templateMethods: ["render"],
+      attachMethods: ["attach"]
     })
   };
 

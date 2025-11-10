@@ -14,6 +14,265 @@
     enabled: true,
     dismissedRoutes: {}
   };
+  const PHISHING_BLUEPRINTS = AppData.phishingBlueprints || {};
+  const DESIGNER_CHANNELS =
+    Array.isArray(AppData.PHISHING_CHANNELS) && AppData.PHISHING_CHANNELS.length > 0
+      ? AppData.PHISHING_CHANNELS.map(channel =>
+          typeof channel === "string" ? channel.trim().toLowerCase() : channel
+        ).filter(Boolean)
+      : ["email", "sms", "teams", "slack", "qr"];
+  const blueprintDefaultForm =
+    PHISHING_BLUEPRINTS.defaultForm && typeof PHISHING_BLUEPRINTS.defaultForm === "object"
+      ? PHISHING_BLUEPRINTS.defaultForm
+      : {};
+  const blueprintDefaultSender =
+    blueprintDefaultForm.sender && typeof blueprintDefaultForm.sender === "object"
+      ? blueprintDefaultForm.sender
+      : {};
+  const DEFAULT_DESIGNER_FORM = {
+    id: null,
+    templateId:
+      typeof blueprintDefaultForm.templateId === "string" && blueprintDefaultForm.templateId.trim().length > 0
+        ? blueprintDefaultForm.templateId.trim()
+        : null,
+    name: typeof blueprintDefaultForm.name === "string" ? blueprintDefaultForm.name : "",
+    status: "draft",
+    channel:
+      typeof blueprintDefaultForm.channel === "string" && blueprintDefaultForm.channel.trim().length > 0
+        ? blueprintDefaultForm.channel.trim().toLowerCase()
+        : DESIGNER_CHANNELS[0] || "email",
+    sender: {
+      displayName:
+        typeof blueprintDefaultSender.displayName === "string" && blueprintDefaultSender.displayName.trim().length > 0
+          ? blueprintDefaultSender.displayName.trim()
+          : "Security Desk",
+      address:
+        typeof blueprintDefaultSender.address === "string" && blueprintDefaultSender.address.trim().length > 0
+          ? blueprintDefaultSender.address.trim()
+          : "security@weldsecure.com"
+    },
+    subject: typeof blueprintDefaultForm.subject === "string" ? blueprintDefaultForm.subject : "",
+    body: typeof blueprintDefaultForm.body === "string" ? blueprintDefaultForm.body : "",
+    signalIds: Array.isArray(blueprintDefaultForm.signalIds)
+      ? blueprintDefaultForm.signalIds.slice()
+      : Array.isArray(blueprintDefaultForm.defaultSignals)
+      ? blueprintDefaultForm.defaultSignals.slice()
+      : [],
+    targetIds: Array.isArray(blueprintDefaultForm.targetIds)
+      ? blueprintDefaultForm.targetIds.slice()
+      : Array.isArray(blueprintDefaultForm.suggestedTargets)
+      ? blueprintDefaultForm.suggestedTargets.slice()
+      : [],
+    schedule:
+      typeof blueprintDefaultForm.schedule === "string" && blueprintDefaultForm.schedule.trim().length > 0
+        ? blueprintDefaultForm.schedule
+        : null,
+    ownerId:
+      typeof blueprintDefaultForm.ownerId === "string" && blueprintDefaultForm.ownerId.trim().length > 0
+        ? blueprintDefaultForm.ownerId.trim()
+        : blueprintDefaultSender.address || "amelia-reed"
+  };
+  const blueprintTemplates = Array.isArray(PHISHING_BLUEPRINTS.templates) ? PHISHING_BLUEPRINTS.templates : [];
+  const designerTokens = Array.isArray(PHISHING_BLUEPRINTS.tokens) ? PHISHING_BLUEPRINTS.tokens : [];
+  const designerId = prefix =>
+    WeldUtil && typeof WeldUtil.generateId === "function"
+      ? WeldUtil.generateId(prefix || "phish-draft")
+      : `${prefix || "phish-draft"}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6)
+          .toString(36)
+          .padStart(4, "0")}`;
+  const normalizeDesignerKey = value => {
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed : null;
+    }
+    if (Number.isFinite(value)) {
+      return String(value);
+    }
+    return null;
+  };
+  const normalizeDesignerChannel = (value, fallback = DESIGNER_CHANNELS[0] || "email") => {
+    if (typeof value === "string") {
+      const normalized = value.trim().toLowerCase();
+      if (DESIGNER_CHANNELS.includes(normalized)) {
+        return normalized;
+      }
+    }
+    return fallback;
+  };
+  const normalizeDesignerSchedule = value => {
+    if (!value) return null;
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      return value.toISOString();
+    }
+    if (typeof value === "string" && value.trim().length > 0) {
+      const parsed = new Date(value);
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed.toISOString();
+      }
+    }
+    return null;
+  };
+  const normalizeDesignerList = (list, fallback = []) => {
+    if (!Array.isArray(list)) {
+      return fallback.slice();
+    }
+    const seen = new Set();
+    const normalized = [];
+    list.forEach(item => {
+      const key = normalizeDesignerKey(item);
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      normalized.push(key);
+    });
+    return normalized;
+  };
+  const cloneDesignerForm = source => {
+    const base = {
+      ...DEFAULT_DESIGNER_FORM,
+      sender: { ...DEFAULT_DESIGNER_FORM.sender },
+      signalIds: Array.isArray(DEFAULT_DESIGNER_FORM.signalIds) ? DEFAULT_DESIGNER_FORM.signalIds.slice() : [],
+      targetIds: Array.isArray(DEFAULT_DESIGNER_FORM.targetIds) ? DEFAULT_DESIGNER_FORM.targetIds.slice() : []
+    };
+    if (!source || typeof source !== "object") {
+      return base;
+    }
+    const senderPatch =
+      source.sender && typeof source.sender === "object"
+        ? {
+            displayName:
+              typeof source.sender.displayName === "string" && source.sender.displayName.trim().length > 0
+                ? source.sender.displayName.trim()
+                : base.sender.displayName,
+            address:
+              typeof source.sender.address === "string" && source.sender.address.trim().length > 0
+                ? source.sender.address.trim()
+                : base.sender.address
+          }
+        : base.sender;
+    return {
+      ...base,
+      id: normalizeDesignerKey(source.id),
+      templateId: normalizeDesignerKey(source.templateId) || base.templateId,
+      name: typeof source.name === "string" ? source.name : base.name,
+      status: typeof source.status === "string" ? source.status : base.status,
+      channel: normalizeDesignerChannel(source.channel, base.channel),
+      sender: senderPatch,
+      subject: typeof source.subject === "string" ? source.subject : base.subject,
+      body: typeof source.body === "string" ? source.body : base.body,
+      signalIds: normalizeDesignerList(source.signalIds, base.signalIds),
+      targetIds: normalizeDesignerList(source.targetIds, base.targetIds),
+      schedule: normalizeDesignerSchedule(source.schedule),
+      ownerId:
+        typeof source.ownerId === "string" && source.ownerId.trim().length > 0
+          ? source.ownerId.trim()
+          : base.ownerId
+    };
+  };
+  const mergeDesignerForm = (current, patch) => {
+    if (!patch || typeof patch !== "object") {
+      return cloneDesignerForm(current);
+    }
+    const merged = {
+      ...current,
+      ...patch,
+      sender: {
+        ...(current && current.sender ? current.sender : DEFAULT_DESIGNER_FORM.sender),
+        ...(patch.sender && typeof patch.sender === "object" ? patch.sender : {})
+      }
+    };
+    if (patch.signalIds !== undefined) {
+      merged.signalIds = Array.isArray(patch.signalIds) ? patch.signalIds.slice() : [];
+    }
+    if (patch.targetIds !== undefined) {
+      merged.targetIds = Array.isArray(patch.targetIds) ? patch.targetIds.slice() : [];
+    }
+    return cloneDesignerForm(merged);
+  };
+  const ensureDesignerState = state => {
+    if (!state.phishingDesigner || typeof state.phishingDesigner !== "object") {
+      state.phishingDesigner = {
+        activeTemplateId: null,
+        drafts: [],
+        form: cloneDesignerForm(DEFAULT_DESIGNER_FORM),
+        validation: {}
+      };
+      return state.phishingDesigner;
+    }
+    const designer = state.phishingDesigner;
+    if (!Array.isArray(designer.drafts)) {
+      designer.drafts = [];
+    }
+    designer.form = cloneDesignerForm(designer.form);
+    if (!designer.validation || typeof designer.validation !== "object") {
+      designer.validation = {};
+    }
+    if (designer.activeTemplateId) {
+      designer.activeTemplateId = normalizeDesignerKey(designer.activeTemplateId);
+    }
+    return designer;
+  };
+  const validateDesignerForm = form => {
+    const errors = {};
+    if (!form.name || form.name.trim().length === 0) {
+      errors.name = "Name is required.";
+    }
+    if (!form.subject || form.subject.trim().length === 0) {
+      errors.subject = "Subject is required.";
+    }
+    if (!form.body || form.body.trim().length === 0) {
+      errors.body = "Body copy cannot be empty.";
+    }
+    if (!form.sender || !form.sender.displayName || form.sender.displayName.trim().length === 0) {
+      errors.senderDisplayName = "Sender display name required.";
+    }
+    if (!form.sender || !form.sender.address || form.sender.address.trim().length === 0) {
+      errors.senderAddress = "Sender address required.";
+    }
+    if (!form.channel) {
+      errors.channel = "Select a channel.";
+    }
+    if (!Array.isArray(form.signalIds) || form.signalIds.length === 0) {
+      errors.signalIds = "Select at least one signal.";
+    }
+    if (!Array.isArray(form.targetIds) || form.targetIds.length === 0) {
+      errors.targetIds = "Choose at least one target.";
+    }
+    return errors;
+  };
+  const findDraftById = (designerState, draftId) => {
+    if (
+      !designerState ||
+      !Array.isArray(designerState.drafts) ||
+      !draftId ||
+      typeof draftId !== "string"
+    ) {
+      return null;
+    }
+    return (
+      designerState.drafts.find(draft => draft && draft.id === draftId) || null
+    );
+  };
+  const blueprintTemplateById = templateId =>
+    blueprintTemplates.find(template => template && template.id === templateId) || null;
+  const ensureSimData = () => {
+    if (!AppData.phishingSimulations || typeof AppData.phishingSimulations !== "object") {
+      AppData.phishingSimulations = { campaigns: [], templates: [], historyByDepartment: {}, signalsByCampaign: {} };
+    }
+    const simData = AppData.phishingSimulations;
+    if (!Array.isArray(simData.campaigns)) {
+      simData.campaigns = [];
+    }
+    if (!Array.isArray(simData.templates)) {
+      simData.templates = [];
+    }
+    if (!simData.historyByDepartment || typeof simData.historyByDepartment !== "object") {
+      simData.historyByDepartment = {};
+    }
+    if (!simData.signalsByCampaign || typeof simData.signalsByCampaign !== "object") {
+      simData.signalsByCampaign = {};
+    }
+    return simData;
+  };
 
   function resolveState(providedState) {
     if (providedState && typeof providedState === "object") return providedState;
@@ -467,6 +726,250 @@
     saveState(state);
     renderShell();
   };
+
+  WeldServices.setPhishingDesignerForm = function setPhishingDesignerForm(patch, providedState) {
+    const state = resolveState(providedState);
+    if (!state) return { success: false, reason: "State missing." };
+    const designer = ensureDesignerState(state);
+    designer.form = mergeDesignerForm(designer.form, patch);
+    designer.activeTemplateId = designer.form.id || null;
+    designer.validation = validateDesignerForm(designer.form);
+    syncGlobalState(state);
+    saveState(state);
+    renderShell();
+    return { success: true, form: designer.form, validation: designer.validation };
+  };
+
+  WeldServices.createPhishingDraft = function createPhishingDraft(payload = {}, providedState) {
+    const state = resolveState(providedState);
+    if (!state) return { success: false, reason: "State missing." };
+    const designer = ensureDesignerState(state);
+    const mergedForm = mergeDesignerForm(designer.form, payload);
+    const validation = validateDesignerForm(mergedForm);
+    if (Object.keys(validation).length > 0) {
+      designer.validation = validation;
+      designer.form = mergedForm;
+      syncGlobalState(state);
+      saveState(state);
+      renderShell();
+      return { success: false, validation };
+    }
+    const nowIso = new Date().toISOString();
+    const draft = {
+      ...mergedForm,
+      id: mergedForm.id || designerId("phish-draft"),
+      status: "draft",
+      createdAt: nowIso,
+      updatedAt: nowIso,
+      lastPublishedAt: null
+    };
+    designer.drafts = [draft, ...designer.drafts.filter(existing => existing && existing.id !== draft.id)].slice(0, 12);
+    designer.form = cloneDesignerForm(draft);
+    designer.validation = {};
+    designer.activeTemplateId = draft.id;
+    syncGlobalState(state);
+    saveState(state);
+    renderShell();
+    return { success: true, draft };
+  };
+
+  WeldServices.updatePhishingDraft = function updatePhishingDraft(draftId, patch = {}, providedState) {
+    const state = resolveState(providedState);
+    if (!state) return { success: false, reason: "State missing." };
+    const designer = ensureDesignerState(state);
+    const normalizedId = normalizeDesignerKey(draftId) || designer.form.id;
+    const sourceDraft = normalizedId ? findDraftById(designer, normalizedId) : null;
+    const baseForm = sourceDraft || designer.form;
+    const mergedForm = mergeDesignerForm(baseForm, patch);
+    designer.form = mergedForm;
+    if (normalizedId) {
+      designer.activeTemplateId = normalizedId;
+      const targetIndex = designer.drafts.findIndex(draft => draft && draft.id === normalizedId);
+      if (targetIndex !== -1) {
+        designer.drafts[targetIndex] = {
+          ...designer.drafts[targetIndex],
+          ...mergedForm,
+          id: normalizedId,
+          updatedAt: new Date().toISOString()
+        };
+      }
+    }
+    designer.validation = validateDesignerForm(mergedForm);
+    syncGlobalState(state);
+    saveState(state);
+    renderShell();
+    return { success: true, form: designer.form, validation: designer.validation };
+  };
+
+  WeldServices.loadPhishingDraft = function loadPhishingDraft(draftId, providedState) {
+    const state = resolveState(providedState);
+    if (!state) return { success: false, reason: "State missing." };
+    const designer = ensureDesignerState(state);
+    const normalizedId = normalizeDesignerKey(draftId);
+    if (!normalizedId) {
+      return { success: false, reason: "Draft id missing." };
+    }
+    const draft = findDraftById(designer, normalizedId);
+    if (!draft) {
+      return { success: false, reason: "Draft not found." };
+    }
+    designer.form = cloneDesignerForm(draft);
+    designer.activeTemplateId = normalizedId;
+    designer.validation = validateDesignerForm(designer.form);
+    syncGlobalState(state);
+    saveState(state);
+    renderShell();
+    return { success: true, form: designer.form };
+  };
+
+  WeldServices.duplicatePhishingDraft = function duplicatePhishingDraft(draftId, providedState) {
+    const state = resolveState(providedState);
+    if (!state) return { success: false, reason: "State missing." };
+    const designer = ensureDesignerState(state);
+    const normalizedId = normalizeDesignerKey(draftId);
+    if (!normalizedId) {
+      return { success: false, reason: "Draft id missing." };
+    }
+    const draft = findDraftById(designer, normalizedId);
+    if (!draft) {
+      return { success: false, reason: "Draft not found." };
+    }
+    const nowIso = new Date().toISOString();
+    const copyName = draft.name ? `${draft.name} copy` : "New simulation draft";
+    const duplicate = {
+      ...cloneDesignerForm({ ...draft, id: null }),
+      id: designerId("phish-draft"),
+      name: copyName,
+      status: "draft",
+      createdAt: nowIso,
+      updatedAt: nowIso,
+      lastPublishedAt: null
+    };
+    designer.drafts = [duplicate, ...designer.drafts].slice(0, 12);
+    designer.form = cloneDesignerForm(duplicate);
+    designer.validation = {};
+    designer.activeTemplateId = duplicate.id;
+    syncGlobalState(state);
+    saveState(state);
+    renderShell();
+    return { success: true, draft: duplicate };
+  };
+
+  WeldServices.applyPhishingTemplate = function applyPhishingTemplate(templateId, providedState) {
+    const state = resolveState(providedState);
+    if (!state) return { success: false, reason: "State missing." };
+    const template = blueprintTemplateById(templateId);
+    if (!template) {
+      return { success: false, reason: "Template not found." };
+    }
+    const designer = ensureDesignerState(state);
+    const form = cloneDesignerForm({
+      templateId: template.id,
+      name: template.name,
+      channel: template.defaultChannel,
+      subject: template.subject,
+      body: template.body,
+      signalIds: Array.isArray(template.defaultSignals) ? template.defaultSignals : [],
+      targetIds: Array.isArray(template.suggestedTargets) ? template.suggestedTargets : [],
+      id: null
+    });
+    form.status = "draft";
+    designer.form = form;
+    designer.activeTemplateId = template.id;
+    designer.validation = validateDesignerForm(form);
+    syncGlobalState(state);
+    saveState(state);
+    renderShell();
+    return { success: true, form };
+  };
+
+  WeldServices.publishPhishingDraft = function publishPhishingDraft(draftId, options = {}, providedState) {
+    const state = resolveState(providedState);
+    if (!state) return { success: false, reason: "State missing." };
+    const designer = ensureDesignerState(state);
+    const normalizedId = normalizeDesignerKey(draftId) || designer.form.id;
+    let draft = normalizedId ? findDraftById(designer, normalizedId) : null;
+    const mergedForm = mergeDesignerForm(draft || designer.form, options.patch || {});
+    const validation = validateDesignerForm(mergedForm);
+    if (Object.keys(validation).length > 0) {
+      designer.validation = validation;
+      designer.form = mergedForm;
+      syncGlobalState(state);
+      saveState(state);
+      renderShell();
+      return { success: false, validation };
+    }
+    const nowIso = new Date().toISOString();
+    if (!draft) {
+      draft = {
+        ...mergedForm,
+        id: mergedForm.id || designerId("phish-draft"),
+        status: "draft",
+        createdAt: nowIso,
+        updatedAt: nowIso,
+        lastPublishedAt: null
+      };
+      designer.drafts = [draft, ...designer.drafts].slice(0, 12);
+    } else {
+      Object.assign(draft, mergedForm, {
+        id: draft.id,
+        updatedAt: nowIso
+      });
+    }
+    const simData = ensureSimData();
+    const templateId = draft.templateId || `template-${draft.id}`;
+    const templateSignals = draft.signalIds.map(id =>
+      typeof id === "string" ? id.replace(/[^a-z0-9]+/gi, "_").toUpperCase() : id
+    );
+    if (!simData.templates.some(template => template && template.id === templateId)) {
+      simData.templates.push({
+        id: templateId,
+        subject: draft.subject || draft.name || "Simulation template",
+        vector: draft.channel || "email",
+        difficulty:
+          draft.signalIds.length >= 4 ? "high" : draft.signalIds.length >= 2 ? "medium" : "low",
+        signals: templateSignals
+      });
+    }
+    const launchDate = normalizeDesignerSchedule(draft.schedule) || nowIso;
+    const targetIds =
+      Array.isArray(draft.targetIds) && draft.targetIds.length > 0
+        ? draft.targetIds.slice()
+        : ["security-enablement"];
+    const campaignId = normalizeDesignerKey(options.campaignId) || designerId("sim");
+    const targetCount = Math.max(targetIds.length, 1);
+    const sent = targetCount * 120;
+    const delivered = Math.max(sent - Math.floor(sent * 0.02), 0);
+    const failed = sent - delivered;
+    const campaign = {
+      id: campaignId,
+      name: draft.name || "Simulation",
+      launchDate,
+      templateId,
+      ownerId: draft.ownerId || "amelia-reed",
+      targets: targetIds,
+      delivery: { sent, delivered, failed },
+      engagement: { reported: 0, clicked: 0, ignored: Math.max(delivered - 0, 0) },
+      followUps: [],
+      designerDraftId: draft.id
+    };
+    simData.campaigns = [campaign, ...simData.campaigns.filter(entry => entry && entry.id !== campaignId)];
+    simData.signalsByCampaign[campaignId] = templateSignals;
+    draft.status = "staged";
+    draft.lastPublishedAt = launchDate;
+    draft.lastCampaignId = campaignId;
+    draft.updatedAt = launchDate;
+    designer.form = cloneDesignerForm(draft);
+    designer.validation = {};
+    designer.activeTemplateId = draft.id;
+    syncGlobalState(state);
+    saveState(state);
+    renderShell();
+    if (typeof WeldServices.queuePhishingLaunch === "function") {
+      WeldServices.queuePhishingLaunch(campaignId, { targets: targetIds }, state);
+    }
+    return { success: true, draft, campaignId };
+  };
   const DEFAULT_PHISHING_SIM_STATE = {
     activeCampaignId: null,
     selectedDepartmentId: null,
@@ -474,7 +977,7 @@
     lastSimFeedback: null
   };
 
-  const getPhishingData = () => AppData.phishingSimulations || {};
+  const getPhishingData = () => ensureSimData();
   const getPhishingCampaigns = () => {
     const campaigns = getPhishingData().campaigns;
     return Array.isArray(campaigns) ? campaigns : [];

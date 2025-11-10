@@ -34,6 +34,23 @@ const normalizedReporterReasons = Array.isArray(resolvedReporterReasons)
   ? resolvedReporterReasons.map(reason => (reason && typeof reason === "object" ? { ...reason } : reason))
   : [];
 
+const blueprintConfig = AppData.phishingBlueprints || {};
+const defaultPhishingChannels = ["email", "sms", "teams", "slack", "qr"];
+const phishingChannelsEnum =
+  Array.isArray(blueprintConfig.channels) && blueprintConfig.channels.length > 0
+    ? blueprintConfig.channels.slice()
+    : defaultPhishingChannels;
+const defaultSignalCategories = {
+  deception: "Identity deception",
+  delivery: "Delivery channel oddities",
+  persuasion: "Persuasion & urgency",
+  payload: "Payload or attachment risk"
+};
+const phishingSignalCategories =
+  blueprintConfig.signalCategories && typeof blueprintConfig.signalCategories === "object"
+    ? { ...defaultSignalCategories, ...blueprintConfig.signalCategories }
+    : { ...defaultSignalCategories };
+
 Object.assign(AppData, {
   STORAGE_KEY: "weldStaticDemoStateV1",
   ROLE_LABELS: {
@@ -58,6 +75,7 @@ Object.assign(AppData, {
   "client-quests": { requiresRole: "client" },
   "weld-admin": { requiresRole: "admin" },
   "phishing-sims": { requiresRole: "admin" },
+  "phishing-designer": { requiresRole: "admin" },
   "weld-labs": { requiresRole: "admin" },
   "client-badges": { requiresRole: "client" },
   addin: { requiresRole: false }
@@ -92,10 +110,13 @@ Object.assign(AppData, {
     items: [
       { label: "Weld Admin", route: "weld-admin", role: "admin" },
       { label: "Phishing Sims", route: "phishing-sims", role: "admin" },
+      { label: "Phishing Designer", route: "phishing-designer", role: "admin" },
       { label: "Weld Labs", route: "weld-labs", role: "admin" }
     ]
   }
 ],
+  PHISHING_CHANNELS: phishingChannelsEnum,
+  PHISHING_SIGNAL_CATEGORIES: phishingSignalCategories,
   QUEST_DIFFICULTY_ORDER: ["starter", "intermediate", "advanced"],
   SETTINGS_CATEGORIES: [
   {

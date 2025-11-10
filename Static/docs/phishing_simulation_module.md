@@ -126,7 +126,18 @@ Interaction plan:
 
 ---
 
-## 8. Open Questions / Assumptions
+## 8. Phishing Designer Workspace
+- **Route & Nav:** New WeldSecure route `phishing-designer` lives beside `phishing-sims`. The registry maps it to `features/phishingDesigner.js` and the global nav loads it under the WeldSecure cluster.
+- **Blueprint data:** `Static/data/phishingBlueprints.js` seeds channel enums, signal definitions (severity + category), default tokens, and starter templates. `AppData.PHISHING_CHANNELS` / `PHISHING_SIGNAL_CATEGORIES` expose the enums to other layers.
+- **State slice:** `state.phishingDesigner` tracks `drafts`, `form`, `activeTemplateId`, and `validation`. Defaults come from the blueprint file so the builder loads with sample content even before admins save anything locally.
+- **Services:** New mutators in `stateServices.js` (`setPhishingDesignerForm`, `createPhishingDraft`, `updatePhishingDraft`, `duplicatePhishingDraft`, `applyPhishingTemplate`, `publishPhishingDraft`) keep the builder declarative. Publishing a draft appends a campaign + template into `AppData.phishingSimulations`, records `signalsByCampaign`, and immediately calls `queuePhishingLaunch` so telemetry stays in sync.
+- **UI flow:** `features/phishingDesigner.js` renders three major zones:
+  1. **Draft library** – cards for saved/staged drafts with Edit / Duplicate / Launch actions.
+  2. **Builder form** – envelope settings, body copy + token helpers, signal checklist, targeting, and optional scheduling. Inputs call the update services so state stays persistent.
+  3. **Live preview** – mirrors the envelope/body copy and highlights selected signals to show how reporters will experience the payload.
+- **Publishing:** Launch CTA is disabled until validation passes (name, subject/body, sender, ≥1 signal, ≥1 target). Successful publishes mark the draft as `staged`, stamp metadata such as `lastCampaignId`, and enqueue the simulation so the existing phishing module immediately reflects the new campaign.
+
+## 9. Open Questions / Assumptions
 - Do we need historical trend charts (e.g., sparklines) on day one, or can we start with textual summaries?
 - Should queued simulations appear on the Admin landing feature, or remain isolated until automation work lands?
 - Are we reusing an existing toast/alert component for `lastSimFeedback`, or should this module ship an inline banner?

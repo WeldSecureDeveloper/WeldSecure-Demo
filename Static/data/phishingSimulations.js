@@ -109,6 +109,12 @@
       "security-enablement": [
         { campaignId: "sim-cxo-wire", templateId: "template-wire-fraud", reported: 54, clicked: 3 }
       ]
+    },
+    signalsByCampaign: {
+      "sim-q4-finance": ["LOOKALIKE_DOMAIN", "MISMATCHED_LINK", "SENDER_SPOOF"],
+      "sim-hr-benefits": ["LOOKALIKE_DOMAIN", "UNEXPECTED_FORM"],
+      "sim-cxo-wire": ["LOOKALIKE_DOMAIN", "SENDER_SPOOF", "URGENT_TONE"],
+      "sim-ops-logistics": ["SHORT_URL", "SENSE_OF_URGENCY"]
     }
   };
 })();

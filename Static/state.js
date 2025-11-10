@@ -55,6 +55,271 @@
     enabled: true,
     dismissedRoutes: {}
   };
+  const blueprintConfig = appData.phishingBlueprints || {};
+  const CHANNEL_OPTIONS = Array.isArray(appData.PHISHING_CHANNELS) && appData.PHISHING_CHANNELS.length > 0
+    ? appData.PHISHING_CHANNELS.map(channel => (typeof channel === "string" ? channel.trim().toLowerCase() : channel)).filter(Boolean)
+    : ["email", "sms", "teams", "slack", "qr"];
+  const defaultBlueprintForm =
+    blueprintConfig.defaultForm && typeof blueprintConfig.defaultForm === "object"
+      ? blueprintConfig.defaultForm
+      : {};
+  const defaultBlueprintSender =
+    defaultBlueprintForm.sender && typeof defaultBlueprintForm.sender === "object"
+      ? defaultBlueprintForm.sender
+      : {};
+  const DEFAULT_PHISHING_FORM = {
+    id: null,
+    templateId:
+      typeof defaultBlueprintForm.templateId === "string" && defaultBlueprintForm.templateId.trim().length > 0
+        ? defaultBlueprintForm.templateId.trim()
+        : null,
+    name: resolveStringDefault(defaultBlueprintForm.name, ""),
+    status: "draft",
+    channel:
+      typeof defaultBlueprintForm.channel === "string" && defaultBlueprintForm.channel.trim().length > 0
+        ? defaultBlueprintForm.channel.trim().toLowerCase()
+        : CHANNEL_OPTIONS[0] || "email",
+    sender: {
+      displayName: resolveStringDefault(defaultBlueprintSender.displayName, "Security Desk"),
+      address: resolveStringDefault(defaultBlueprintSender.address, "security@weldsecure.com")
+    },
+    subject: resolveStringDefault(defaultBlueprintForm.subject, ""),
+    body: typeof defaultBlueprintForm.body === "string" ? defaultBlueprintForm.body : "",
+    signalIds: Array.isArray(defaultBlueprintForm.signalIds)
+      ? defaultBlueprintForm.signalIds.slice()
+      : Array.isArray(defaultBlueprintForm.defaultSignals)
+      ? defaultBlueprintForm.defaultSignals.slice()
+      : [],
+    targetIds: Array.isArray(defaultBlueprintForm.targetIds)
+      ? defaultBlueprintForm.targetIds.slice()
+      : Array.isArray(defaultBlueprintForm.suggestedTargets)
+      ? defaultBlueprintForm.suggestedTargets.slice()
+      : [],
+    schedule:
+      typeof defaultBlueprintForm.schedule === "string" && defaultBlueprintForm.schedule.trim().length > 0
+        ? new Date(defaultBlueprintForm.schedule).toISOString()
+        : null,
+    ownerId: resolveStringDefault(defaultBlueprintForm.ownerId, defaultBlueprintSender.address) || "amelia-reed"
+  };
+  const getGenerateId =
+    window.WeldUtil && typeof window.WeldUtil.generateId === "function"
+      ? window.WeldUtil.generateId
+      : prefix => {
+          const normalizedPrefix = typeof prefix === "string" && prefix.length > 0 ? `${prefix}-` : "";
+          return `${normalizedPrefix}${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6)
+            .toString(36)
+            .padStart(4, "0")}`;
+        };
+  const ALLOWED_DRAFT_STATUSES = new Set(["draft", "staged", "published"]);
+
+  const normalizeDesignerKey = value => {
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed : null;
+    }
+    if (Number.isFinite(value)) {
+      return String(value);
+    }
+    return null;
+  };
+
+  const normalizeDesignerChannel = (value, fallback) => {
+    if (typeof value === "string") {
+      const normalized = value.trim().toLowerCase();
+      if (CHANNEL_OPTIONS.includes(normalized)) {
+        return normalized;
+      }
+    }
+    return fallback || CHANNEL_OPTIONS[0] || "email";
+  };
+
+  const normalizeDesignerSchedule = value => {
+    if (!value) return null;
+    const candidate =
+      value instanceof Date
+        ? value
+        : typeof value === "string" && value.trim().length > 0
+        ? new Date(value)
+        : null;
+    if (!candidate || Number.isNaN(candidate.getTime())) {
+      return null;
+    }
+    return candidate.toISOString();
+  };
+
+  const normalizeDesignerStatus = (value, fallback = "draft") => {
+    if (typeof value === "string") {
+      const normalized = value.trim().toLowerCase();
+      if (ALLOWED_DRAFT_STATUSES.has(normalized)) {
+        return normalized;
+      }
+    }
+    return fallback;
+  };
+
+  const normalizeDesignerList = (list, fallback = []) => {
+    if (!Array.isArray(list)) {
+      return fallback.slice();
+    }
+    const seen = new Set();
+    const normalized = [];
+    list.forEach(entry => {
+      const key = normalizeDesignerKey(entry);
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      normalized.push(key);
+    });
+    return normalized;
+  };
+
+  function clonePhishingForm(source) {
+    const base = {
+      ...DEFAULT_PHISHING_FORM,
+      sender: { ...DEFAULT_PHISHING_FORM.sender },
+      signalIds: Array.isArray(DEFAULT_PHISHING_FORM.signalIds)
+        ? DEFAULT_PHISHING_FORM.signalIds.slice()
+        : [],
+      targetIds: Array.isArray(DEFAULT_PHISHING_FORM.targetIds)
+        ? DEFAULT_PHISHING_FORM.targetIds.slice()
+        : []
+    };
+    if (!source || typeof source !== "object") {
+      return base;
+    }
+    const mergedSender =
+      source.sender && typeof source.sender === "object"
+        ? {
+            displayName: resolveStringDefault(source.sender.displayName, base.sender.displayName),
+            address: resolveStringDefault(source.sender.address, base.sender.address)
+          }
+        : base.sender;
+    return {
+      ...base,
+      id: normalizeDesignerKey(source.id),
+      templateId: normalizeDesignerKey(source.templateId) || base.templateId,
+      name: resolveStringDefault(source.name, base.name),
+      status: normalizeDesignerStatus(source.status, base.status),
+      channel: normalizeDesignerChannel(source.channel, base.channel),
+      sender: mergedSender,
+      subject: typeof source.subject === "string" ? source.subject : base.subject,
+      body: typeof source.body === "string" ? source.body : base.body,
+      signalIds: normalizeDesignerList(source.signalIds, base.signalIds),
+      targetIds: normalizeDesignerList(source.targetIds, base.targetIds),
+      schedule: normalizeDesignerSchedule(source.schedule),
+      ownerId: resolveStringDefault(source.ownerId, base.ownerId)
+    };
+  }
+
+  const parseIsoDate = value => {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const parsed = new Date(trimmed);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed.toISOString();
+  };
+
+  const normalizeDesignerDraft = (source, fallbackStatus = "draft") => {
+    const normalized = clonePhishingForm(source);
+    if (!normalized.id) {
+      normalized.id = getGenerateId("phish-draft");
+    }
+    normalized.status = normalizeDesignerStatus(source?.status, fallbackStatus);
+    normalized.createdAt = parseIsoDate(source?.createdAt) || new Date().toISOString();
+    normalized.updatedAt = parseIsoDate(source?.updatedAt) || normalized.createdAt;
+    normalized.lastPublishedAt = parseIsoDate(source?.lastPublishedAt);
+    return normalized;
+  };
+
+  const blueprintTemplates = Array.isArray(blueprintConfig.templates) ? blueprintConfig.templates : [];
+
+  const seedPhishingDrafts = () => {
+    if (!blueprintTemplates.length) return [];
+    const now = Date.now();
+    return blueprintTemplates.slice(0, 3).map((template, index) => {
+      const draft = clonePhishingForm({
+        id: template.id,
+        templateId: template.id,
+        name: template.name,
+        channel: template.defaultChannel,
+        subject: template.subject,
+        body: template.body,
+        signalIds: template.defaultSignals,
+        targetIds: template.suggestedTargets
+      });
+      const timestamp = new Date(now - index * 4 * 60 * 60 * 1000).toISOString();
+      return {
+        ...draft,
+        status: "draft",
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        lastPublishedAt: null
+      };
+    });
+  };
+
+  const normalizePhishingDesigner = (source, fallbackState) => {
+    const fallback =
+      fallbackState && typeof fallbackState === "object"
+        ? fallbackState
+        : {
+            activeTemplateId: null,
+            drafts: [],
+            form: clonePhishingForm(),
+            validation: {}
+          };
+    const base = {
+      activeTemplateId: normalizeDesignerKey(fallback.activeTemplateId),
+      drafts: Array.isArray(fallback.drafts)
+        ? fallback.drafts.map(entry => ({
+            ...entry,
+            sender: entry.sender ? { ...entry.sender } : { ...DEFAULT_PHISHING_FORM.sender },
+            signalIds: Array.isArray(entry.signalIds) ? entry.signalIds.slice() : [],
+            targetIds: Array.isArray(entry.targetIds) ? entry.targetIds.slice() : []
+          }))
+        : [],
+      form: clonePhishingForm(fallback.form),
+      validation:
+        fallback.validation && typeof fallback.validation === "object"
+          ? { ...fallback.validation }
+          : {}
+    };
+    if (!source || typeof source !== "object") {
+      if (!base.drafts.length) {
+        base.drafts = seedPhishingDrafts();
+      }
+      if (!base.form.id && base.drafts.length > 0) {
+        base.form = clonePhishingForm(base.drafts[0]);
+        base.activeTemplateId = base.drafts[0].id;
+      }
+      return base;
+    }
+    const drafts =
+      Array.isArray(source.drafts) && source.drafts.length > 0
+        ? source.drafts.map(entry => normalizeDesignerDraft(entry))
+        : base.drafts.length > 0
+        ? base.drafts
+        : seedPhishingDrafts();
+    const form = clonePhishingForm(source.form);
+    const activeTemplateId = normalizeDesignerKey(source.activeTemplateId) || form.id || (drafts[0] && drafts[0].id) || null;
+    const validation =
+      source.validation && typeof source.validation === "object" ? { ...source.validation } : {};
+    if (!form.id && drafts.length > 0) {
+      const [firstDraft] = drafts;
+      return {
+        activeTemplateId: firstDraft.id,
+        drafts,
+        form: clonePhishingForm(firstDraft),
+        validation
+      };
+    }
+    return {
+      activeTemplateId,
+      drafts,
+      form,
+      validation
+    };
+  };
 
   function storageAvailable() {
     try {
@@ -259,6 +524,12 @@
       selectedDepartmentId: null,
       simLaunchQueue: [],
       lastSimFeedback: null
+    },
+    phishingDesigner: {
+      activeTemplateId: null,
+      drafts: [],
+      form: clonePhishingForm(),
+      validation: {}
     }
   };
 
@@ -391,6 +662,10 @@
       status: normalizeStatus(message.status)
     }));
     const phishingSimulation = normalizePhishingSimulation(base.phishingSimulation);
+    const phishingDesigner = normalizePhishingDesigner(
+      base.phishingDesigner,
+      FALLBACK_BASE.phishingDesigner
+    );
 
     return {
       meta,
@@ -417,7 +692,8 @@
       rewardRedemptions,
       messages,
       clients,
-      phishingSimulation
+      phishingSimulation,
+      phishingDesigner
     };
   }
 
@@ -1003,8 +1279,12 @@
           SETTINGS_CATEGORIES.find(category => !category.disabled) || SETTINGS_CATEGORIES[0] || null;
         mergedMeta.settingsCategory = fallbackCategory ? fallbackCategory.id : null;
       }
-      const { customer: storedCustomer, phishingSimulation: storedPhishingSimulation, ...restPassthrough } =
-        passthrough;
+      const {
+        customer: storedCustomer,
+        phishingSimulation: storedPhishingSimulation,
+        phishingDesigner: storedPhishingDesigner,
+        ...restPassthrough
+      } = passthrough;
       const normalizeBonusPoints = (candidate, baseBonus) => {
         const fallback = baseBonus && typeof baseBonus === "object" ? baseBonus : {};
         const baseBreakdown = Array.isArray(fallback.breakdown) ? fallback.breakdown : [];
@@ -1182,6 +1462,10 @@
         storedPhishingSimulation,
         baseState.phishingSimulation
       );
+      const normalizedPhishingDesigner = normalizePhishingDesigner(
+        storedPhishingDesigner,
+        baseState.phishingDesigner
+      );
       return {
         ...baseState,
         ...restPassthrough,
@@ -1199,7 +1483,8 @@
         departmentLeaderboard: normalizedLeaderboard,
         engagementPrograms: normalizedPrograms,
         labs: normalizedLabs,
-        settings: normalizedSettings
+        settings: normalizedSettings,
+        phishingDesigner: normalizedPhishingDesigner
       };
     } catch {
       return initialState();
