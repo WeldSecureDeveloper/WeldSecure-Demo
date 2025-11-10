@@ -216,26 +216,30 @@
   }
 
   .badge-lab-badge__icon {
-    width: 5.5rem;
-    height: 5.5rem;
+    width: 6rem;
+    height: 6rem;
     border-radius: 999px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     position: relative;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden;
   }
 
-  .badge-lab-badge__icon:hover {
-    transform: scale(1.05);
+  .catalogue-badge__trigger:hover .badge-lab-badge__icon,
+  .catalogue-badge__trigger:focus-visible .badge-lab-badge__icon {
+    transform: scale(1.08);
   }
 
   .badge-lab-badge__img {
-    width: 68%;
-    height: 68%;
+    width: 70%;
+    height: 70%;
     object-fit: contain;
     filter: drop-shadow(0 6px 10px rgba(15, 23, 42, 0.25));
     animation: badge-lab-pulse 2.6s ease-in-out infinite;
+    position: relative;
+    z-index: 2;
   }
 
   .badge-lab-badge__fallback {
@@ -251,6 +255,7 @@
     inset: 0;
     pointer-events: none;
     fill: none;
+    z-index: 2;
   }
 
   .badge-lab-badge__arc text {
@@ -258,6 +263,50 @@
     letter-spacing: 0.28em;
     text-transform: uppercase;
     fill: rgba(255, 255, 255, 0.92);
+  }
+
+  .badge-lab-badge__shine {
+    position: absolute;
+    inset: 0;
+    width: 200%;
+    background: linear-gradient(120deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 45%, rgba(255, 255, 255, 0) 100%);
+    transform: skewX(-20deg);
+    left: -120%;
+    top: 0;
+    transition: left 0.7s ease;
+    z-index: 1;
+  }
+
+  .catalogue-badge__trigger:hover .badge-lab-badge__shine {
+    left: 130%;
+  }
+
+  .badge-lab-badge__ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    animation: badge-lab-spin 12s linear infinite;
+    z-index: 1;
+  }
+
+  .badge-lab-badge__particles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .badge-lab-badge__particle {
+    position: absolute;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.72);
+    opacity: 0;
+  }
+
+  .catalogue-badge__trigger:hover .badge-lab-badge__particle,
+  .catalogue-badge__trigger:focus-visible .badge-lab-badge__particle {
+    animation: badge-lab-float 2.4s ease-in-out infinite;
   }
 
   .badge-lab-card .catalogue-badge-card__main {
@@ -291,6 +340,32 @@
     }
     100% {
       transform: scale(1);
+    }
+  }
+
+  @keyframes badge-lab-float {
+    0% {
+      transform: translateY(0) scale(1);
+      opacity: 0;
+    }
+    20% {
+      opacity: 1;
+    }
+    80% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(-16px) scale(0.8);
+      opacity: 0;
+    }
+  }
+
+  @keyframes badge-lab-spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
     }
   }
 

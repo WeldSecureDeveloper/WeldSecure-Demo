@@ -259,6 +259,9 @@
           aria-controls="${cardId}"
           aria-label="${escapeHtml(ariaLabel)}">
           <span class="catalogue-badge__icon badge-lab-badge__icon" style="background:${styles.background}; box-shadow:${styles.shadow};">
+            ${renderBadgeShine()}
+            ${renderBadgeRing()}
+            ${renderBadgeParticles()}
             ${renderBadgeArc(tierMeta.label, arcId)}
             ${renderBadgeIconImage(badge)}
           </span>
@@ -345,6 +348,28 @@
     }
     const safeSrc = escapeHtml(iconSrc);
     return `<img class="badge-lab-badge__img" src="${safeSrc}" alt="" loading="lazy" decoding="async" />`;
+  }
+
+  function renderBadgeShine() {
+    return `<span class="badge-lab-badge__shine" aria-hidden="true"></span>`;
+  }
+
+  function renderBadgeRing() {
+    return `<span class="badge-lab-badge__ring" aria-hidden="true"></span>`;
+  }
+
+  function renderBadgeParticles(count = 10) {
+    const particles = [];
+    for (let i = 0; i < count; i++) {
+      const size = (Math.random() * 3 + 3).toFixed(2);
+      const left = (Math.random() * 100).toFixed(2);
+      const top = (Math.random() * 100).toFixed(2);
+      const delay = (Math.random() * 2).toFixed(2);
+      particles.push(
+        `<span class="badge-lab-badge__particle" style="width:${size}px;height:${size}px;left:${left}%;top:${top}%;animation-delay:${delay}s;" aria-hidden="true"></span>`
+      );
+    }
+    return `<span class="badge-lab-badge__particles" aria-hidden="true">${particles.join("")}</span>`;
   }
 
   function getTierStyles(tierMeta) {
