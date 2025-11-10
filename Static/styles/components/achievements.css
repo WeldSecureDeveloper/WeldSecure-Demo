@@ -209,6 +209,28 @@
     }
   }
 
+  @-webkit-keyframes slideDownExit {
+    100% {
+      -webkit-transform: translateY(0);
+      transform: translateY(0);
+    }
+    0% {
+      -webkit-transform: translateY(-135px);
+      transform: translateY(-135px);
+    }
+  }
+
+  @keyframes slideDownExit {
+    100% {
+      -webkit-transform: translateY(0);
+      transform: translateY(0);
+    }
+    0% {
+      -webkit-transform: translateY(-135px);
+      transform: translateY(-135px);
+    }
+  }
+
   @-webkit-keyframes setColor {
     0% {
       background: rgba(255, 255, 255, 0);
@@ -553,8 +575,8 @@
   }
 
   .achievement-overlay--leaving .achievement-wrapper {
-    -webkit-animation: slideDown 750ms cubic-bezier(0.75, -0.5, 0, 1.75) 0s 1 forwards !important;
-    animation: slideDown 750ms cubic-bezier(0.75, -0.5, 0, 1.75) 0s 1 forwards !important;
+    -webkit-animation: slideDownExit 750ms cubic-bezier(0.75, -0.5, 0, 1.75) 0s 1 forwards !important;
+    animation: slideDownExit 750ms cubic-bezier(0.75, -0.5, 0, 1.75) 0s 1 forwards !important;
   }
 
   .achievement-overlay--paused .achievement-wrapper,

@@ -136,6 +136,7 @@ const ACHIEVEMENT_LEAVE_CLEANUP_MS = 750;
 const ACHIEVEMENT_EXIT_CLEANUP_BUFFER_MS = 120;
 const ACHIEVEMENT_BLINK_DELAY = 1400;
 const ACHIEVEMENT_COLLAPSE_LEAD_MS = 700;
+const ACHIEVEMENT_EXIT_ANIMATION_NAME = "slideDownExit";
 const ACHIEVEMENT_SUBTITLE_MAX_LENGTH = 54;
 const ACHIEVEMENT_TITLE_TEXT = "Badge unlocked!";
 const ACHIEVEMENT_FLAG_KEYS = {
@@ -575,7 +576,7 @@ function scheduleAchievementExitCleanup(entryId) {
   const wrapper = host.querySelector("[data-achievement-toast]");
   if (wrapper) {
     const handler = event => {
-      if (event.animationName !== "slideDown") {
+      if (event.animationName !== ACHIEVEMENT_EXIT_ANIMATION_NAME) {
         return;
       }
       complete();
