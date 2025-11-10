@@ -102,7 +102,8 @@ Object.assign(AppData, {
       { label: "Quest Catalogue", route: "client-quests", role: "client" },
       { label: "Rewards Catalogue", route: "client-rewards", role: "client" },
       { label: "Leaderboards", route: "client-leaderboards", role: "client" },
-      { label: "User configuration", route: "client-user-config", role: "client" }
+      { label: "User configuration", route: "client-user-config", role: "client" },
+      { label: "Phishing Designer", route: "phishing-designer", role: "admin" }
     ]
   },
   {
@@ -110,7 +111,6 @@ Object.assign(AppData, {
     items: [
       { label: "Weld Admin", route: "weld-admin", role: "admin" },
       { label: "Phishing Sims", route: "phishing-sims", role: "admin" },
-      { label: "Phishing Designer", route: "phishing-designer", role: "admin" },
       { label: "Weld Labs", route: "weld-labs", role: "admin" }
     ]
   }
