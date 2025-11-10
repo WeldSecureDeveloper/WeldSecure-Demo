@@ -3140,6 +3140,28 @@ function clearGuidedTourOverlay() {
   }
 }
 
+function scrollViewportToTop() {
+  if (typeof window === "undefined") return;
+  const doc = document.scrollingElement || document.documentElement || document.body;
+  let previousScrollBehavior;
+  if (doc && doc.style) {
+    previousScrollBehavior = doc.style.scrollBehavior;
+    doc.style.scrollBehavior = "auto";
+  }
+  if (doc && typeof doc.scrollTo === "function") {
+    doc.scrollTo(0, 0);
+  } else if (typeof window.scrollTo === "function") {
+    window.scrollTo(0, 0);
+  }
+  if (doc && doc.style) {
+    if (typeof previousScrollBehavior === "string" && previousScrollBehavior.length > 0) {
+      doc.style.scrollBehavior = previousScrollBehavior;
+    } else {
+      doc.style.removeProperty("scroll-behavior");
+    }
+  }
+}
+
 
 
 
@@ -3160,6 +3182,7 @@ function renderApp() {
 
   const app = document.getElementById("app");
   const route = state.meta.route;
+  const shouldResetScroll = lastRenderedRoute !== null && lastRenderedRoute !== route;
   if (lastRenderedRoute && lastRenderedRoute !== route) {
     clearGuidedTourOverlay();
   }
@@ -3205,6 +3228,9 @@ function renderApp() {
     routeConfig.attach(attachTarget, state);
   }
   scheduleBadgeEdgeAlignment(app);
+  if (shouldResetScroll) {
+    scrollViewportToTop();
+  }
   lastRenderedRoute = route;
 }
 
