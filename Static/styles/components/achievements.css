@@ -123,46 +123,34 @@
   }
 
   .achievement-wrapper.animation {
-    -webkit-animation: slideUp 750ms cubic-bezier(0.75, -0.5, 0, 1.75) 0s 1 forwards,
-      slideDown 750ms cubic-bezier(0.75, -0.5, 0, 1.75) 5450ms 1 forwards;
-    animation: slideUp 750ms cubic-bezier(0.75, -0.5, 0, 1.75) 0s 1 forwards,
-      slideDown 750ms cubic-bezier(0.75, -0.5, 0, 1.75) 5450ms 1 forwards;
+    -webkit-animation: slideUp 750ms cubic-bezier(0.75, -0.5, 0, 1.75) 0s 1 forwards;
+    animation: slideUp 750ms cubic-bezier(0.75, -0.5, 0, 1.75) 0s 1 forwards;
   }
 
   .achievement-wrapper.animation .achievement-title {
     -webkit-animation: slideLeft 750ms ease 650ms 1 forwards,
       setColor 750ms ease 650ms 1 forwards,
-      ripple 500ms ease 1200ms 1,
-      slideRight 750ms ease 4750ms 1 forwards,
-      removeColor 750ms ease 4750ms 1 forwards;
+      ripple 500ms ease 1200ms 1;
     animation: slideLeft 750ms ease 650ms 1 forwards,
       setColor 750ms ease 650ms 1 forwards,
-      ripple 500ms ease 1200ms 1,
-      slideRight 750ms ease 4750ms 1 forwards,
-      removeColor 750ms ease 4750ms 1 forwards;
+      ripple 500ms ease 1200ms 1;
   }
 
   .achievement-wrapper.animation .achievement-body {
     -webkit-animation: expand 750ms ease 650ms 1 forwards,
-      contract 750ms ease 4750ms 1 forwards,
       shimmer 1500ms linear 1400ms 2;
     animation: expand 750ms ease 650ms 1 forwards,
-      contract 750ms ease 4750ms 1 forwards,
       shimmer 1500ms linear 1400ms 2;
   }
 
   .achievement-wrapper.animation .achievement-text {
-    -webkit-animation: fadeInUp 550ms ease 1250ms 1 forwards,
-      fadeOutUp 550ms ease 4250ms 1 forwards;
-    animation: fadeInUp 550ms ease 1250ms 1 forwards,
-      fadeOutUp 550ms ease 4250ms 1 forwards;
+    -webkit-animation: fadeInUp 550ms ease 1250ms 1 forwards;
+    animation: fadeInUp 550ms ease 1250ms 1 forwards;
   }
 
   .achievement-wrapper.animation .achievement-subtext {
-    -webkit-animation: fadeInUp 550ms ease 1350ms 1 forwards,
-      fadeOutUp 550ms ease 4350ms 1 forwards;
-    animation: fadeInUp 550ms ease 1350ms 1 forwards,
-      fadeOutUp 550ms ease 4350ms 1 forwards;
+    -webkit-animation: fadeInUp 550ms ease 1350ms 1 forwards;
+    animation: fadeInUp 550ms ease 1350ms 1 forwards;
   }
 
   @-webkit-keyframes slideUp {
@@ -564,8 +552,10 @@
   }
 
   .achievement-overlay--collapsing .achievement-title {
-    -webkit-animation: slideRight 750ms ease 0s 1 forwards !important;
-    animation: slideRight 750ms ease 0s 1 forwards !important;
+    -webkit-animation: slideRight 750ms ease 0s 1 forwards,
+      removeColor 750ms ease 0s 1 forwards !important;
+    animation: slideRight 750ms ease 0s 1 forwards,
+      removeColor 750ms ease 0s 1 forwards !important;
   }
 
   .achievement-overlay--collapsing .achievement-text,
