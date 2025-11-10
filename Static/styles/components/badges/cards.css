@@ -119,6 +119,16 @@
     transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
 
+  .catalogue-badge__icon--lab {
+    width: auto;
+    height: auto;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: 0;
+    padding: 0;
+    display: inline-flex;
+  }
+
   
   .catalogue-badge__label {
     display: inline-flex;
@@ -135,6 +145,12 @@
   .catalogue-badge__trigger:focus-visible .catalogue-badge__icon {
     transform: rotate(-6deg) translateY(-4px);
     box-shadow: 0 28px 48px rgba(79, 70, 229, 0.26);
+  }
+
+  .catalogue-badge__trigger:hover .catalogue-badge__icon--lab,
+  .catalogue-badge__trigger:focus-visible .catalogue-badge__icon--lab {
+    transform: none;
+    box-shadow: none;
   }
   
   .catalogue-badge__trigger:hover + .catalogue-badge__label,

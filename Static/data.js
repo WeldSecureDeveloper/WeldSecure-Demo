@@ -157,6 +157,17 @@ Object.assign(AppData, {
     whistle: "svg/whistle.svg",
     plane: "svg/plane.svg"
   },
+  BADGE_LAB_ICONS: AppData.BADGE_LAB_ICONS || {
+    basePath: "svg/Laura_Reen",
+    names: ["activity", "award", "cup", "finish", "mountain", "ok", "podium", "smartwatch", "torch", "watch"]
+  },
+  BADGE_PROGRESSION_TIERS: AppData.BADGE_PROGRESSION_TIERS || [
+    { id: "aware", label: "Aware", reference: "Emerald", gradient: "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)", shadow: "0 18px 32px rgba(17, 153, 142, 0.32)" },
+    { id: "observant", label: "Observant", reference: "Sapphire", gradient: "linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%)", shadow: "0 18px 32px rgba(33, 147, 176, 0.32)" },
+    { id: "careful", label: "Careful", reference: "Amethyst", gradient: "linear-gradient(135deg, #9d50bb 0%, #6e48aa 100%)", shadow: "0 18px 32px rgba(110, 72, 170, 0.32)" },
+    { id: "measured", label: "Measured", reference: "Ruby", gradient: "linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%)", shadow: "0 18px 32px rgba(255, 75, 43, 0.32)" },
+    { id: "vigilant", label: "Vigilant", reference: "Obsidian", gradient: "linear-gradient(135deg, #434343 0%, #000000 100%)", shadow: "0 18px 32px rgba(0, 0, 0, 0.45)" }
+  ],
   METRIC_TONES: {
   indigo: { bg: "linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(129, 140, 248, 0.28))", color: "#312e81" },
   emerald: { bg: "linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(52, 211, 153, 0.28))", color: "#065f46" },

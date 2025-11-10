@@ -7,6 +7,7 @@ const METRIC_TONES = window.AppData.METRIC_TONES;
 const BADGE_TONES = window.AppData.BADGE_TONES;
 const BADGE_ICON_BACKDROPS = window.AppData.BADGE_ICON_BACKDROPS;
 const POINTS_CARD_ICONS = window.AppData.POINTS_CARD_ICONS;
+const BadgeLabTheme = window.BadgeLabTheme || {};
 const BADGES = window.AppData.BADGES;
 const BADGE_CATEGORY_ORDER = window.AppData.BADGE_CATEGORY_ORDER;
 const BADGE_DRAFTS = new Set(window.AppData.BADGE_DRAFTS);
@@ -231,6 +232,94 @@ function achievementToneStyles(toneKey) {
   };
 }
 
+function sanitizeBadgeVisualId(value, prefix = "badge") {
+  const base =
+    typeof value === "string" && value.trim().length > 0 ? value.trim() : `${prefix}-${Date.now().toString(36)}`;
+  return `${prefix}-${base.replace(/[^a-zA-Z0-9:_-]/g, "-")}`;
+}
+
+function getBadgeTierMetaValue(badgeLike, fallbackIndex = 0) {
+  if (!badgeLike) return null;
+  if (badgeLike.tierMeta) return badgeLike.tierMeta;
+  if (badgeLike.badgeTier && typeof BadgeLabTheme?.getTierMetaById === "function") {
+    const tier = BadgeLabTheme.getTierMetaById(badgeLike.badgeTier);
+    if (tier) return tier;
+  }
+  if (typeof badgeLike.difficulty === "string" && typeof BadgeLabTheme?.getTierMetaByDifficulty === "function") {
+    const tier = BadgeLabTheme.getTierMetaByDifficulty(badgeLike.difficulty, fallbackIndex);
+    if (tier) return tier;
+  }
+  if (typeof BadgeLabTheme?.getTierMetaForIndex === "function") {
+    return BadgeLabTheme.getTierMetaForIndex(fallbackIndex, BadgeLabTheme.tiers?.length || 1);
+  }
+  if (Array.isArray(BadgeLabTheme?.tiers) && BadgeLabTheme.tiers.length) {
+    return BadgeLabTheme.tiers[Math.min(fallbackIndex, BadgeLabTheme.tiers.length - 1)];
+  }
+  return null;
+}
+
+function getBadgeVisualStyles(tierMeta) {
+  if (typeof BadgeLabTheme?.getTierStyles === "function") {
+    return BadgeLabTheme.getTierStyles(tierMeta);
+  }
+  if (tierMeta?.gradient) {
+    return {
+      background: tierMeta.gradient,
+      shadow: tierMeta.shadow || "0 12px 24px rgba(79, 70, 229, 0.32)"
+    };
+  }
+  return {
+    background: "linear-gradient(135deg, #c7d2fe, #818cf8)",
+    shadow: "0 12px 24px rgba(79, 70, 229, 0.32)"
+  };
+}
+
+function getBadgeIconSource(badgeLike, fallbackIndex = 0) {
+  if (badgeLike?.labIcon) return badgeLike.labIcon;
+  if (typeof BadgeLabTheme?.getIconForBadge === "function") {
+    const src = BadgeLabTheme.getIconForBadge(badgeLike, fallbackIndex);
+    if (src) return src;
+  }
+  return typeof badgeLike?.icon === "string" ? badgeLike.icon : "";
+}
+
+function renderBadgeLabOrb(badgeLike, { arcPrefix = "badge", modifier = "", particleCount = 10 } = {}) {
+  if (!BadgeLabTheme || typeof BadgeLabTheme.renderArc !== "function") {
+    return null;
+  }
+  const tierMeta = getBadgeTierMetaValue(badgeLike);
+  const styles = getBadgeVisualStyles(tierMeta);
+  const arcId = sanitizeBadgeVisualId(badgeLike?.id || arcPrefix, arcPrefix);
+  const shine = typeof BadgeLabTheme.renderShine === "function" ? BadgeLabTheme.renderShine() : "";
+  const ring = typeof BadgeLabTheme.renderRing === "function" ? BadgeLabTheme.renderRing() : "";
+  const particles =
+    typeof BadgeLabTheme.renderParticles === "function" ? BadgeLabTheme.renderParticles(particleCount) : "";
+  const iconSrc = getBadgeIconSource(badgeLike);
+  const label =
+    typeof badgeLike?.title === "string" && badgeLike.title.trim().length > 0 ? badgeLike.title.trim() : "Badge";
+  const iconMarkup =
+    typeof BadgeLabTheme.renderIconImage === "function"
+      ? BadgeLabTheme.renderIconImage(iconSrc, label)
+      : typeof WeldUtil?.renderIcon === "function"
+      ? WeldUtil.renderIcon("medal", "sm")
+      : `<span class="badge-lab-badge__fallback" aria-hidden="true">B</span>`;
+  return {
+    markup: `
+      <span class="badge-lab-badge ${modifier}">
+        <span class="badge-lab-badge__icon" style="background:${styles.background}; box-shadow:${styles.shadow};">
+          ${shine}
+          ${ring}
+          ${particles}
+          ${BadgeLabTheme.renderArc(tierMeta?.label || "", arcId)}
+          ${iconMarkup}
+        </span>
+      </span>
+    `,
+    shadow: styles.shadow || "rgba(15, 23, 42, 0.25)",
+    tierMeta
+  };
+}
+
 function sanitizeAchievementText(value, maxLength = ACHIEVEMENT_SUBTITLE_MAX_LENGTH) {
   if (typeof value !== "string") return "";
   let normalized = value.replace(/[^\x20-\x7E]/g, " ").replace(/\s+/g, " ").trim();
@@ -261,6 +350,16 @@ function normalizeAchievementEntry(entry) {
     points: Number.isFinite(pointsValue) && pointsValue > 0 ? pointsValue : null,
     icon: escapeTitle(entry.icon) || "medal",
     tone: escapeTitle(entry.tone) || "emerald",
+    badgeId:
+      typeof entry.badgeId === "string" && entry.badgeId.trim().length > 0 ? entry.badgeId.trim() : null,
+    badgeTierId:
+      typeof entry.badgeTier === "string" && entry.badgeTier.trim().length > 0
+        ? entry.badgeTier.trim().toLowerCase()
+        : null,
+    badgeDifficulty:
+      typeof entry.difficulty === "string" && entry.difficulty.trim().length > 0 ? entry.difficulty.trim() : null,
+    badgeLabIcon:
+      typeof entry.labIcon === "string" && entry.labIcon.trim().length > 0 ? entry.labIcon.trim() : null,
     displayMs:
       Number.isFinite(entry.displayMs) && entry.displayMs > 0 ? entry.displayMs : ACHIEVEMENT_DISPLAY_MS
   };
@@ -276,6 +375,9 @@ function renderAchievementContent(entry) {
       ? WeldUtil.renderIcon(entry.icon || "medal", "md")
       : `<span class="achievement-toast__icon-placeholder">?</span>`;
   const toneStyles = achievementToneStyles(entry.tone);
+  const badgeVisual = renderAchievementBadge(entry);
+  const visualMarkup = badgeVisual?.markup || iconMarkup;
+  const visualShadow = badgeVisual?.shadow || toneStyles.shadow || "rgba(0, 0, 0, 0.3)";
   let formattedPoints = null;
   if (Number.isFinite(entry.points) && entry.points > 0) {
     formattedPoints =
@@ -299,12 +401,28 @@ function renderAchievementContent(entry) {
           <p class="achievement-text">${escapeHtml(entry.title)}</p>
           ${detailMarkup}
         </div>
-        <div class="achievement-title" style="box-shadow:0 0 18px ${toneStyles.shadow || "rgba(0, 0, 0, 0.3)"};">
-          ${iconMarkup}
+        <div class="achievement-title" style="box-shadow:0 0 18px ${visualShadow};">
+          ${visualMarkup}
         </div>
       </div>
     </div>
   `;
+}
+
+function renderAchievementBadge(entry) {
+  const badgeDetails = {
+    id: entry.badgeId || entry.id,
+    title: entry.subtitle || entry.title,
+    badgeTier: entry.badgeTierId,
+    difficulty: entry.badgeDifficulty,
+    labIcon: entry.badgeLabIcon
+  };
+  const orb = renderBadgeLabOrb(badgeDetails, {
+    arcPrefix: entry.id ? `achievement-${entry.id}` : "achievement-toast",
+    modifier: "badge-lab-badge--toast",
+    particleCount: 6
+  });
+  return orb;
 }
 
 const ACHIEVEMENT_SUBTEXT_FIT_ATTEMPTS = 5;
@@ -651,6 +769,10 @@ function queueBadgeAchievements(badgeInput, options = {}) {
         ? resolvedBadge.title.trim()
         : "";
     const subtitleText = sanitizeAchievementText(badgeName) || fallbackSubtitle;
+    const tierId =
+      typeof resolvedBadge.tierMeta?.id === "string" && resolvedBadge.tierMeta.id.trim().length > 0
+        ? resolvedBadge.tierMeta.id.trim().toLowerCase()
+        : null;
     queueAchievementToast({
       id:
         typeof resolvedBadge.id === "string" && resolvedBadge.id.trim().length > 0
@@ -661,7 +783,11 @@ function queueBadgeAchievements(badgeInput, options = {}) {
       subtitle: subtitleText,
       points: resolvedBadge.points,
       icon: resolvedBadge.icon || "medal",
-      tone: resolvedBadge.tone || "emerald"
+      tone: resolvedBadge.tone || "emerald",
+      badgeId: resolvedBadge.id,
+      badgeTier: tierId,
+      difficulty: resolvedBadge.difficulty,
+      labIcon: resolvedBadge.labIcon
     });
   });
 }
@@ -2788,6 +2914,16 @@ function renderHubBadgeCard(badge) {
     ? `${WeldUtil.escapeHtml(difficultyLabel)} - ${formatNumber(pointsValue)} pts`
     : `${formatNumber(pointsValue)} pts`;
   const ariaLabel = `${badge.title} badge, worth ${formatNumber(pointsValue)} points in the collection.`;
+  const badgeOrb = renderBadgeLabOrb(badge, {
+    arcPrefix: `hub-${sanitizedId}`,
+    modifier: "badge-lab-badge--spotlight",
+    particleCount: 8
+  });
+  const iconMarkup = badgeOrb
+    ? `<span class="catalogue-badge__icon catalogue-badge__icon--lab">${badgeOrb.markup}</span>`
+    : `<span class="catalogue-badge__icon" style="background:${iconBackdrop}; box-shadow:0 18px 32px ${iconShadow};">
+          ${WeldUtil.renderIcon(badge.icon || "medal", "sm")}
+        </span>`;
 
   return `
     <article
@@ -2803,9 +2939,7 @@ function renderHubBadgeCard(badge) {
         aria-label="${WeldUtil.escapeHtml(badge.title)} badge details"
         aria-controls="${cardId}"
         title="${WeldUtil.escapeHtml(toggleTitle)}">
-        <span class="catalogue-badge__icon" style="background:${iconBackdrop}; box-shadow:0 18px 32px ${iconShadow};">
-          ${WeldUtil.renderIcon(badge.icon || "medal", "sm")}
-        </span>
+        ${iconMarkup}
       </button>
       <span class="catalogue-badge__label">${WeldUtil.escapeHtml(badge.title)}</span>
       <div id="${cardId}" class="catalogue-badge-card catalogue-badge-card--hub" role="group" aria-label="${WeldUtil.escapeHtml(ariaLabel)}">

@@ -213,6 +213,7 @@
 
   .badge-lab-badge {
     gap: 0.65rem;
+    display: inline-flex;
   }
 
   .badge-lab-badge__icon {
@@ -230,6 +231,35 @@
   .catalogue-badge__trigger:hover .badge-lab-badge__icon,
   .catalogue-badge__trigger:focus-visible .badge-lab-badge__icon {
     transform: scale(1.08);
+  }
+
+  .catalogue-badge__icon--lab {
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0;
+    border: 0;
+    display: inline-flex;
+  }
+
+  .badge-lab-badge--spotlight .badge-lab-badge__icon {
+    width: 4.5rem;
+    height: 4.5rem;
+  }
+
+  .badge-lab-badge--spotlight-mini .badge-lab-badge__icon {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .badge-lab-badge--toast {
+    gap: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .badge-lab-badge--toast .badge-lab-badge__icon {
+    width: 100%;
+    height: 100%;
   }
 
   .badge-lab-badge__img {

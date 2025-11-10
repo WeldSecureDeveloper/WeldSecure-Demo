@@ -59,16 +59,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 72px;
-    height: 72px;
-    border-radius: 24px;
-    background: rgba(255, 255, 255, 0.32);
-    border: 1px solid rgba(255, 255, 255, 0.62);
-  }
-
-  .badge-spotlight-tile__icon .icon-token {
-    width: 54px;
-    height: 54px;
+    width: 100%;
   }
 
   .badge-spotlight-tile__label {
@@ -226,22 +217,9 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 14px;
-    background: rgba(79, 70, 229, 0.16);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    width: 48px;
+    height: 48px;
     flex-shrink: 0;
-  }
-
-  .badge-spotlight-extra__icon .icon-token {
-    width: 22px;
-    height: 22px;
-    min-width: 22px;
-    min-height: 22px;
-    max-width: 22px;
-    max-height: 22px;
-    box-shadow: none;
   }
 
   .badge-spotlight-extra__name {

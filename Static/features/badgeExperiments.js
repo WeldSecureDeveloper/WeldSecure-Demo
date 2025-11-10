@@ -3,17 +3,26 @@
 
   const features = window.Weld.features || (window.Weld.features = {});
   const AppData = window.AppData || {};
+  const BadgeLabTheme = window.BadgeLabTheme || {};
   const { WeldUtil } = window;
   const difficultyOrder = ["Starter", "Rising", "Skilled", "Expert", "Legendary"];
-  const iconBasePath = "svg/Laura_Reen";
-  const lauraReenIcons = ["activity", "award", "cup", "finish", "mountain", "ok", "podium", "smartwatch", "torch", "watch"];
-  const PROGRESSION_TIERS = [
-    { id: "aware", label: "Aware", reference: "Emerald", gradient: "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)", shadow: "0 18px 32px rgba(17, 153, 142, 0.32)" },
-    { id: "observant", label: "Observant", reference: "Sapphire", gradient: "linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%)", shadow: "0 18px 32px rgba(33, 147, 176, 0.32)" },
-    { id: "careful", label: "Careful", reference: "Amethyst", gradient: "linear-gradient(135deg, #9d50bb 0%, #6e48aa 100%)", shadow: "0 18px 32px rgba(110, 72, 170, 0.32)" },
-    { id: "measured", label: "Measured", reference: "Ruby", gradient: "linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%)", shadow: "0 18px 32px rgba(255, 75, 43, 0.32)" },
-    { id: "vigilant", label: "Vigilant", reference: "Obsidian", gradient: "linear-gradient(135deg, #434343 0%, #000000 100%)", shadow: "0 18px 32px rgba(0, 0, 0, 0.45)" }
-  ];
+  const iconBasePath = typeof BadgeLabTheme.iconBasePath === "string" && BadgeLabTheme.iconBasePath.length
+    ? BadgeLabTheme.iconBasePath
+    : "svg/Laura_Reen";
+  const lauraReenIcons =
+    Array.isArray(BadgeLabTheme.iconNames) && BadgeLabTheme.iconNames.length > 0
+      ? BadgeLabTheme.iconNames.slice()
+      : ["activity", "award", "cup", "finish", "mountain", "ok", "podium", "smartwatch", "torch", "watch"];
+  const PROGRESSION_TIERS =
+    Array.isArray(BadgeLabTheme.tiers) && BadgeLabTheme.tiers.length > 0
+      ? BadgeLabTheme.tiers.slice()
+      : [
+          { id: "aware", label: "Aware", reference: "Emerald", gradient: "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)", shadow: "0 18px 32px rgba(17, 153, 142, 0.32)" },
+          { id: "observant", label: "Observant", reference: "Sapphire", gradient: "linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%)", shadow: "0 18px 32px rgba(33, 147, 176, 0.32)" },
+          { id: "careful", label: "Careful", reference: "Amethyst", gradient: "linear-gradient(135deg, #9d50bb 0%, #6e48aa 100%)", shadow: "0 18px 32px rgba(110, 72, 170, 0.32)" },
+          { id: "measured", label: "Measured", reference: "Ruby", gradient: "linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%)", shadow: "0 18px 32px rgba(255, 75, 43, 0.32)" },
+          { id: "vigilant", label: "Vigilant", reference: "Obsidian", gradient: "linear-gradient(135deg, #434343 0%, #000000 100%)", shadow: "0 18px 32px rgba(0, 0, 0, 0.45)" }
+        ];
   const MAX_LAB_BADGES = 50;
   const labFilterState = { status: "all", category: null, tier: null };
   let labCategoryLookup = new Map();
@@ -321,6 +330,9 @@
   }
 
   function renderBadgeArc(label, arcId) {
+    if (typeof BadgeLabTheme.renderArc === "function") {
+      return BadgeLabTheme.renderArc(label, arcId);
+    }
     const safeLabel = escapeHtml(label || "");
     return `
       <svg viewBox="0 0 120 120" class="badge-lab-badge__arc" aria-hidden="true">
@@ -343,6 +355,10 @@
   }
 
   function renderBadgeIconImage(badge) {
+    if (typeof BadgeLabTheme.renderIconImage === "function") {
+      const label = typeof badge.title === "string" ? badge.title : "";
+      return BadgeLabTheme.renderIconImage(badge.labIcon, label);
+    }
     const iconSrc = typeof badge.labIcon === "string" ? badge.labIcon : "";
     const rawInitial =
       typeof badge.title === "string" && badge.title.trim().length > 0 ? badge.title.trim().charAt(0) : "B";
@@ -355,14 +371,23 @@
   }
 
   function renderBadgeShine() {
+    if (typeof BadgeLabTheme.renderShine === "function") {
+      return BadgeLabTheme.renderShine();
+    }
     return `<span class="badge-lab-badge__shine" aria-hidden="true"></span>`;
   }
 
   function renderBadgeRing() {
+    if (typeof BadgeLabTheme.renderRing === "function") {
+      return BadgeLabTheme.renderRing();
+    }
     return `<span class="badge-lab-badge__ring" aria-hidden="true"></span>`;
   }
 
   function renderBadgeParticles(count = 10) {
+    if (typeof BadgeLabTheme.renderParticles === "function") {
+      return BadgeLabTheme.renderParticles(count);
+    }
     const particles = [];
     for (let i = 0; i < count; i++) {
       const size = (Math.random() * 3 + 3).toFixed(2);
@@ -377,6 +402,9 @@
   }
 
   function getTierStyles(tierMeta) {
+    if (typeof BadgeLabTheme.getTierStyles === "function") {
+      return BadgeLabTheme.getTierStyles(tierMeta);
+    }
     if (!tierMeta) {
       return {
         background: "linear-gradient(135deg, #c7d2fe, #818cf8)",
@@ -632,6 +660,9 @@
   }
 
   function getTierMetaForIndex(index, total) {
+    if (typeof BadgeLabTheme.getTierMetaForIndex === "function") {
+      return BadgeLabTheme.getTierMetaForIndex(index, total);
+    }
     if (!PROGRESSION_TIERS.length) return null;
     const groupSize = Math.ceil(total / PROGRESSION_TIERS.length) || 1;
     const tierIndex = Math.min(Math.floor(index / groupSize), PROGRESSION_TIERS.length - 1);
@@ -639,6 +670,10 @@
   }
 
   function getLabIconForLevel(levelIndex) {
+    if (typeof BadgeLabTheme.getIconForLevel === "function") {
+      const src = BadgeLabTheme.getIconForLevel(levelIndex);
+      if (src) return src;
+    }
     if (!lauraReenIcons.length) return "";
     const iconName = lauraReenIcons[levelIndex % lauraReenIcons.length];
     return `${iconBasePath}/${iconName}.svg`;

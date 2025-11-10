@@ -9,6 +9,7 @@
     const ROUTES = AppData.ROUTES || {};
     const BADGE_ICON_BACKDROPS = AppData.BADGE_ICON_BACKDROPS || {};
     const WeldUtil = window.WeldUtil || {};
+    const BadgeLabTheme = window.BadgeLabTheme || {};
     const THEME_TOGGLE_LABELS = {
       light: "Switch to dark mode",
       dark: "Switch to light mode"
@@ -142,21 +143,20 @@
       const EXTRA_DISPLAY_LIMIT = 3;
       const [primaryBadge, ...extraBadges] = badges;
       const displayedExtras = extraBadges.slice(0, EXTRA_DISPLAY_LIMIT);
-      const renderTile = badge => {
+
+      const renderTile = (badge, index, total) => {
         if (!badge) return "";
-        const safeId = WeldUtil.escapeHtml(String(badge.id ?? ""));
-        const toneKey =
-          typeof badge.tone === "string" && BADGE_ICON_BACKDROPS[badge.tone]
-            ? badge.tone
-            : "violet";
-        const iconBackdrop =
-          BADGE_ICON_BACKDROPS[toneKey]?.background ||
-          BADGE_ICON_BACKDROPS.violet?.background ||
-          "linear-gradient(135deg, #c7d2fe, #818cf8)";
-        const iconShadow =
-          BADGE_ICON_BACKDROPS[toneKey]?.shadow ||
-          BADGE_ICON_BACKDROPS.violet?.shadow ||
-          "rgba(79, 70, 229, 0.32)";
+        const tierMeta = getSpotlightTierMeta(badge, index, total);
+        const arcId = `badge-spotlight-arc-${sanitizeBadgeArcId(badge.id, index)}`;
+        const iconSrc = getBadgeIconSource(badge, index);
+        const badgeVisual = renderBadgeVisual({
+          tierMeta,
+          arcId,
+          iconSrc,
+          fallbackInitial: badge.title,
+          modifier: "badge-lab-badge--spotlight",
+          particleCount: 10
+        });
         const normalizedTitle =
           typeof badge.title === "string" && badge.title.trim().length > 0
             ? badge.title.trim()
@@ -169,10 +169,10 @@
         class="badge-spotlight-tile"
         role="listitem"
         tabindex="0"
-        data-badge="${safeId}"
+        data-badge="${WeldUtil.escapeHtml(String(badge.id ?? ""))}"
         aria-label="${WeldUtil.escapeHtml(ariaLabel)}">
-        <span class="badge-spotlight-tile__icon" style="background:${iconBackdrop}; box-shadow:0 22px 44px ${iconShadow};">
-          ${WeldUtil.renderIcon(badge.icon || "medal", "sm")}
+        <span class="badge-spotlight-tile__icon">
+          ${badgeVisual}
         </span>
         <span class="badge-spotlight-tile__label">${WeldUtil.escapeHtml(normalizedTitle)}</span>
         <span class="badge-spotlight-tile__points" aria-label="${WeldUtil.escapeHtml(
@@ -186,9 +186,19 @@
         extraBadges.length > 0
           ? (() => {
               const extraPanelId = WeldUtil.generateId("extra-badges");
-              const formatExtra = badge => {
+              const formatExtra = (badge, index) => {
                 if (!badge) return "";
-                const safeId = WeldUtil.escapeHtml(String(badge.id ?? ""));
+                const tierMeta = getSpotlightTierMeta(badge, index + 1, badges.length);
+                const arcId = `badge-spotlight-mini-arc-${sanitizeBadgeArcId(badge.id, index)}`;
+                const iconSrc = getBadgeIconSource(badge, index);
+                const badgeVisual = renderBadgeVisual({
+                  tierMeta,
+                  arcId,
+                  iconSrc,
+                  fallbackInitial: badge.title,
+                  modifier: "badge-lab-badge--spotlight-mini",
+                  particleCount: 6
+                });
                 const normalizedTitle =
                   typeof badge.title === "string" && badge.title.trim().length > 0
                     ? badge.title.trim()
@@ -196,11 +206,8 @@
                 const rawPoints = Number(badge.points);
                 const pointsValue = Number.isFinite(rawPoints) ? rawPoints : 0;
                 return `
-        <li class="badge-spotlight-extra__item" data-badge="${safeId}">
-          <span class="badge-spotlight-extra__icon">${WeldUtil.renderIcon(
-            badge.icon || "medal",
-            "xs"
-          )}</span>
+        <li class="badge-spotlight-extra__item" data-badge="${WeldUtil.escapeHtml(String(badge.id ?? ""))}">
+          <span class="badge-spotlight-extra__icon">${badgeVisual}</span>
           <span class="badge-spotlight-extra__name">${WeldUtil.escapeHtml(normalizedTitle)}</span>
           <span class="badge-spotlight-extra__points" aria-label="${WeldUtil.escapeHtml(
             `${formatNumber(pointsValue)} points`
@@ -219,7 +226,7 @@
         </button>
         <div class="badge-spotlight-extra__panel" id="${extraPanelId}" role="group" aria-label="Additional badges earned">
           <ul class="badge-spotlight-extra__list">
-            ${displayedExtras.map(formatExtra).join("")}
+            ${displayedExtras.map((badge, index) => formatExtra(badge, index)).join("")}
           </ul>
         </div>
       </div>`;
@@ -229,10 +236,81 @@
       return `
     <div class="badge-spotlight" data-badge-showcase>
       <div class="badge-spotlight__primary" role="list">
-        ${renderTile(primaryBadge)}
+        ${renderTile(primaryBadge, 0, badges.length)}
         ${extrasMarkup}
       </div>
     </div>`;
+    }
+
+    function getSpotlightTierMeta(badge, index, total) {
+      if (typeof BadgeLabTheme.getTierMetaByDifficulty === "function") {
+        const tier = BadgeLabTheme.getTierMetaByDifficulty(badge?.difficulty, index);
+        if (tier) return tier;
+      }
+      if (typeof BadgeLabTheme.getTierMetaForIndex === "function") {
+        return BadgeLabTheme.getTierMetaForIndex(index, total || 1);
+      }
+      return null;
+    }
+
+    function getBadgeTierStyles(tierMeta) {
+      if (typeof BadgeLabTheme.getTierStyles === "function") {
+        return BadgeLabTheme.getTierStyles(tierMeta);
+      }
+      if (tierMeta && tierMeta.gradient) {
+        return {
+          background: tierMeta.gradient,
+          shadow: tierMeta.shadow || "0 18px 32px rgba(15, 23, 42, 0.25)"
+        };
+      }
+      return {
+        background: "linear-gradient(135deg, #c7d2fe, #818cf8)",
+        shadow: "0 12px 24px rgba(79, 70, 229, 0.32)"
+      };
+    }
+
+    function getBadgeIconSource(badge, fallbackIndex = 0) {
+      if (typeof BadgeLabTheme.getIconForBadge === "function") {
+        const src = BadgeLabTheme.getIconForBadge(badge, fallbackIndex);
+        if (src) return src;
+      }
+      if (typeof badge?.labIcon === "string" && badge.labIcon.trim().length > 0) {
+        return badge.labIcon.trim();
+      }
+      return "";
+    }
+
+    function sanitizeBadgeArcId(id, index) {
+      const raw =
+        typeof id === "string" && id.trim().length > 0
+          ? id.trim()
+          : `badge-${index}-${Date.now().toString(16)}`;
+      return raw.replace(/[^a-zA-Z0-9:_-]/g, "-");
+    }
+
+    function renderBadgeVisual({ tierMeta, arcId, iconSrc, fallbackInitial, modifier = "", particleCount = 10 }) {
+      const styles = getBadgeTierStyles(tierMeta);
+      const arcMarkup =
+        typeof BadgeLabTheme.renderArc === "function" ? BadgeLabTheme.renderArc(tierMeta?.label || "", arcId) : "";
+      const shine = typeof BadgeLabTheme.renderShine === "function" ? BadgeLabTheme.renderShine() : "";
+      const ring = typeof BadgeLabTheme.renderRing === "function" ? BadgeLabTheme.renderRing() : "";
+      const particles =
+        typeof BadgeLabTheme.renderParticles === "function" ? BadgeLabTheme.renderParticles(particleCount) : "";
+      const iconMarkup =
+        typeof BadgeLabTheme.renderIconImage === "function"
+          ? BadgeLabTheme.renderIconImage(iconSrc, fallbackInitial || "")
+          : WeldUtil.renderIcon("medal", "sm");
+      return `
+        <span class="badge-lab-badge ${modifier || ""}">
+          <span class="badge-lab-badge__icon" style="background:${styles.background}; box-shadow:${styles.shadow};">
+            ${shine}
+            ${ring}
+            ${particles}
+            ${arcMarkup}
+            ${iconMarkup}
+          </span>
+        </span>
+      `;
     }
 
     function teardownBadgeShowcase() {
@@ -255,7 +333,7 @@
         return;
       }
 
-      const eligible = badges.filter(badge => badge && badge.icon);
+      const eligible = badges.filter(badge => Boolean(badge));
       if (eligible.length === 0) {
         badgeContainer.innerHTML = "";
         return;

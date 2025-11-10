@@ -411,10 +411,16 @@
   box-shadow: none;
 }
 .addin-success__badge .badge-spotlight-tile__icon {
-  width: 68px;
-  height: 68px;
-  border-radius: 20px;
-  box-shadow: none;
+  width: auto;
+  height: auto;
+}
+.addin-success__badge .badge-lab-badge--spotlight .badge-lab-badge__icon {
+  width: 3.8rem;
+  height: 3.8rem;
+}
+.addin-success__badge .badge-lab-badge--spotlight-mini .badge-lab-badge__icon {
+  width: 2.4rem;
+  height: 2.4rem;
 }
 .addin-success__badge .badge-spotlight-tile__points {
   box-shadow: none;
