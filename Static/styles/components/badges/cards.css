@@ -465,7 +465,8 @@
   }
 
   @media (min-width: 768px) {
-    .catalogue-badge.catalogue-badge--edge .catalogue-badge-card:not(.catalogue-badge-card--hub) {
+    .catalogue-badge.catalogue-badge--edge .catalogue-badge-card:not(.catalogue-badge-card--hub),
+    .catalogue-badge.catalogue-badge--edge-right .catalogue-badge-card:not(.catalogue-badge-card--hub) {
       left: auto;
       right: 0;
       transform: translate(0, 16px) scale(0.98);
@@ -474,11 +475,16 @@
     .catalogue-badge.catalogue-badge--edge:hover .catalogue-badge-card:not(.catalogue-badge-card--hub),
     .catalogue-badge.catalogue-badge--edge:focus-within .catalogue-badge-card:not(.catalogue-badge-card--hub),
     .catalogue-badge.catalogue-badge--edge .catalogue-badge-card:not(.catalogue-badge-card--hub):hover,
-    .catalogue-badge.catalogue-badge--edge .catalogue-badge-card:not(.catalogue-badge-card--hub):focus-within {
+    .catalogue-badge.catalogue-badge--edge .catalogue-badge-card:not(.catalogue-badge-card--hub):focus-within,
+    .catalogue-badge.catalogue-badge--edge-right:hover .catalogue-badge-card:not(.catalogue-badge-card--hub),
+    .catalogue-badge.catalogue-badge--edge-right:focus-within .catalogue-badge-card:not(.catalogue-badge-card--hub),
+    .catalogue-badge.catalogue-badge--edge-right .catalogue-badge-card:not(.catalogue-badge-card--hub):hover,
+    .catalogue-badge.catalogue-badge--edge-right .catalogue-badge-card:not(.catalogue-badge-card--hub):focus-within {
       transform: translate(0, 0) scale(1);
     }
 
-    .catalogue-badge.catalogue-badge--edge .catalogue-badge-card--hub {
+    .catalogue-badge.catalogue-badge--edge .catalogue-badge-card--hub,
+    .catalogue-badge.catalogue-badge--edge-right .catalogue-badge-card--hub {
       left: auto;
       right: calc(100% + 1.5rem);
       transform: translate(-12px, -50%) scale(0.98);
@@ -487,8 +493,25 @@
     .catalogue-badge.catalogue-badge--edge:hover .catalogue-badge-card--hub,
     .catalogue-badge.catalogue-badge--edge:focus-within .catalogue-badge-card--hub,
     .catalogue-badge.catalogue-badge--edge .catalogue-badge-card--hub:hover,
-    .catalogue-badge.catalogue-badge--edge .catalogue-badge-card--hub:focus-within {
+    .catalogue-badge.catalogue-badge--edge .catalogue-badge-card--hub:focus-within,
+    .catalogue-badge.catalogue-badge--edge-right:hover .catalogue-badge-card--hub,
+    .catalogue-badge.catalogue-badge--edge-right:focus-within .catalogue-badge-card--hub,
+    .catalogue-badge.catalogue-badge--edge-right .catalogue-badge-card--hub:hover,
+    .catalogue-badge.catalogue-badge--edge-right .catalogue-badge-card--hub:focus-within {
       transform: translate(-12px, -50%) scale(0.98);
+    }
+
+    .catalogue-badge.catalogue-badge--edge-left .catalogue-badge-card:not(.catalogue-badge-card--hub) {
+      left: 0;
+      right: auto;
+      transform: translate(0, 16px) scale(0.98);
+    }
+
+    .catalogue-badge.catalogue-badge--edge-left:hover .catalogue-badge-card:not(.catalogue-badge-card--hub),
+    .catalogue-badge.catalogue-badge--edge-left:focus-within .catalogue-badge-card:not(.catalogue-badge-card--hub),
+    .catalogue-badge.catalogue-badge--edge-left .catalogue-badge-card:not(.catalogue-badge-card--hub):hover,
+    .catalogue-badge.catalogue-badge--edge-left .catalogue-badge-card:not(.catalogue-badge-card--hub):focus-within {
+      transform: translate(0, 0) scale(1);
     }
   }
   

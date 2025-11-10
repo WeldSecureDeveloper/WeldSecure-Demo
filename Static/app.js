@@ -3489,45 +3489,46 @@ function scheduleBadgeEdgeAlignment(scope) {
 
 function applyBadgeEdgeAlignment(scope) {
   if (!scope || typeof scope.querySelectorAll !== "function") return;
-  const containers = scope.querySelectorAll(
-    ".catalogue-badge-grid, .catalogue-badge-grid--hub, .catalogue-badge-group__grid"
+  const badges = Array.from(scope.querySelectorAll(".catalogue-badge"));
+  if (badges.length === 0) return;
+  const viewportWidth = Math.max(
+    window.innerWidth || 0,
+    document.documentElement?.clientWidth || 0,
+    0
   );
-  containers.forEach(container => alignBadgeEdgesInContainer(container));
+  if (viewportWidth <= 0) return;
+  const safePadding = 16;
+  badges.forEach(badge => alignBadgeEdgesForBadge(badge, viewportWidth, safePadding));
 }
 
-function alignBadgeEdgesInContainer(container) {
-  if (!container || typeof container.querySelectorAll !== "function") return;
-  const badges = Array.from(container.querySelectorAll(".catalogue-badge"));
-  if (badges.length === 0) return;
+function alignBadgeEdgesForBadge(badge, viewportWidth, safePadding) {
+  if (
+    !badge ||
+    typeof badge.querySelector !== "function" ||
+    typeof badge.classList?.remove !== "function"
+  ) {
+    return;
+  }
   const edgeClass = "catalogue-badge--edge";
-  const rowTolerance = 12;
-  badges.forEach(badge => badge.classList.remove(edgeClass));
-  const rows = [];
-  badges.forEach(badge => {
-    const top = badge.offsetTop;
-    if (!Number.isFinite(top)) return;
-    let row = rows.find(entry => Math.abs(entry.top - top) <= rowTolerance);
-    if (!row) {
-      row = { top, badges: [] };
-      rows.push(row);
-    }
-    row.badges.push(badge);
-  });
-  rows.forEach(row => {
-    let edgeBadge = null;
-    let edgeRight = -Infinity;
-    row.badges.forEach(badge => {
-      const rect = typeof badge.getBoundingClientRect === "function" ? badge.getBoundingClientRect() : null;
-      if (!rect) return;
-      if (!edgeBadge || rect.right > edgeRight) {
-        edgeBadge = badge;
-        edgeRight = rect.right;
-      }
-    });
-    if (edgeBadge) {
-      edgeBadge.classList.add(edgeClass);
-    }
-  });
+  const edgeRightClass = "catalogue-badge--edge-right";
+  const edgeLeftClass = "catalogue-badge--edge-left";
+  badge.classList.remove(edgeClass, edgeRightClass, edgeLeftClass);
+  const card = badge.querySelector(".catalogue-badge-card");
+  if (!card || typeof card.getBoundingClientRect !== "function") return;
+  const cardRect = card.getBoundingClientRect();
+  if (!cardRect || !Number.isFinite(cardRect.left) || !Number.isFinite(cardRect.right)) {
+    return;
+  }
+  const thresholdLeft = safePadding;
+  const thresholdRight = viewportWidth - safePadding;
+  const overflowLeft = cardRect.left < thresholdLeft;
+  const overflowRight = cardRect.right > thresholdRight;
+  if (overflowRight) {
+    badge.classList.add(edgeClass, edgeRightClass);
+  }
+  if (overflowLeft) {
+    badge.classList.add(edgeLeftClass);
+  }
 }
 
 
