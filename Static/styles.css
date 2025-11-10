@@ -37,5 +37,6 @@
 @import url("./styles/features/userConfig.css");
 @import url("./styles/features/admin.css");
 @import url("./styles/features/client.css");
+@import url("./styles/features/phishingSimulation.css");
 @import url("./styles/features/badges.css");
 @import url("./styles/features/badgeExperiments.css");

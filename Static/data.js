@@ -57,6 +57,7 @@ Object.assign(AppData, {
   "client-rewards": { requiresRole: "client" },
   "client-quests": { requiresRole: "client" },
   "weld-admin": { requiresRole: "admin" },
+  "phishing-sims": { requiresRole: "admin" },
   "weld-labs": { requiresRole: "admin" },
   "client-badges": { requiresRole: "client" },
   addin: { requiresRole: false }
@@ -90,6 +91,7 @@ Object.assign(AppData, {
     label: "WeldSecure",
     items: [
       { label: "Weld Admin", route: "weld-admin", role: "admin" },
+      { label: "Phishing Sims", route: "phishing-sims", role: "admin" },
       { label: "Weld Labs", route: "weld-labs", role: "admin" }
     ]
   }

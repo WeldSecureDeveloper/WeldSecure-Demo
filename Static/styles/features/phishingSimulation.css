@@ -1,0 +1,395 @@
+@layer features {
+  .phish-sim {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding-bottom: 2rem;
+  }
+
+  .phish-sim__hero,
+  .phish-sim__campaigns,
+  .phish-sim__panel {
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border-soft);
+    border-radius: 1.5rem;
+    padding: 1.75rem;
+    box-shadow: var(--shadow-card, 0 20px 40px rgba(15, 23, 42, 0.08));
+  }
+
+  .phish-sim__hero {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .phish-sim__metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .phish-sim__metric {
+    background: var(--color-bg-surface-alt);
+    border: 1px solid var(--color-border-soft);
+    border-radius: 1.25rem;
+    padding: 1.25rem;
+  }
+
+  .phish-sim__metric-label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.25rem;
+  }
+
+  .phish-sim__metric-value {
+    font-size: 1.75rem;
+    line-height: 1.2;
+    color: var(--color-text-primary);
+  }
+
+  .phish-sim__metric-caption {
+    color: var(--color-text-secondary);
+    margin: 0.35rem 0 0;
+  }
+
+  .phish-sim__queue {
+    background: var(--color-bg-surface-alt);
+    border: 1px dashed var(--color-border-soft);
+    border-radius: 1.25rem;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .phish-sim__queue-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .phish-sim__queue-indicator strong {
+    font-size: 1.5rem;
+    color: var(--color-text-primary);
+  }
+
+  .phish-sim__layout {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    gap: 2rem;
+    align-items: start;
+  }
+
+  .phish-sim__campaigns header,
+  .phish-sim__panel header {
+    margin-bottom: 1.25rem;
+  }
+
+  .phish-sim__campaigns h2,
+  .phish-sim__panel h2 {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+
+  .phish-sim__campaigns p,
+  .phish-sim__panel p {
+    margin: 0.35rem 0 0;
+    color: var(--color-text-muted);
+  }
+
+  .phish-sim__campaign-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .phish-sim__campaign-card {
+    border: 1px solid var(--color-border-soft);
+    border-radius: 1.25rem;
+    padding: 1.5rem;
+    background: var(--color-bg-surface-alt);
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+  }
+
+  .phish-sim__campaign-card--active {
+    border-color: var(--btn-ring-color, #60a5fa);
+    box-shadow: 0 20px 40px rgba(59, 130, 246, 0.18);
+  }
+
+  .phish-sim__campaign-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .phish-sim__campaign-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+  }
+
+  .phish-sim__campaign-meta {
+    margin: 0 0 1rem;
+    color: var(--color-text-muted);
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+  }
+
+  .phish-sim__kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 0.75rem;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.25rem;
+  }
+
+  .phish-sim__kpis li {
+    border: 1px solid var(--color-border-soft);
+    border-radius: 1rem;
+    padding: 0.75rem;
+    background: var(--color-bg-surface);
+  }
+
+  .phish-sim__kpis span {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    margin-bottom: 0.25rem;
+  }
+
+  .phish-sim__kpis strong {
+    font-size: 1.1rem;
+    color: var(--color-text-primary);
+  }
+
+  .phish-sim__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .phish-sim__action {
+    border: 1px solid var(--color-border-soft);
+    border-radius: 999px;
+    padding: 0.6rem 1.5rem;
+    font-weight: 600;
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: transform 120ms ease, box-shadow 120ms ease;
+  }
+
+  .phish-sim__action:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
+  }
+
+  .phish-sim__action--primary {
+    background: var(--btn-gradient-primary);
+    border: none;
+    color: var(--color-text-on-accent);
+    box-shadow: var(--btn-shadow-soft);
+  }
+
+  .phish-sim__panel + .phish-sim__panel {
+    margin-top: 1.5rem;
+  }
+
+  .phish-sim__department-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .phish-sim__department {
+    border: 1px solid var(--color-border-soft);
+    border-radius: 1rem;
+    padding: 1rem;
+    text-align: left;
+    background: var(--color-bg-page-muted);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: border-color 160ms ease, background 160ms ease;
+  }
+
+  .phish-sim__department strong {
+    display: block;
+    font-size: 1rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .phish-sim__department span {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+  }
+
+  .phish-sim__department--active {
+    border-color: var(--btn-ring-color, #60a5fa);
+    background: var(--color-bg-surface);
+  }
+
+  .phish-sim__department-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .phish-sim__department-metric {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--color-text-muted);
+  }
+
+  .phish-sim__department-detail {
+    margin-top: 1.25rem;
+    border: 1px solid var(--color-border-soft);
+    border-radius: 1.25rem;
+    padding: 1.25rem;
+    background: var(--color-bg-surface-alt);
+  }
+
+  .phish-sim__department-detail header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .phish-sim__detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin: 0;
+  }
+
+  .phish-sim__detail-grid dt {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    margin-bottom: 0.2rem;
+  }
+
+  .phish-sim__detail-grid dd {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .phish-sim__history ul,
+  .phish-sim__follow-ups,
+  .phish-sim__queue-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.75rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .phish-sim__history li,
+  .phish-sim__follow-up,
+  .phish-sim__queue-list li {
+    border: 1px solid var(--color-border-soft);
+    border-radius: 1rem;
+    padding: 0.85rem 1rem;
+    background: var(--color-bg-surface);
+  }
+
+  .phish-sim__follow-up span {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+  }
+
+  .phish-sim__detail-actions {
+    margin-top: 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .phish-sim__insights-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .phish-sim__eyebrow {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+
+  .phish-sim__pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    border-radius: 999px;
+    padding: 0.25rem 0.85rem;
+    border: 1px solid transparent;
+    background: rgba(99, 102, 241, 0.12);
+    color: #4338ca;
+  }
+
+  .phish-sim__pill[data-tone="vector"] {
+    background: rgba(14, 165, 233, 0.15);
+    color: #0369a1;
+  }
+
+  .phish-sim__pill[data-tone="queue"] {
+    background: rgba(16, 185, 129, 0.15);
+    color: #065f46;
+  }
+
+  .phish-sim__department-metric[data-tone="report"],
+  .phish-sim__pill[data-tone="report"] {
+    color: #0f766e;
+  }
+
+  .phish-sim__department-metric[data-tone="click"],
+  .phish-sim__pill[data-tone="click"] {
+    color: #b45309;
+  }
+
+  .phish-sim__empty {
+    padding: 1.25rem;
+    border-radius: 1rem;
+    background: var(--color-bg-page-muted);
+    color: var(--color-text-muted);
+    text-align: center;
+  }
+
+  @media (max-width: 1024px) {
+    .phish-sim__layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .phish-sim__metrics {
+      grid-template-columns: 1fr;
+    }
+
+    .phish-sim__campaign-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .phish-sim__detail-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+}

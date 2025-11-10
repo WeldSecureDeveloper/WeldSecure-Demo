@@ -1,5 +1,6 @@
 (function () {
   const AppData = window.AppData || {};
+  const DirectoryData = window.DirectoryData || {};
   const WeldState = window.WeldState;
   const WeldUtil = window.WeldUtil;
   const WeldServices = window.WeldServices || (window.WeldServices = {});
@@ -126,6 +127,7 @@
     state.departmentLeaderboard = WeldUtil.clone(defaultState.departmentLeaderboard);
     state.engagementPrograms = WeldUtil.clone(defaultState.engagementPrograms);
     state.labs = WeldUtil.clone(defaultState.labs);
+    state.phishingSimulation = WeldUtil.clone(defaultState.phishingSimulation);
 
     if (window.location && window.location.hash) {
       if (window.history && typeof window.history.replaceState === "function") {
@@ -464,5 +466,174 @@
     syncGlobalState(state);
     saveState(state);
     renderShell();
+  };
+  const DEFAULT_PHISHING_SIM_STATE = {
+    activeCampaignId: null,
+    selectedDepartmentId: null,
+    simLaunchQueue: [],
+    lastSimFeedback: null
+  };
+
+  const getPhishingData = () => AppData.phishingSimulations || {};
+  const getPhishingCampaigns = () => {
+    const campaigns = getPhishingData().campaigns;
+    return Array.isArray(campaigns) ? campaigns : [];
+  };
+  const getDepartments = () =>
+    Array.isArray(DirectoryData.departments) ? DirectoryData.departments : [];
+
+  const normalizeCampaignId = value => {
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed : null;
+    }
+    if (Number.isFinite(value)) {
+      return String(value);
+    }
+    return null;
+  };
+
+  const findCampaignById = id => {
+    const normalized = normalizeCampaignId(id);
+    if (!normalized) return null;
+    return getPhishingCampaigns().find(campaign => campaign && campaign.id === normalized) || null;
+  };
+
+  const normalizeDepartmentId = value => {
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed : null;
+    }
+    return null;
+  };
+
+  function ensurePhishingSimState(state) {
+    if (!state.phishingSimulation || typeof state.phishingSimulation !== "object") {
+      state.phishingSimulation =
+        (WeldUtil && typeof WeldUtil.clone === "function"
+          ? WeldUtil.clone(DEFAULT_PHISHING_SIM_STATE)
+          : { ...DEFAULT_PHISHING_SIM_STATE }) || {};
+    }
+    if (!Array.isArray(state.phishingSimulation.simLaunchQueue)) {
+      state.phishingSimulation.simLaunchQueue = [];
+    }
+    return state.phishingSimulation;
+  }
+
+  function updatePhishingState(state, updater) {
+    const simState = ensurePhishingSimState(state);
+    const next = typeof updater === "function" ? updater(simState) : null;
+    return next || simState;
+  }
+
+  function renderPhishFeedback(campaign, targets) {
+    const name = campaign?.name || "Simulation";
+    const targetCount = Array.isArray(targets) ? targets.length : 0;
+    const plural = targetCount === 1 ? "department" : "departments";
+    return `${name} queued for ${targetCount || "0"} ${plural} at ${new Date().toISOString()}`;
+  }
+
+  WeldServices.selectPhishingCampaign = function selectPhishingCampaign(campaignId, providedState) {
+    const state = resolveState(providedState);
+    if (!state) return { success: false, reason: "State missing." };
+    const campaigns = getPhishingCampaigns();
+    if (campaigns.length === 0) return { success: false, reason: "No campaigns available." };
+    const targetCampaign =
+      findCampaignById(campaignId) ||
+      findCampaignById(state.phishingSimulation && state.phishingSimulation.activeCampaignId) ||
+      campaigns[0];
+    if (!targetCampaign) return { success: false, reason: "Campaign not found." };
+    const normalizedId = normalizeCampaignId(targetCampaign.id);
+    updatePhishingState(state, simState => {
+      if (simState.activeCampaignId !== normalizedId) {
+        simState.activeCampaignId = normalizedId;
+        simState.selectedDepartmentId = null;
+      }
+      return simState;
+    });
+    syncGlobalState(state);
+    saveState(state);
+    renderShell();
+    return { success: true, campaignId: normalizedId };
+  };
+
+  WeldServices.selectPhishingDepartment = function selectPhishingDepartment(departmentId, providedState) {
+    const state = resolveState(providedState);
+    if (!state) return { success: false, reason: "State missing." };
+    const normalizedDepartmentId = normalizeDepartmentId(departmentId);
+    if (!normalizedDepartmentId) {
+      updatePhishingState(state, simState => {
+        simState.selectedDepartmentId = null;
+        return simState;
+      });
+      syncGlobalState(state);
+      saveState(state);
+      renderShell();
+      return { success: true, departmentId: null };
+    }
+    const departments = getDepartments();
+    const departmentExists = departments.some(dept => dept?.id === normalizedDepartmentId);
+    if (!departmentExists) {
+      return { success: false, reason: "Department not found." };
+    }
+    const activeCampaign =
+      state.phishingSimulation && state.phishingSimulation.activeCampaignId
+        ? findCampaignById(state.phishingSimulation.activeCampaignId)
+        : null;
+    if (activeCampaign && Array.isArray(activeCampaign.targets) && activeCampaign.targets.length > 0) {
+      const targetsSet = new Set(activeCampaign.targets);
+      if (!targetsSet.has(normalizedDepartmentId)) {
+        return { success: false, reason: "Department not targeted in this campaign." };
+      }
+    }
+    updatePhishingState(state, simState => {
+      simState.selectedDepartmentId = normalizedDepartmentId;
+      return simState;
+    });
+    syncGlobalState(state);
+    saveState(state);
+    renderShell();
+    return { success: true, departmentId: normalizedDepartmentId };
+  };
+
+  WeldServices.queuePhishingLaunch = function queuePhishingLaunch(
+    campaignId,
+    options = {},
+    providedState
+  ) {
+    const state = resolveState(providedState);
+    if (!state) return { success: false, reason: "State missing." };
+    const campaigns = getPhishingCampaigns();
+    if (campaigns.length === 0) return { success: false, reason: "No campaigns available." };
+    const fallbackCampaign =
+      findCampaignById(state.phishingSimulation && state.phishingSimulation.activeCampaignId) ||
+      campaigns[0];
+    const targetCampaign = findCampaignById(campaignId) || fallbackCampaign;
+    if (!targetCampaign) return { success: false, reason: "Campaign not found." };
+    const normalizedId = normalizeCampaignId(targetCampaign.id);
+    const targets =
+      Array.isArray(options.targets) && options.targets.length > 0
+        ? options.targets
+        : Array.isArray(targetCampaign.targets)
+        ? targetCampaign.targets
+        : [];
+    const feedbackMessage = renderPhishFeedback(targetCampaign, targets);
+    updatePhishingState(state, simState => {
+      const queue = Array.isArray(simState.simLaunchQueue) ? simState.simLaunchQueue.slice() : [];
+      const filtered = queue.filter(id => id !== normalizedId);
+      filtered.unshift(normalizedId);
+      simState.simLaunchQueue = filtered.slice(0, 10);
+      simState.activeCampaignId = normalizedId;
+      simState.lastSimFeedback = feedbackMessage;
+      return simState;
+    });
+    syncGlobalState(state);
+    saveState(state);
+    renderShell();
+    return {
+      success: true,
+      campaignId: normalizedId,
+      message: feedbackMessage
+    };
   };
 })();

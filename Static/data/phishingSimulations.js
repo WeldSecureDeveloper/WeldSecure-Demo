@@ -1,0 +1,114 @@
+(function () {
+  const AppData = window.AppData || (window.AppData = {});
+  if (AppData.phishingSimulations) return;
+
+  const iso = value => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return new Date().toISOString();
+    }
+    return date.toISOString();
+  };
+
+  AppData.phishingSimulations = {
+    campaigns: [
+      {
+        id: "sim-q4-finance",
+        name: "Q4 Finance Spoof",
+        launchDate: iso("2025-10-28T09:00:00Z"),
+        templateId: "template-wire-fraud",
+        ownerId: "amelia-reed",
+        targets: ["finance-assurance", "operations-resilience"],
+        delivery: { sent: 280, delivered: 276, failed: 4 },
+        engagement: { reported: 198, clicked: 22, ignored: 60 },
+        followUps: [
+          { id: "reward-badge:finance-assurance", label: "Badge drop: Treasury Guardians" },
+          { id: "reset-script:opsres", label: "Reset script: Ops Resilience devices" }
+        ]
+      },
+      {
+        id: "sim-hr-benefits",
+        name: "Benefits Renewal Alert",
+        launchDate: iso("2025-11-06T15:30:00Z"),
+        templateId: "template-benefits-refresh",
+        ownerId: "emily-chen",
+        targets: ["people-experience", "engineering-delivery"],
+        delivery: { sent: 210, delivered: 207, failed: 3 },
+        engagement: { reported: 156, clicked: 18, ignored: 36 },
+        followUps: [
+          { id: "training-module:people-experience", label: "Training: Benefits social engineering" }
+        ]
+      },
+      {
+        id: "sim-cxo-wire",
+        name: "Executive Wire Escalation",
+        launchDate: iso("2025-11-10T11:15:00Z"),
+        templateId: "template-wire-fraud",
+        ownerId: "nina-kowalski",
+        targets: ["security-enablement"],
+        delivery: { sent: 65, delivered: 65, failed: 0 },
+        engagement: { reported: 54, clicked: 3, ignored: 8 },
+        followUps: [
+          { id: "reward-badge:security-enablement", label: "Badge: Vigilant Exec Desk" },
+          { id: "exec-briefing", label: "Exec briefing: highlight lookalike domains" }
+        ]
+      },
+      {
+        id: "sim-ops-logistics",
+        name: "Logistics Routing Update",
+        launchDate: iso("2025-11-12T08:20:00Z"),
+        templateId: "template-vendor-portal",
+        ownerId: "grace-muller",
+        targets: ["operations-resilience"],
+        delivery: { sent: 140, delivered: 138, failed: 2 },
+        engagement: { reported: 92, clicked: 11, ignored: 37 },
+        followUps: [
+          { id: "reset-script:opsres", label: "Reset script: Ops handheld devices" },
+          { id: "badge-nudge:opsres", label: "Badge nudge: Logistics sentry" }
+        ]
+      }
+    ],
+    templates: [
+      {
+        id: "template-wire-fraud",
+        subject: "Treasury URGENT: Wire validation",
+        vector: "email",
+        difficulty: "high",
+        signals: ["LOOKALIKE_DOMAIN", "MISMATCHED_LINK", "SENDER_SPOOF"]
+      },
+      {
+        id: "template-benefits-refresh",
+        subject: "Action required: renew benefits window",
+        vector: "email",
+        difficulty: "medium",
+        signals: ["LOOKALIKE_DOMAIN", "UNEXPECTED_FORM"]
+      },
+      {
+        id: "template-vendor-portal",
+        subject: "Vendor portal MFA refresh",
+        vector: "sms",
+        difficulty: "medium",
+        signals: ["SHORT_URL", "SENSE_OF_URGENCY"]
+      }
+    ],
+    historyByDepartment: {
+      "finance-assurance": [
+        { campaignId: "sim-q3-finance", templateId: "template-wire-fraud", reported: 180, clicked: 28 },
+        { campaignId: "sim-q4-finance", templateId: "template-wire-fraud", reported: 198, clicked: 22 }
+      ],
+      "operations-resilience": [
+        { campaignId: "sim-q4-finance", templateId: "template-wire-fraud", reported: 76, clicked: 11 },
+        { campaignId: "sim-ops-logistics", templateId: "template-vendor-portal", reported: 92, clicked: 11 }
+      ],
+      "people-experience": [
+        { campaignId: "sim-hr-benefits", templateId: "template-benefits-refresh", reported: 108, clicked: 14 }
+      ],
+      "engineering-delivery": [
+        { campaignId: "sim-hr-benefits", templateId: "template-benefits-refresh", reported: 48, clicked: 4 }
+      ],
+      "security-enablement": [
+        { campaignId: "sim-cxo-wire", templateId: "template-wire-fraud", reported: 54, clicked: 3 }
+      ]
+    }
+  };
+})();

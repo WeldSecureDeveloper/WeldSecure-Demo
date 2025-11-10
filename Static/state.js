@@ -140,6 +140,52 @@
     return base;
   }
 
+  function normalizePhishingSimulation(source, fallback) {
+    const base =
+      fallback && typeof fallback === "object"
+        ? fallback
+        : FALLBACK_BASE.phishingSimulation || {
+            activeCampaignId: null,
+            selectedDepartmentId: null,
+            simLaunchQueue: [],
+            lastSimFeedback: null
+          };
+    const ensureId = value => {
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        return trimmed.length > 0 ? trimmed : null;
+      }
+      if (Number.isFinite(value)) {
+        return String(value);
+      }
+      return null;
+    };
+    const ensureQueue = list => {
+      if (!Array.isArray(list)) {
+        return Array.isArray(base.simLaunchQueue) ? base.simLaunchQueue.slice() : [];
+      }
+      const normalized = list
+        .map(entry => ensureId(entry))
+        .filter(Boolean)
+        .slice(0, 10);
+      if (normalized.length > 0) return normalized;
+      return Array.isArray(base.simLaunchQueue) ? base.simLaunchQueue.slice() : [];
+    };
+    const ensureFeedback = value => {
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        return trimmed.length > 0 ? trimmed : null;
+      }
+      return null;
+    };
+    return {
+      activeCampaignId: ensureId(source?.activeCampaignId) || ensureId(base.activeCampaignId),
+      selectedDepartmentId: ensureId(source?.selectedDepartmentId),
+      simLaunchQueue: ensureQueue(source?.simLaunchQueue),
+      lastSimFeedback: ensureFeedback(source?.lastSimFeedback)
+    };
+  }
+
   const FALLBACK_BASE = {
     meta: {
       role: null,
@@ -207,6 +253,12 @@
     labs: {
       lastReviewAt: null,
       features: []
+    },
+    phishingSimulation: {
+      activeCampaignId: null,
+      selectedDepartmentId: null,
+      simLaunchQueue: [],
+      lastSimFeedback: null
     }
   };
 
@@ -338,6 +390,7 @@
       reasons: Array.isArray(message.reasons) ? message.reasons.slice() : [],
       status: normalizeStatus(message.status)
     }));
+    const phishingSimulation = normalizePhishingSimulation(base.phishingSimulation);
 
     return {
       meta,
@@ -363,7 +416,8 @@
       labs,
       rewardRedemptions,
       messages,
-      clients
+      clients,
+      phishingSimulation
     };
   }
 
@@ -949,7 +1003,8 @@
           SETTINGS_CATEGORIES.find(category => !category.disabled) || SETTINGS_CATEGORIES[0] || null;
         mergedMeta.settingsCategory = fallbackCategory ? fallbackCategory.id : null;
       }
-      const { customer: storedCustomer, ...restPassthrough } = passthrough;
+      const { customer: storedCustomer, phishingSimulation: storedPhishingSimulation, ...restPassthrough } =
+        passthrough;
       const normalizeBonusPoints = (candidate, baseBonus) => {
         const fallback = baseBonus && typeof baseBonus === "object" ? baseBonus : {};
         const baseBreakdown = Array.isArray(fallback.breakdown) ? fallback.breakdown : [];
@@ -1123,10 +1178,15 @@
           )
         };
       })();
+      const normalizedPhishingSimulation = normalizePhishingSimulation(
+        storedPhishingSimulation,
+        baseState.phishingSimulation
+      );
       return {
         ...baseState,
         ...restPassthrough,
         customer: normalizedCustomer,
+        phishingSimulation: normalizedPhishingSimulation,
         meta: mergedMeta,
         rewards: normalizedRewards,
         quests: normalizedQuests,

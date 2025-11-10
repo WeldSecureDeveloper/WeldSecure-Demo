@@ -179,6 +179,10 @@
     "weld-admin": featureRoute("admin", {
       templateMethods: ["template", "render"],
       attachMethods: ["attach", "render"]
+    }),
+    "phishing-sims": featureRoute("phishingSimulation", {
+      templateMethods: ["render"],
+      attachMethods: ["attach"]
     })
   };
 
