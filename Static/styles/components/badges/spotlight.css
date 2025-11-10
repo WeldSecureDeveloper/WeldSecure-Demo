@@ -9,7 +9,7 @@
   .badge-spotlight__primary {
     display: inline-flex;
     align-items: center;
-    gap: 1.1rem;
+    gap: clamp(1.35rem, 1rem + 1vw, 2rem);
   }
 
   .badge-spotlight-row {
@@ -93,6 +93,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-left: 0.15rem;
   }
 
   .badge-spotlight-extra__trigger {
@@ -133,14 +134,16 @@
     position: absolute;
     bottom: calc(100% + 14px);
     right: 0;
-    width: 220px;
+    width: max-content;
+    min-width: 280px;
+    max-width: min(380px, calc(100vw - 2.5rem));
     padding: 0.85rem 1rem;
     border-radius: 18px;
     background: rgba(15, 23, 42, 0.96);
     color: #f1f5f9;
     box-shadow: 0 24px 44px rgba(15, 23, 42, 0.28);
     opacity: 0;
-    transform: translateY(8px) scale(0.98);
+    transform: translate3d(var(--badge-panel-shift, 0px), 8px, 0) scale(0.98);
     pointer-events: none;
     transition:
       opacity 0.16s ease,
@@ -151,14 +154,14 @@
   .badge-spotlight-extra--open .badge-spotlight-extra__panel {
     opacity: 1;
     pointer-events: auto;
-    transform: translateY(0) scale(1);
+    transform: translate3d(var(--badge-panel-shift, 0px), 0, 0) scale(1);
   }
 
   .badge-spotlight-extra__panel::before {
     content: "";
     position: absolute;
     bottom: -8px;
-    right: 18px;
+    right: calc(18px + var(--badge-panel-caret-offset, 0px));
     width: 16px;
     height: 16px;
     transform: rotate(45deg);
@@ -176,9 +179,11 @@
   }
 
   .badge-spotlight-extra__item {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    column-gap: 0.75rem;
+    row-gap: 0.15rem;
     align-items: center;
-    gap: 0.75rem;
     font-size: 0.82rem;
     letter-spacing: 0.02em;
     text-align: left;
@@ -220,12 +225,15 @@
     width: 48px;
     height: 48px;
     flex-shrink: 0;
+    align-self: center;
   }
 
   .badge-spotlight-extra__name {
-    flex: 1;
     color: rgba(241, 245, 249, 0.92);
     text-align: left;
+    line-height: 1.35;
+    word-break: break-word;
+    align-self: center;
   }
 
   .badge-spotlight-extra__points {
@@ -242,5 +250,8 @@
     text-transform: uppercase;
     font-size: 0.66rem;
     margin-left: auto;
+    justify-self: end;
+    align-self: center;
+    white-space: nowrap;
   }
 }

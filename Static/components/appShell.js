@@ -377,7 +377,51 @@
       if (extraWrapper && extraToggle && panel) {
         panel.setAttribute("aria-hidden", "true");
         let hoverIntent = null;
+        let resizeHandlerBound = false;
         const moreButton = extraWrapper.querySelector(".badge-spotlight-extra__more");
+        const clampPanelToViewport = () => {
+          if (!panel || typeof window === "undefined") return;
+          panel.style.removeProperty("--badge-panel-shift");
+          panel.style.removeProperty("--badge-panel-caret-offset");
+          const rect = panel.getBoundingClientRect();
+          if (!rect || !rect.width) {
+            return;
+          }
+          const viewportWidth = window.innerWidth || document.documentElement?.clientWidth || 0;
+          const padding = 24;
+          let shift = 0;
+          if (viewportWidth > 0 && rect.right > viewportWidth - padding) {
+            shift = Math.min(shift, (viewportWidth - padding) - rect.right);
+          }
+          if (viewportWidth > 0 && rect.left < padding) {
+            shift = Math.max(shift, padding - rect.left);
+          }
+          if (shift !== 0) {
+            panel.style.setProperty("--badge-panel-shift", `${shift}px`);
+            panel.style.setProperty("--badge-panel-caret-offset", `${-shift}px`);
+          }
+        };
+        const bindResizeListener = () => {
+          if (resizeHandlerBound || typeof window === "undefined") return;
+          window.addEventListener("resize", clampPanelToViewport);
+          resizeHandlerBound = true;
+        };
+        const unbindResizeListener = () => {
+          if (!resizeHandlerBound || typeof window === "undefined") return;
+          window.removeEventListener("resize", clampPanelToViewport);
+          resizeHandlerBound = false;
+        };
+        const scheduleClamp = () => {
+          if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+            window.requestAnimationFrame(() => {
+              clampPanelToViewport();
+              bindResizeListener();
+            });
+          } else {
+            clampPanelToViewport();
+            bindResizeListener();
+          }
+        };
         const openPanel = () => {
           if (hoverIntent) {
             window.clearTimeout(hoverIntent);
@@ -386,6 +430,7 @@
           extraWrapper.classList.add("badge-spotlight-extra--open");
           extraToggle.setAttribute("aria-expanded", "true");
           panel.setAttribute("aria-hidden", "false");
+          scheduleClamp();
         };
         const closePanel = () => {
           if (hoverIntent) {
@@ -395,6 +440,9 @@
           extraWrapper.classList.remove("badge-spotlight-extra--open");
           extraToggle.setAttribute("aria-expanded", "false");
           panel.setAttribute("aria-hidden", "true");
+          panel.style.removeProperty("--badge-panel-shift");
+          panel.style.removeProperty("--badge-panel-caret-offset");
+          unbindResizeListener();
         };
 
         extraToggle.addEventListener("click", event => {
