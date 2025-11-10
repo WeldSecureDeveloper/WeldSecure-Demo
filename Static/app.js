@@ -1557,17 +1557,20 @@ function setRewardPublication(rewardId, published) {
   renderAppPreservingScroll();
 }
 
-function setBadgePublication(badgeId, published) {
-  if (!Array.isArray(state.badges)) return;
+function setBadgePublication(badgeId, published, options = {}) {
+  if (!Array.isArray(state.badges)) return false;
   const targetId =
     typeof badgeId === "string" && badgeId.trim().length > 0 ? badgeId.trim() : String(badgeId ?? "");
   const badge = state.badges.find(item => item.id === targetId);
-  if (!badge) return;
+  if (!badge) return false;
   const nextPublished = Boolean(published);
-  if (badge.published === nextPublished) return;
+  if (badge.published === nextPublished) return false;
   badge.published = nextPublished;
   WeldState.saveState(state);
-  renderAppPreservingScroll();
+  if (!options || options.silent !== true) {
+    renderAppPreservingScroll();
+  }
+  return true;
 }
 
 function setAllRewardsPublication(published) {

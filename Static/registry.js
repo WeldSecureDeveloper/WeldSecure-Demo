@@ -155,10 +155,7 @@
     "client-reporting": featureRoute("dashboard", {
       attachMethods: ["render"]
     }),
-    "client-badges": featureRoute("badges", {
-      attachMethods: ["render"]
-    }),
-    "client-badge-lab": featureRoute("badgeExperiments", {
+    "client-badges": featureRoute("badgeExperiments", {
       attachMethods: ["render"]
     }),
     "client-quests": featureRoute("hub", {

@@ -31,8 +31,12 @@
     const filteredBadges = applyLabFilters(tieredBadges);
     container.innerHTML = `
       <section class="badge-experiments">
-        ${renderCatalogueHeader(tieredBadges, categories, filteredBadges)}
-        ${renderGroupedGrid(filteredBadges)}
+        <div class="badge-experiments__header">
+          ${renderCatalogueHeader(tieredBadges, categories, filteredBadges)}
+        </div>
+        <div class="badge-experiments__content">
+          ${renderGroupedGrid(filteredBadges)}
+        </div>
       </section>
     `;
     attachFilterHandlers(container);
@@ -386,22 +390,16 @@
   }
 
   function getTieredBadges() {
-    const publishedSource = Array.isArray(AppData.BADGES) ? AppData.BADGES : [];
-    const draftSource = Array.isArray(AppData.BADGE_DRAFTS) ? AppData.BADGE_DRAFTS : [];
-    const combined = [...publishedSource, ...draftSource];
-    const visibleBadges = combined.filter(badge => {
-      if (!badge || typeof badge !== "object") return false;
-      if (typeof badge.published === "boolean") {
-        return badge.published;
-      }
-      return true;
-    });
+    const sourceBadges = getBadgeSource();
+    if (!sourceBadges.length) return [];
 
-    if (!visibleBadges.length) {
-      return [];
-    }
+    const comparable = sourceBadges
+      .filter(badge => badge && typeof badge === "object")
+      .map(badge => ({ ...badge }));
 
-    const trimmed = visibleBadges
+    if (!comparable.length) return [];
+
+    const trimmed = comparable
       .sort((a, b) => {
         const rankDiff = getDifficultyRank(a?.difficulty) - getDifficultyRank(b?.difficulty);
         if (rankDiff !== 0) return rankDiff;
@@ -419,6 +417,16 @@
       labIcon: getLabIconForLevel(index),
       tierMeta: getTierMetaForIndex(index, trimmed.length)
     }));
+  }
+
+  function getBadgeSource() {
+    const stateBadges = Array.isArray(window.state?.badges) ? window.state.badges : [];
+    if (stateBadges.length) {
+      return stateBadges;
+    }
+    const publishedSource = Array.isArray(AppData.BADGES) ? AppData.BADGES : [];
+    const draftSource = Array.isArray(AppData.BADGE_DRAFTS) ? AppData.BADGE_DRAFTS : [];
+    return [...publishedSource, ...draftSource];
   }
 
   function getBadgeCategories(badges) {
@@ -466,6 +474,77 @@
     return Array.from(groups.values()).sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }));
   }
 
+  function updateLabHeader(container, tieredBadges, categories, filteredBadges) {
+    if (!container) return;
+    const header = container.querySelector(".badge-experiments__header");
+    if (!header) return;
+    header.innerHTML = renderCatalogueHeader(tieredBadges, categories, filteredBadges);
+  }
+
+  function updateBadgeCardState(badgeElement, published, badgeData) {
+    if (!badgeElement) return;
+    badgeElement.classList.toggle("catalogue-badge--published", published);
+    badgeElement.classList.toggle("catalogue-badge--draft", !published);
+    const detailCard = badgeElement.querySelector(".catalogue-badge-card");
+    if (detailCard) {
+      detailCard.classList.toggle("catalogue-badge-card--published", published);
+      detailCard.classList.toggle("catalogue-badge-card--draft", !published);
+      const statusEl = detailCard.querySelector(".catalogue-badge-card__status");
+      if (statusEl) {
+        statusEl.classList.toggle("catalogue-badge-card__status--published", published);
+        statusEl.classList.toggle("catalogue-badge-card__status--draft", !published);
+        statusEl.textContent = published ? "Published" : "Unpublished";
+      }
+      if (typeof badgeData?.description === "string" && badgeData.description.length > 0) {
+        const desc = detailCard.querySelector(".catalogue-badge-card__description");
+        if (desc && desc.classList.contains("catalogue-badge-card__description--empty")) {
+          desc.classList.remove("catalogue-badge-card__description--empty");
+          desc.textContent = badgeData.description;
+        }
+      }
+    }
+  }
+
+  function updateGroupMetaCount(groupElement) {
+    if (!groupElement) return;
+    const badgeCount = groupElement.querySelectorAll(".catalogue-badge").length;
+    const meta = groupElement.querySelector(".detail-table__meta");
+    if (meta) {
+      const label = `${formatNumber(badgeCount)} badge${badgeCount === 1 ? "" : "s"}`;
+      meta.textContent = label;
+    }
+  }
+
+  function shouldBadgeRemainVisible(published) {
+    if (labFilterState.status === "published") {
+      return published;
+    }
+    if (labFilterState.status === "unpublished") {
+      return !published;
+    }
+    return true;
+  }
+
+  function removeBadgeCard(badgeElement, container, filteredBadges) {
+    if (!badgeElement || !container) return;
+    const group = badgeElement.closest(".catalogue-badge-group");
+    badgeElement.remove();
+    if (group) {
+      if (group.querySelector(".catalogue-badge")) {
+        updateGroupMetaCount(group);
+      } else {
+        group.remove();
+      }
+    }
+    const anyBadgesLeft = container.querySelector(".catalogue-badge");
+    if (!anyBadgesLeft) {
+      const content = container.querySelector(".badge-experiments__content");
+      if (content) {
+        content.innerHTML = renderGroupedGrid(filteredBadges);
+      }
+    }
+  }
+
   function getCategoryLabel(key) {
     if (!key) return "All badges";
     const entry = labCategoryLookup.get(key);
@@ -501,8 +580,20 @@
         if (!badgeId) return;
         event.preventDefault();
         const isPublished = badgeElement?.classList.contains("catalogue-badge--published");
-        window.setBadgePublication(badgeId, !isPublished);
-        renderLabPage(container);
+        const nextPublished = !isPublished;
+        const changed = window.setBadgePublication(badgeId, nextPublished, { silent: true });
+        if (!changed) return;
+        const tieredBadges = getTieredBadges();
+        const categories = getBadgeCategories(tieredBadges);
+        const filteredBadges = applyLabFilters(tieredBadges);
+        updateLabHeader(container, tieredBadges, categories, filteredBadges);
+        if (shouldBadgeRemainVisible(nextPublished)) {
+          const badgeData = tieredBadges.find(item => String(item.id ?? "") === badgeId);
+          updateBadgeCardState(badgeElement, nextPublished, badgeData);
+          updateGroupMetaCount(badgeElement.closest(".catalogue-badge-group"));
+        } else {
+          removeBadgeCard(badgeElement, container, filteredBadges);
+        }
         return;
       }
       const statusButton = event.target.closest("[data-lab-status]");
