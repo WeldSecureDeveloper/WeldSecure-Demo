@@ -1,4 +1,4 @@
-# Org Phishing Simulation Designer – Implementation Plan
+﻿# Org Phishing Simulation Designer â€“ Implementation Plan
 
 Blueprint for adding an organisation-facing feature that lets admins design phishing simulations, pick red flags reporters must spot, and push them into the existing simulation launcher. Keep scope browser-only and aligned with the layered architecture.
 
@@ -6,7 +6,7 @@ Blueprint for adding an organisation-facing feature that lets admins design phis
 
 ## 1. Goal & Persona
 - **Persona:** Admin / security lead working from the WeldSecure view.
-- **Objective:** Rapidly assemble multi-channel phishing simulations with configurable “signals” (lookalike domain, mismatched link, QR lure, etc.) and send them to selected departments or segments.
+- **Objective:** Rapidly assemble multi-channel phishing simulations with configurable â€œsignalsâ€ (lookalike domain, mismatched link, QR lure, etc.) and send them to selected departments or segments.
 - **Success criteria:** Designer outputs feed `AppData.phishingSimulations`, queue launches through `WeldServices.queuePhishingLaunch`, and expose metadata consumed by the reporter sandbox feature.
 
 ---
@@ -18,7 +18,7 @@ Blueprint for adding an organisation-facing feature that lets admins design phis
    - Body copy with inline token hints.
    - Signal checklist (features that recipients must identify).
    - Targeting (departments/segments) + scheduling.
-3. **Validation & send drawer:** Summarises required fields, highlights outstanding configuration, and exposes “Launch now” or “Stage in queue”.
+3. **Validation & send drawer:** Summarises required fields, highlights outstanding configuration, and exposes â€œLaunch nowâ€ or â€œStage in queueâ€.
 
 ---
 
@@ -83,9 +83,9 @@ window.AppData.phishingBlueprints = {
 ---
 
 ## 5. Services & Business Logic
-- `createPhishingDraft(payload)` – clones builder form, assigns ID (use `WeldUtil.generateId`), pushes to `state.phishingDesigner.drafts`.
-- `updatePhishingDraft(id, patch)` – merges changes and runs validation.
-- `publishPhishingDraft(id)` – converts draft into `AppData.phishingSimulations` entry by:
+- `createPhishingDraft(payload)` â€“ clones builder form, assigns ID (use `WeldUtil.generateId`), pushes to `state.phishingDesigner.drafts`.
+- `updatePhishingDraft(id, patch)` â€“ merges changes and runs validation.
+- `publishPhishingDraft(id)` â€“ converts draft into `AppData.phishingSimulations` entry by:
   1. Generating campaign ID + metadata (launchDate, owner from admin persona).
   2. Appending to `window.AppData.phishingSimulations.campaigns` in-memory (demo-only) and pushing `signalIds` for reporter sandbox consumption.
   3. Calling `queuePhishingLaunch(id, { targets: ... })` to stage the campaign.
@@ -101,7 +101,7 @@ window.AppData.phishingBlueprints = {
 ### Builder Form
 - Left column: collapsible sections (Envelope, Body, Signals, Targeting).
 - Right column: preview with highlight overlays for selected signals.
-- Provide “Insert token” buttons (`{{FIRST_NAME}}`, etc.) for rapid copy tweaks.
+- Provide â€œInsert tokenâ€ buttons (`{{FIRST_NAME}}`, etc.) for rapid copy tweaks.
 
 ### Validation
 - Display inline errors per section + summary at top.
@@ -117,16 +117,24 @@ window.AppData.phishingBlueprints = {
 ---
 
 ## 8. Implementation Phases
-1. **Scaffold route & nav** – add data file, route registration, blank feature & CSS.
-2. **State/services** – extend `state.js` + `stateServices.js` with designer slice.
-3. **Template board UI** – list drafts, actions, wiring to state.
-4. **Builder form** – sections, validation, preview.
-5. **Publish flow** – convert drafts to campaigns, queue launches.
-6. **QA + docs** – update `phishing_simulation_module.md` with new flow, smoke-test across admin persona.
+1. **Scaffold route & nav** â€“ add data file, route registration, blank feature & CSS.
+2. **State/services** â€“ extend `state.js` + `stateServices.js` with designer slice.
+3. **Template board UI** â€“ list drafts, actions, wiring to state.
+4. **Builder form** â€“ sections, validation, preview.
+5. **Publish flow** â€“ convert drafts to campaigns, queue launches.
+6. **QA + docs** â€“ update `phishing_simulation_module.md` with new flow, smoke-test across admin persona.
 
 ---
 
-## 9. Open Questions
-- Do drafts need version history or only “latest edit”?
+## 9. Reporter Sandbox Execution
+1. **Basic email playback:** When the designer publishes an email-channel draft, clone the envelope + body payload into `AppData.phishingSimulations.sandboxMessages` so the sandbox inbox can display the exact email copy admins composed.
+2. **Reporter add-in dock:** Selecting a sandbox email should automatically call `Weld.features.reporter.openWithSandboxContext(...)` and dock the Reporter add-in on the right (~360px). The preview stays on the left so reporters read the email and submit findings side-by-side.
+3. **Signal guidance:** Pass `expectedSignalIds`, micro-lesson snippets, and link metadata from the designer so the add-in can surface contextual hints. Toggling hints highlights the referenced spans inside the email preview.
+4. **Submission cycle:** When the Reporter add-in submission fires, invoke `recordSandboxSubmission` to record accuracy, annotate the inbox row with success/fail chips, and display feedback inline beneath the email body.
+
+---
+
+## 10. Open Questions
+- Do drafts need version history or only â€œlatest editâ€?
 - Should signals be globally defined (data file) or per draft?
 - Is scheduling (future date) required or can we simulate immediate launch for now?

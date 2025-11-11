@@ -67,6 +67,7 @@ Object.assign(AppData, {
   "customer-badges": { requiresRole: "customer" },
   "customer-redemptions": { requiresRole: "customer" },
   "customer-leaderboards": { requiresRole: "customer" },
+  "reporter-sandbox": { requiresRole: "customer" },
   "client-dashboard": { requiresRole: "client" },
   "client-user-config": { requiresRole: "client" },
   "client-leaderboards": { requiresRole: "client" },
@@ -90,7 +91,8 @@ Object.assign(AppData, {
     label: "Reporter",
     items: [
       { label: "Reporter", route: "addin", role: "customer" },
-      { label: "Hub", route: "customer", role: "customer" }
+      { label: "Hub", route: "customer", role: "customer" },
+      { label: "Sandbox Inbox", route: "reporter-sandbox", role: "customer" }
     ]
   },
   {

@@ -87,7 +87,8 @@ Implementation detail: expose a `window.WeldReporterHooks` object or extend `fea
 ---
 
 ## 7. Integration with Existing Components
-- Reporter nav already has `addin`. Add `reporter-sandbox` route to `NAV_GROUPS[0]`.
+- Reporter nav needs a dedicated **Sandbox Inbox** button: register `reporter-sandbox` in `AppData.ROUTES`, add it to `NAV_GROUPS[0]`, and surface the entry under the Reporter cluster inside `appShell` so frontline users launch the sandbox directly from the nav rail.
+- Mirror the nav link on the reporter landing hero (same CTA text/icon) so both the hub landing screen and persistent nav point to the sandbox route.
 - When `reporter-sandbox` route renders, ensure meta role is `customer`; re-use existing gating logic (if route requires role and meta.role mismatch, use `WeldServices.setRole` before navigate).
 - Reporter component should expose a method to accept sandbox payload:
   ```js

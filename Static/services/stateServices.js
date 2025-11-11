@@ -211,6 +211,189 @@
     }
     return designer;
   };
+
+  const normalizeSandboxMessageId = value => {
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed : null;
+    }
+    if (Number.isFinite(value)) {
+      return String(value);
+    }
+    return null;
+  };
+
+  const normalizeSandboxSignalId = value => {
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed.toLowerCase() : null;
+    }
+    return null;
+  };
+
+  const cloneSandboxAttachments = list => {
+    if (!Array.isArray(list)) return [];
+    return list
+      .map(item => {
+        if (!item || typeof item !== "object") return null;
+        const id = normalizeSandboxMessageId(item.id) || getGenerateId("sandbox-file");
+        const name =
+          typeof item.name === "string" && item.name.trim().length > 0 ? item.name.trim() : "attachment.bin";
+        const type =
+          typeof item.type === "string" && item.type.trim().length > 0 ? item.type.trim().toLowerCase() : "file";
+        return { id, name, type };
+      })
+      .filter(Boolean);
+  };
+
+  const normalizeSandboxMessage = (source, fallbackId) => {
+    if (!source || typeof source !== "object") return null;
+    const id = normalizeSandboxMessageId(source.id) || fallbackId || getGenerateId("sandbox-msg");
+    const createdAt =
+      typeof source.createdAt === "string" && source.createdAt.trim().length > 0
+        ? new Date(source.createdAt).toISOString()
+        : new Date().toISOString();
+    const channel =
+      typeof source.channel === "string" && source.channel.trim().length > 0
+        ? source.channel.trim().toLowerCase()
+        : "email";
+    const senderInput = source.sender && typeof source.sender === "object" ? source.sender : {};
+    const senderDisplay =
+      typeof senderInput.displayName === "string" && senderInput.displayName.trim().length > 0
+        ? senderInput.displayName.trim()
+        : "Security Desk";
+    const senderAddress =
+      typeof senderInput.address === "string" && senderInput.address.trim().length > 0
+        ? senderInput.address.trim()
+        : "security@weldsecure.com";
+    const signalIds = Array.isArray(source.signalIds)
+      ? source.signalIds.map(normalizeSandboxSignalId).filter(Boolean)
+      : [];
+    const metadata =
+      source.metadata && typeof source.metadata === "object" ? { ...source.metadata } : {};
+    Object.keys(metadata).forEach(key => {
+      if (metadata[key] === undefined) {
+        delete metadata[key];
+      }
+    });
+    return {
+      id,
+      campaignId: normalizeSandboxMessageId(source.campaignId),
+      channel,
+      createdAt,
+      sender: {
+        displayName: senderDisplay,
+        address: senderAddress
+      },
+      subject: typeof source.subject === "string" ? source.subject : "Simulation message",
+      previewText:
+        typeof source.previewText === "string" && source.previewText.trim().length > 0
+          ? source.previewText.trim()
+          : "",
+      body: typeof source.body === "string" ? source.body : "",
+      signalIds,
+      attachments: cloneSandboxAttachments(source.attachments),
+      metadata
+    };
+  };
+
+  const cloneSandboxMessagesForState = (list, prefix = "sandbox-msg") => {
+    if (!Array.isArray(list)) return [];
+    const seen = new Set();
+    return list
+      .map((entry, index) => normalizeSandboxMessage(entry, `${prefix}-${index + 1}`))
+      .filter(entry => {
+        if (!entry || seen.has(entry.id)) return false;
+        seen.add(entry.id);
+        return true;
+      });
+  };
+
+  const normalizeSandboxSubmissionEntry = (entry, index = 0) => {
+    if (!entry || typeof entry !== "object") return null;
+    const messageId = normalizeSandboxMessageId(entry.messageId);
+    if (!messageId) return null;
+    const normalizeList = list =>
+      Array.isArray(list) ? list.map(normalizeSandboxSignalId).filter(Boolean) : [];
+    const submittedAt =
+      typeof entry.submittedAt === "string" && entry.submittedAt.trim().length > 0
+        ? entry.submittedAt.trim()
+        : new Date(Date.now() - index * 500).toISOString();
+    return {
+      messageId,
+      selectedSignals: normalizeList(entry.selectedSignals),
+      correctSignals: normalizeList(entry.correctSignals),
+      missedSignals: normalizeList(entry.missedSignals),
+      extraSignals: normalizeList(entry.extraSignals),
+      submittedAt,
+      usedHints: entry.usedHints === true,
+      success: entry.success === true
+    };
+  };
+
+  const ensureReporterSandboxState = state => {
+    if (!state) return null;
+    const sandboxSeed = ensureSimData().sandboxMessages;
+    if (!state.reporterSandbox || typeof state.reporterSandbox !== "object") {
+      state.reporterSandbox = {
+        messages: cloneSandboxMessagesForState(sandboxSeed, "sandbox-state"),
+        activeMessageId: null,
+        hintsVisible: false,
+        findings: {},
+        submissions: []
+      };
+    } else {
+      const sandboxMessages = Array.isArray(state.reporterSandbox.messages)
+        ? state.reporterSandbox.messages
+        : sandboxSeed;
+      state.reporterSandbox.messages = cloneSandboxMessagesForState(sandboxMessages, "sandbox-state");
+      if (!state.reporterSandbox.findings || typeof state.reporterSandbox.findings !== "object") {
+        state.reporterSandbox.findings = {};
+      }
+      if (!Array.isArray(state.reporterSandbox.submissions)) {
+        state.reporterSandbox.submissions = [];
+      } else {
+        state.reporterSandbox.submissions = state.reporterSandbox.submissions
+          .map((entry, index) => normalizeSandboxSubmissionEntry(entry, index))
+          .filter(Boolean)
+          .slice(0, 24);
+      }
+    }
+    if (
+      !state.reporterSandbox.activeMessageId ||
+      !state.reporterSandbox.messages.some(msg => msg.id === state.reporterSandbox.activeMessageId)
+    ) {
+      state.reporterSandbox.activeMessageId = state.reporterSandbox.messages[0]?.id || null;
+    }
+    return state.reporterSandbox;
+  };
+
+  const findSandboxMessage = (sandboxState, messageId) => {
+    if (!sandboxState || !Array.isArray(sandboxState.messages)) return null;
+    const normalizedId = normalizeSandboxMessageId(messageId);
+    if (!normalizedId) return null;
+    return sandboxState.messages.find(message => message && message.id === normalizedId) || null;
+  };
+
+  const upsertSandboxMessage = (sandboxState, message) => {
+    if (!sandboxState || !message) return;
+    if (!Array.isArray(sandboxState.messages)) {
+      sandboxState.messages = [];
+    }
+    const index = sandboxState.messages.findIndex(entry => entry && entry.id === message.id);
+    if (index === -1) {
+      sandboxState.messages.unshift(message);
+    } else {
+      sandboxState.messages[index] = message;
+    }
+    sandboxState.messages = cloneSandboxMessagesForState(sandboxState.messages, "sandbox-state");
+    if (
+      !sandboxState.activeMessageId ||
+      !sandboxState.messages.some(entry => entry.id === sandboxState.activeMessageId)
+    ) {
+      sandboxState.activeMessageId = sandboxState.messages[0]?.id || null;
+    }
+  };
   const validateDesignerForm = form => {
     const errors = {};
     if (!form.name || form.name.trim().length === 0) {
@@ -256,7 +439,13 @@
     blueprintTemplates.find(template => template && template.id === templateId) || null;
   const ensureSimData = () => {
     if (!AppData.phishingSimulations || typeof AppData.phishingSimulations !== "object") {
-      AppData.phishingSimulations = { campaigns: [], templates: [], historyByDepartment: {}, signalsByCampaign: {} };
+      AppData.phishingSimulations = {
+        campaigns: [],
+        templates: [],
+        historyByDepartment: {},
+        signalsByCampaign: {},
+        sandboxMessages: []
+      };
     }
     const simData = AppData.phishingSimulations;
     if (!Array.isArray(simData.campaigns)) {
@@ -270,6 +459,9 @@
     }
     if (!simData.signalsByCampaign || typeof simData.signalsByCampaign !== "object") {
       simData.signalsByCampaign = {};
+    }
+    if (!Array.isArray(simData.sandboxMessages)) {
+      simData.sandboxMessages = [];
     }
     return simData;
   };
@@ -955,6 +1147,36 @@
     };
     simData.campaigns = [campaign, ...simData.campaigns.filter(entry => entry && entry.id !== campaignId)];
     simData.signalsByCampaign[campaignId] = templateSignals;
+    if ((draft.channel || "email").toLowerCase() === "email") {
+      const sandboxMessage = normalizeSandboxMessage(
+        {
+          id: `sandbox-${campaignId}`,
+          campaignId,
+          channel: draft.channel,
+          createdAt: launchDate,
+          sender: draft.sender,
+          subject: draft.subject || draft.name || "Simulation",
+          previewText: draft.name || draft.subject || "Simulation email",
+          body: draft.body || "",
+          signalIds: draft.signalIds,
+          metadata: {
+            microLesson:
+              (options && options.microLesson) ||
+              (draft.metadata && draft.metadata.microLesson) ||
+              "Spot every selected signal before submitting via the Reporter dock."
+          }
+        },
+        `sandbox-${campaignId}`
+      );
+      if (sandboxMessage) {
+        simData.sandboxMessages = [
+          sandboxMessage,
+          ...simData.sandboxMessages.filter(entry => entry && entry.id !== sandboxMessage.id)
+        ];
+        const sandboxState = ensureReporterSandboxState(state);
+        upsertSandboxMessage(sandboxState, sandboxMessage);
+      }
+    }
     draft.status = "staged";
     draft.lastPublishedAt = launchDate;
     draft.lastCampaignId = campaignId;
@@ -970,6 +1192,101 @@
     }
     return { success: true, draft, campaignId };
   };
+
+  WeldServices.setActiveSandboxMessage = function setActiveSandboxMessage(messageId, providedState) {
+    const state = resolveState(providedState);
+    if (!state) return { success: false, reason: "State missing." };
+    const sandbox = ensureReporterSandboxState(state);
+    const message = findSandboxMessage(sandbox, messageId);
+    if (!message) {
+      return { success: false, reason: "Message not found." };
+    }
+    const changed = sandbox.activeMessageId !== message.id;
+    sandbox.activeMessageId = message.id;
+    if (changed) {
+      sandbox.hintsVisible = false;
+    }
+    syncGlobalState(state);
+    saveState(state);
+    renderShell();
+    return { success: true, message };
+  };
+
+  WeldServices.toggleSandboxHints = function toggleSandboxHints(forceValue, providedState) {
+    const state = resolveState(providedState);
+    if (!state) return { success: false, reason: "State missing." };
+    const sandbox = ensureReporterSandboxState(state);
+    sandbox.hintsVisible = forceValue === undefined ? !sandbox.hintsVisible : forceValue === true;
+    syncGlobalState(state);
+    saveState(state);
+    renderShell();
+    return { success: true, hintsVisible: sandbox.hintsVisible };
+  };
+
+  WeldServices.updateSandboxFindings = function updateSandboxFindings(messageId, signalIds = [], providedState) {
+    const state = resolveState(providedState);
+    if (!state) return { success: false, reason: "State missing." };
+    const sandbox = ensureReporterSandboxState(state);
+    const normalizedId = normalizeSandboxMessageId(messageId) || sandbox.activeMessageId;
+    if (!normalizedId) {
+      return { success: false, reason: "Message id missing." };
+    }
+    const message = findSandboxMessage(sandbox, normalizedId);
+    if (!message) {
+      return { success: false, reason: "Message not found." };
+    }
+    const normalizedSignals = Array.isArray(signalIds)
+      ? signalIds.map(normalizeSandboxSignalId).filter(Boolean)
+      : [];
+    sandbox.findings[normalizedId] = normalizedSignals;
+    syncGlobalState(state);
+    saveState(state);
+    return { success: true, selections: normalizedSignals };
+  };
+
+  WeldServices.recordSandboxSubmission = function recordSandboxSubmission(payload = {}, providedState) {
+    const state = resolveState(providedState);
+    if (!state) return { success: false, reason: "State missing." };
+    const sandbox = ensureReporterSandboxState(state);
+    const normalizedId = normalizeSandboxMessageId(payload.messageId) || sandbox.activeMessageId;
+    if (!normalizedId) {
+      return { success: false, reason: "Message id missing." };
+    }
+    const message = findSandboxMessage(sandbox, normalizedId);
+    if (!message) {
+      return { success: false, reason: "Message not found." };
+    }
+    const selectedSignalsSource =
+      Array.isArray(payload.signalIds) && payload.signalIds.length > 0
+        ? payload.signalIds
+        : sandbox.findings[normalizedId] || [];
+    const selectedSignals = selectedSignalsSource.map(normalizeSandboxSignalId).filter(Boolean);
+    const expectedSignals = Array.isArray(message.signalIds) ? message.signalIds : [];
+    const expectedSet = new Set(expectedSignals);
+    const selectedSet = new Set(selectedSignals);
+    const correctSignals = selectedSignals.filter(id => expectedSet.has(id));
+    const missedSignals = expectedSignals.filter(id => !selectedSet.has(id));
+    const extraSignals = selectedSignals.filter(id => !expectedSet.has(id));
+    const submission = {
+      messageId: message.id,
+      selectedSignals,
+      correctSignals,
+      missedSignals,
+      extraSignals,
+      submittedAt: new Date().toISOString(),
+      usedHints: sandbox.hintsVisible === true || payload.usedHints === true
+    };
+    submission.success = missedSignals.length === 0 && extraSignals.length === 0 && selectedSignals.length > 0;
+    sandbox.submissions.unshift(submission);
+    sandbox.submissions = sandbox.submissions.slice(0, 24);
+    sandbox.findings[message.id] = selectedSignals;
+    sandbox.hintsVisible = false;
+    syncGlobalState(state);
+    saveState(state);
+    renderShell();
+    return { success: true, submission };
+  };
+
   const DEFAULT_PHISHING_SIM_STATE = {
     activeCampaignId: null,
     selectedDepartmentId: null,

@@ -143,6 +143,10 @@
       templateMethods: ["templateLeaderboards"],
       attachMethods: ["attachLeaderboards"]
     }),
+    "reporter-sandbox": featureRoute("reporterSandbox", {
+      templateMethods: ["template"],
+      attachMethods: ["attach"]
+    }),
     "client-dashboard": featureRoute("orgHub", {
       attachMethods: ["render"]
     }),

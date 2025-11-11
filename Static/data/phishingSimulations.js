@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   const AppData = window.AppData || (window.AppData = {});
   if (AppData.phishingSimulations) return;
 
@@ -115,6 +115,72 @@
       "sim-hr-benefits": ["LOOKALIKE_DOMAIN", "UNEXPECTED_FORM"],
       "sim-cxo-wire": ["LOOKALIKE_DOMAIN", "SENDER_SPOOF", "URGENT_TONE"],
       "sim-ops-logistics": ["SHORT_URL", "SENSE_OF_URGENCY"]
-    }
+    },
+    sandboxMessages: [
+      {
+        id: "sandbox-msg-wire-escalation",
+        campaignId: "sim-q4-finance",
+        channel: "email",
+        createdAt: iso("2025-11-08T08:00:00Z"),
+        sender: {
+          displayName: "Treasury Escalations",
+          address: "alerts@everq4-treasury.com"
+        },
+        subject: "Wire validation required before 4pm",
+        previewText: "Finance flagged a transfer request awaiting your approval.",
+        body: `Hi ${"${{FIRST_NAME}}"},
+
+[signal:lookalike-domain]I need you to verify the outbound wire queue before today's 4pm treasury window closes.[/signal]
+
+Log in with the escalation link below and capture a screenshot once it's greenlit.
+
+[signal:mismatched-link]Escalation queue: https://review-weldsecure.co/treasury[/signal]
+
+[signal:urgent-tone]If we miss the slot, we'll trigger a late filing report. Reply once complete.[/signal]
+
+Thanks,
+Amelia`,
+        signalIds: ["lookalike-domain", "mismatched-link", "urgent-tone"],
+        attachments: [],
+        metadata: {
+          microLesson: "Hover to inspect domains before authenticating, especially on payment queues."
+        }
+      },
+      {
+        id: "sandbox-msg-benefits-renewal",
+        campaignId: "sim-hr-benefits",
+        channel: "email",
+        createdAt: iso("2025-11-09T11:45:00Z"),
+        sender: {
+          displayName: "Benefits Desk",
+          address: "benefits@evergreen-benefits.com"
+        },
+        subject: "Final reminder: confirm your benefits selections",
+        previewText: "Portal access closes this afternoon for anyone who has not confirmed coverage.",
+        body: `Hey ${"${{FIRST_NAME}}"},
+
+[signal:sender-spoof]We temporarily moved self-serve benefits over to our vendor portal while IT patches SSO.[/signal]
+
+[signal:invoice-bait]Use the attached \"fast track\" form to lock choices in the interim.[/signal] You only need to provide your national ID and last pay cycle info for verification.
+
+Ping me once you're throughâ€”HR is tracking completions hourly.[signal:urgent-tone][/signal]
+
+Thanks!
+Jess, Benefits`,
+        signalIds: ["sender-spoof", "invoice-bait", "urgent-tone"],
+        attachments: [
+          {
+            id: "att-fast-track-form",
+            name: "Benefits_FastTrack_Form.xlsm",
+            type: "xlsm"
+          }
+        ],
+        metadata: {
+          microLesson: "Unexpected portals and macro-enabled attachments should be escalated immediately.",
+          linkPreview: "Vendor portal (override)"
+        }
+      }
+    ]
   };
 })();
+

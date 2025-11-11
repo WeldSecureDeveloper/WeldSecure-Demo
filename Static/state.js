@@ -321,6 +321,188 @@
     };
   };
 
+  const normalizeSandboxSignalId = value => {
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed.toLowerCase() : null;
+    }
+    return null;
+  };
+
+  const normalizeSandboxSender = sender => {
+    const displayName =
+      typeof sender?.displayName === "string" && sender.displayName.trim().length > 0
+        ? sender.displayName.trim()
+        : "Security Desk";
+    const address =
+      typeof sender?.address === "string" && sender.address.trim().length > 0
+        ? sender.address.trim()
+        : "security@weldsecure.com";
+    return { displayName, address };
+  };
+
+  const normalizeSandboxAttachments = list => {
+    if (!Array.isArray(list)) return [];
+    return list
+      .map(item => {
+        if (!item || typeof item !== "object") return null;
+        const id =
+          typeof item.id === "string" && item.id.trim().length > 0 ? item.id.trim() : getGenerateId("sandbox-attachment");
+        const name =
+          typeof item.name === "string" && item.name.trim().length > 0 ? item.name.trim() : "attachment.bin";
+        const type =
+          typeof item.type === "string" && item.type.trim().length > 0 ? item.type.trim().toLowerCase() : "file";
+        return { id, name, type };
+      })
+      .filter(Boolean);
+  };
+
+  const normalizeSandboxMetadata = metadata => {
+    if (!metadata || typeof metadata !== "object") return {};
+    const copy = { ...metadata };
+    Object.keys(copy).forEach(key => {
+      if (copy[key] === undefined) {
+        delete copy[key];
+      }
+    });
+    return copy;
+  };
+
+  const normalizeSandboxMessage = (source, fallbackId) => {
+    if (!source || typeof source !== "object") return null;
+    const id =
+      typeof source.id === "string" && source.id.trim().length > 0
+        ? source.id.trim()
+        : fallbackId || getGenerateId("sandbox-msg");
+    const createdAt =
+      typeof source.createdAt === "string" && source.createdAt.trim().length > 0
+        ? new Date(source.createdAt).toISOString()
+        : new Date().toISOString();
+    const channel =
+      typeof source.channel === "string" && source.channel.trim().length > 0
+        ? source.channel.trim().toLowerCase()
+        : "email";
+    const signalIds = Array.isArray(source.signalIds)
+      ? source.signalIds.map(normalizeSandboxSignalId).filter(Boolean)
+      : [];
+    const subject = typeof source.subject === "string" ? source.subject : "Simulation message";
+    const previewText =
+      typeof source.previewText === "string" && source.previewText.trim().length > 0
+        ? source.previewText.trim()
+        : "";
+    const body = typeof source.body === "string" ? source.body : "";
+    return {
+      id,
+      campaignId:
+        typeof source.campaignId === "string" && source.campaignId.trim().length > 0
+          ? source.campaignId.trim()
+          : null,
+      channel,
+      createdAt,
+      sender: normalizeSandboxSender(source.sender),
+      subject,
+      previewText,
+      body,
+      signalIds,
+      attachments: normalizeSandboxAttachments(source.attachments),
+      metadata: normalizeSandboxMetadata(source.metadata)
+    };
+  };
+
+  const cloneSandboxMessages = (list, prefix = "sandbox-msg") => {
+    if (!Array.isArray(list)) return [];
+    return list
+      .map((message, index) => normalizeSandboxMessage(message, `${prefix}-${index + 1}`))
+      .filter(Boolean);
+  };
+
+  const DEFAULT_SANDBOX_MESSAGES = cloneSandboxMessages(
+    (appData.phishingSimulations && appData.phishingSimulations.sandboxMessages) || [],
+    "sandbox-seed"
+  );
+
+  const normalizeSandboxFindings = source => {
+    if (!source || typeof source !== "object") return {};
+    const entries = {};
+    Object.entries(source).forEach(([messageId, signals]) => {
+      const normalizedId =
+        typeof messageId === "string" && messageId.trim().length > 0 ? messageId.trim() : null;
+      if (!normalizedId) return;
+      entries[normalizedId] = Array.isArray(signals)
+        ? signals.map(normalizeSandboxSignalId).filter(Boolean)
+        : [];
+    });
+    return entries;
+  };
+
+  const normalizeSandboxSubmission = (entry, index = 0) => {
+    if (!entry || typeof entry !== "object") return null;
+    const messageId =
+      typeof entry.messageId === "string" && entry.messageId.trim().length > 0 ? entry.messageId.trim() : null;
+    if (!messageId) return null;
+    const normalizeList = list =>
+      Array.isArray(list) ? list.map(normalizeSandboxSignalId).filter(Boolean) : [];
+    const submittedAt =
+      typeof entry.submittedAt === "string" && entry.submittedAt.trim().length > 0
+        ? entry.submittedAt.trim()
+        : new Date(Date.now() - index * 1000).toISOString();
+    return {
+      messageId,
+      selectedSignals: normalizeList(entry.selectedSignals),
+      correctSignals: normalizeList(entry.correctSignals),
+      missedSignals: normalizeList(entry.missedSignals),
+      extraSignals: normalizeList(entry.extraSignals),
+      submittedAt,
+      usedHints: entry.usedHints === true,
+      success: entry.success === true
+    };
+  };
+
+  const normalizeReporterSandbox = (source, fallback) => {
+    const base =
+      fallback && typeof fallback === "object"
+        ? fallback
+        : {
+            messages: cloneSandboxMessages(DEFAULT_SANDBOX_MESSAGES),
+            activeMessageId: DEFAULT_SANDBOX_MESSAGES[0]?.id || null,
+            hintsVisible: false,
+            findings: {},
+            submissions: []
+          };
+    const fallbackMessages =
+      Array.isArray(base.messages) && base.messages.length > 0
+        ? cloneSandboxMessages(base.messages, "sandbox-fallback")
+        : cloneSandboxMessages(DEFAULT_SANDBOX_MESSAGES);
+    const messages =
+      Array.isArray(source?.messages) && source.messages.length > 0
+        ? cloneSandboxMessages(source.messages, "sandbox-state")
+        : fallbackMessages;
+    const ensureMessageId = value =>
+      typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+    const requestedActive = ensureMessageId(source?.activeMessageId);
+    const hasRequested =
+      requestedActive && messages.some(message => message.id === requestedActive) ? requestedActive : null;
+    const activeMessageId = hasRequested || messages[0]?.id || null;
+    const submissions =
+      Array.isArray(source?.submissions) && source.submissions.length > 0
+        ? source.submissions
+            .map((entry, index) => normalizeSandboxSubmission(entry, index))
+            .filter(Boolean)
+            .slice(0, 24)
+        : Array.isArray(base.submissions) && base.submissions.length > 0
+        ? base.submissions
+            .map((entry, index) => normalizeSandboxSubmission(entry, index))
+            .filter(Boolean)
+        : [];
+    return {
+      messages,
+      activeMessageId,
+      hintsVisible: source?.hintsVisible === true,
+      findings: normalizeSandboxFindings(source?.findings || base.findings),
+      submissions
+    };
+  };
+
   function storageAvailable() {
     try {
       const testKey = "__weldTest";
@@ -530,6 +712,13 @@
       drafts: [],
       form: clonePhishingForm(),
       validation: {}
+    },
+    reporterSandbox: {
+      messages: cloneSandboxMessages(DEFAULT_SANDBOX_MESSAGES, "sandbox-default"),
+      activeMessageId: DEFAULT_SANDBOX_MESSAGES[0]?.id || null,
+      hintsVisible: false,
+      findings: {},
+      submissions: []
     }
   };
 
@@ -666,6 +855,10 @@
       base.phishingDesigner,
       FALLBACK_BASE.phishingDesigner
     );
+    const reporterSandbox = normalizeReporterSandbox(
+      base.reporterSandbox,
+      FALLBACK_BASE.reporterSandbox
+    );
 
     return {
       meta,
@@ -693,7 +886,8 @@
       messages,
       clients,
       phishingSimulation,
-      phishingDesigner
+      phishingDesigner,
+      reporterSandbox
     };
   }
 
@@ -1283,6 +1477,7 @@
         customer: storedCustomer,
         phishingSimulation: storedPhishingSimulation,
         phishingDesigner: storedPhishingDesigner,
+        reporterSandbox: storedReporterSandbox,
         ...restPassthrough
       } = passthrough;
       const normalizeBonusPoints = (candidate, baseBonus) => {
@@ -1466,6 +1661,10 @@
         storedPhishingDesigner,
         baseState.phishingDesigner
       );
+      const normalizedReporterSandbox = normalizeReporterSandbox(
+        storedReporterSandbox,
+        baseState.reporterSandbox
+      );
       return {
         ...baseState,
         ...restPassthrough,
@@ -1484,7 +1683,8 @@
         engagementPrograms: normalizedPrograms,
         labs: normalizedLabs,
         settings: normalizedSettings,
-        phishingDesigner: normalizedPhishingDesigner
+        phishingDesigner: normalizedPhishingDesigner,
+        reporterSandbox: normalizedReporterSandbox
       };
     } catch {
       return initialState();

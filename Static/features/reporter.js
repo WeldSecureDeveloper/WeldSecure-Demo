@@ -8,16 +8,71 @@
     report: "reporter:addin:report",
     success: "reporter:addin:success"
   };
+  const WeldServices = window.WeldServices || {};
+  let sandboxContext = null;
 
   features.reporter = {
-    render(container) {
+    render(container, providedState, options = {}) {
       if (!container) return;
+      if (Object.prototype.hasOwnProperty.call(options, "sandboxContext")) {
+        sandboxContext = normalizeSandboxContext(options.sandboxContext);
+      } else if (options && options.resetSandboxContext === true) {
+        sandboxContext = null;
+      } else if (!options) {
+        sandboxContext = null;
+      }
       container.innerHTML = renderAddIn();
       applyAddInShellSizing(container);
       attachAddInEvents(container);
       syncReporterGuidedTour(container);
     },
+    setSandboxContext(context) {
+      sandboxContext = normalizeSandboxContext(context);
+    }
   };
+
+  function normalizeSandboxContext(context) {
+    if (!context || typeof context !== "object") return null;
+    const sandboxMessageId = typeof context.sandboxMessageId === "string" ? context.sandboxMessageId : null;
+    const subject = typeof context.subject === "string" ? context.subject : "";
+    const previewText = typeof context.previewText === "string" ? context.previewText : "";
+    const body = typeof context.body === "string" ? context.body : "";
+    const expectedSignalIds = Array.isArray(context.expectedSignalIds)
+      ? context.expectedSignalIds.map(id => (typeof id === "string" ? id.trim().toLowerCase() : null)).filter(Boolean)
+      : [];
+    if (!sandboxMessageId && !subject && !body) {
+      return null;
+    }
+    return {
+      sandboxMessageId,
+      subject,
+      previewText,
+      body,
+      expectedSignalIds
+    };
+  }
+
+  function renderSandboxContextSummary(context) {
+    if (!context) return "";
+    const subject = context.subject || "Sandbox message";
+    const preview = context.previewText || "";
+    const bodyMarkup = context.body
+      ? context.body
+          .split("\n")
+          .map(line => `<p>${WeldUtil.escapeHtml(line)}</p>`)
+          .join("")
+      : "";
+    return `
+      <section class="addin-sandbox-callout" aria-live="polite">
+        <header class="addin-sandbox-callout__header">
+          <span class="addin-sandbox-callout__eyebrow">Reporter sandbox</span>
+          <h2 class="addin-sandbox-callout__title">${WeldUtil.escapeHtml(subject)}</h2>
+          ${preview ? `<p class="addin-sandbox-callout__preview">${WeldUtil.escapeHtml(preview)}</p>` : ""}
+        </header>
+        ${bodyMarkup ? `<div class="addin-sandbox-callout__body">${bodyMarkup}</div>` : ""}
+      </section>
+    `;
+  }
 
   function renderAddIn() {
     const screen = state.meta.addinScreen;
@@ -57,7 +112,9 @@
       })
       .filter(Boolean)
       .join("");
+    const sandboxBanner = renderSandboxContextSummary(sandboxContext);
     const reportForm = `
+      ${sandboxBanner}
       <div class="addin-body">
         <fieldset class="addin-field">
           <legend>${WeldUtil.escapeHtml(reasonPrompt)}</legend>
@@ -307,6 +364,11 @@
             emergencyFlags: emergencySelections,
             origin: "addin"
           });
+          if (sandboxContext && sandboxContext.sandboxMessageId && WeldServices && typeof WeldServices.recordSandboxSubmission === "function") {
+            WeldServices.recordSandboxSubmission({
+              messageId: sandboxContext.sandboxMessageId
+            });
+          }
         });
       }
     } else {
