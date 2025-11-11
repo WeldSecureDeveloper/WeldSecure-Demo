@@ -8,8 +8,8 @@
 
   const WeldServices = window.WeldServices || {};
   const WeldUtil = window.WeldUtil || {};
-
   const reporterSandboxFeature = (features.reporterSandbox = {});
+  const TABS = ["focused", "other"];
 
   const getState = () => window.state || (window.Weld && window.Weld.state) || {};
 
@@ -25,21 +25,19 @@
             .replace(/>/g, "&gt;");
         };
 
+  const formatTime = value => {
+    if (!value) return "Just now";
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return "Just now";
+    return parsed.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  };
+
   const formatBody = body => {
-    if (!body) {
-      return `<p class="reporter-sandbox__empty-copy">No message content provided yet.</p>`;
-    }
+    if (!body) return `<p class="outlook-reading__placeholder">No body copy provided yet.</p>`;
     return body
       .split(/\r?\n/)
       .map(line => `<p>${escapeHtml(line)}</p>`)
       .join("");
-  };
-
-  const formatDate = value => {
-    if (!value) return "Just now";
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return "Just now";
-    return parsed.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   };
 
   const getSandboxSlice = state => {
@@ -49,140 +47,202 @@
       activeMessageId: slice.activeMessageId,
       hintsVisible: slice.hintsVisible === true,
       findings: slice.findings && typeof slice.findings === "object" ? slice.findings : {},
-      submissions: Array.isArray(slice.submissions) ? slice.submissions : []
+      submissions: Array.isArray(slice.submissions) ? slice.submissions : [],
+      activeTab:
+        typeof slice.activeTab === "string" && slice.activeTab.trim().toLowerCase() === "other" ? "other" : "focused"
     };
+  };
+
+  const messageTab = message => {
+    const tab = typeof message?.metadata?.tab === "string" ? message.metadata.tab.trim().toLowerCase() : "";
+    return tab === "other" ? "other" : "focused";
   };
 
   const latestSubmissionFor = (submissions, messageId) =>
     submissions.find(entry => entry && entry.messageId === messageId) || null;
 
-  const renderMessageList = (sandbox, activeId) => {
-    if (sandbox.messages.length === 0) {
-      return `<div class="reporter-sandbox__list-empty"><p>No sandbox messages available yet.</p></div>`;
+  const renderAppBar = () => `
+    <header class="outlook-appbar">
+      <div class="outlook-appbar__brand">
+        <span class="outlook-appbar__waffle">▦</span>
+        <span class="outlook-appbar__logo">Outlook</span>
+      </div>
+      <div class="outlook-search">
+        <input type="text" placeholder="Search mail and people" />
+        <span aria-hidden="true">🔍</span>
+      </div>
+      <div class="outlook-avatar" aria-label="Reporter profile"></div>
+    </header>
+  `;
+
+  const renderFolders = () => `
+    <div class="outlook-panel outlook-folders">
+      <div class="outlook-panel__head">Folders</div>
+      <button class="outlook-folder outlook-folder--active">📥 Inbox <span class="outlook-badge">12</span></button>
+      <button class="outlook-folder">⭐ Favorites</button>
+      <button class="outlook-folder">📤 Sent Items</button>
+      <button class="outlook-folder">🗑 Deleted Items</button>
+      <button class="outlook-folder">📦 Archive</button>
+      <button class="outlook-folder">📁 Projects</button>
+    </div>
+  `;
+
+  const renderTabs = activeTab => `
+    <div class="outlook-tabs">
+      ${TABS.map(tab => {
+        const normalized = tab === "other" ? "other" : "focused";
+        const isActive = normalized === activeTab;
+        const label = normalized === "focused" ? "Focused" : "Other";
+        return `<button type="button" class="outlook-tab${isActive ? " outlook-tab--active" : ""}" data-sandbox-tab="${normalized}">
+          ${label}
+        </button>`;
+      }).join("")}
+    </div>
+  `;
+
+  const renderMessageList = (sandbox, activeMessageId) => {
+    const rows = sandbox.messages.filter(message => messageTab(message) === sandbox.activeTab);
+    if (rows.length === 0) {
+      return `<div class="outlook-list__empty">
+        <p>No messages in this tab yet. Publish another sandbox email from the designer.</p>
+      </div>`;
     }
-    return sandbox.messages
+    return rows
       .map(message => {
-        const isActive = message.id === activeId;
+        const isActive = message.id === activeMessageId;
         const submission = latestSubmissionFor(sandbox.submissions, message.id);
-        const status =
-          submission && submission.success
-            ? `<span class="reporter-sandbox__status reporter-sandbox__status--success">Accurate</span>`
-            : submission
-            ? `<span class="reporter-sandbox__status reporter-sandbox__status--retry">Review</span>`
-            : `<span class="reporter-sandbox__status">Pending</span>`;
+        const statusIcon = (() => {
+          if (submission && submission.success) return "✅";
+          if (submission) return "⚠️";
+          return "⚐";
+        })();
+        const sender = escapeHtml(message.sender?.displayName || "Security Desk");
+        const subject = escapeHtml(message.subject || "Sandbox simulation");
+        const preview = escapeHtml(message.previewText || message.metadata?.excerpt || "");
+        const time = formatTime(message.createdAt);
         return `
-          <button type="button" class="reporter-sandbox__message ${isActive ? "reporter-sandbox__message--active" : ""}" data-sandbox-message="${escapeHtml(message.id)}">
-            <div>
-              <p class="reporter-sandbox__message-eyebrow">${escapeHtml(message.channel || "email")}</p>
-              <strong>${escapeHtml(message.subject || "Sandbox simulation")}</strong>
-              <p class="reporter-sandbox__message-preview">${escapeHtml(message.previewText || "")}</p>
+          <button type="button" class="outlook-row${isActive ? " outlook-row--active" : ""}" data-sandbox-message="${escapeHtml(
+            message.id
+          )}">
+            <div class="outlook-row__icon">${statusIcon}</div>
+            <div class="outlook-row__body">
+              <div class="outlook-row__subject">${subject}</div>
+              <div class="outlook-row__meta">${sender} · <span>${preview}</span></div>
             </div>
-            ${status}
+            <div class="outlook-row__time">${escapeHtml(time)}</div>
           </button>
         `;
       })
       .join("");
   };
 
-  const renderSignalsChecklist = (message, sandbox, hintsVisible) => {
+  const renderSignalsChecklist = (message, sandbox) => {
     const selectedSignals =
       sandbox.findings && Array.isArray(sandbox.findings[message.id]) ? sandbox.findings[message.id] : [];
     if (!Array.isArray(message.signalIds) || message.signalIds.length === 0) {
-      return `<p class="reporter-sandbox__empty-copy">No signals defined for this draft.</p>`;
+      return `<p class="outlook-reading__placeholder">No signals attached to this draft.</p>`;
     }
     return message.signalIds
       .map(signalId => {
         const checked = selectedSignals.includes(signalId) ? "checked" : "";
+        const label = signalId.replace(/-/g, " ");
         return `
-          <label class="reporter-sandbox__signal${hintsVisible ? " reporter-sandbox__signal--hint" : ""}">
+          <label class="outlook-signal">
             <input type="checkbox" value="${escapeHtml(signalId)}" ${checked} data-sandbox-signal />
-            <span>${escapeHtml(signalId.replace(/-/g, " "))}</span>
+            <span>${escapeHtml(label)}</span>
           </label>
         `;
       })
       .join("");
   };
 
-  const renderViewer = (sandbox, message) => {
+  const renderReadingPane = (sandbox, message) => {
     if (!message) {
       return `
-        <div class="reporter-sandbox__viewer-empty">
-          <p>Select a sandbox message to preview the phishing email and open the Reporter dock.</p>
+        <div class="outlook-reading outlook-reading--empty" data-reading-pane>
+          <p>Select a sandbox message to preview the email and open the Reporter add-in.</p>
         </div>
       `;
     }
     const submission = latestSubmissionFor(sandbox.submissions, message.id);
-    const submissionSummary = submission
-      ? `<div class="reporter-sandbox__feedback ${
-          submission.success ? "reporter-sandbox__feedback--success" : "reporter-sandbox__feedback--error"
-        }">
-          <strong>${submission.success ? "Great work" : "Keep practicing"}!</strong>
-          <p>
-            ${submission.success ? "You captured every expected signal." : "Review the missed signals and try again."}
-          </p>
-        </div>`
-      : "";
+    const submissionTone =
+      submission && submission.success
+        ? `<div class="outlook-reading__status outlook-reading__status--success">Accurate report logged</div>`
+        : submission
+        ? `<div class="outlook-reading__status outlook-reading__status--warn">Missed signals — review again</div>`
+        : "";
     return `
-      <header class="reporter-sandbox__viewer-header">
-        <div>
-          <p class="reporter-sandbox__viewer-eyebrow">${escapeHtml(message.sender?.displayName || "Security Desk")} &lt;${escapeHtml(
+      <div class="outlook-reading" data-reading-pane>
+        <div class="outlook-reading__header">
+          <div>
+            <div class="outlook-reading__subject">${escapeHtml(message.subject || "Sandbox simulation")}</div>
+            <div class="outlook-reading__from">${escapeHtml(message.sender?.displayName || "Security Desk")} · ${escapeHtml(
       message.sender?.address || "security@weldsecure.com"
-    )}&gt;</p>
-          <h1>${escapeHtml(message.subject || "Sandbox simulation")}</h1>
-          <p>${escapeHtml(message.previewText || "")}</p>
+    )}</div>
+          </div>
+          <div class="outlook-reading__time">${escapeHtml(formatTime(message.createdAt))}</div>
         </div>
-        <div class="reporter-sandbox__viewer-meta">
-          <span>${escapeHtml(message.channel || "email")}</span>
-          <span>${formatDate(message.createdAt)}</span>
+        ${submissionTone}
+        <article class="outlook-reading__body${sandbox.hintsVisible ? " outlook-reading__body--hint" : ""}">
+          ${formatBody(message.body)}
+        </article>
+        <div class="outlook-reading__actions">
+          <button type="button" class="outlook-btn outlook-btn--ghost" data-sandbox-toggle="hints">
+            ${sandbox.hintsVisible ? "Hide hints" : "Reveal signals"}
+          </button>
+          <button type="button" class="outlook-btn outlook-btn--primary" data-sandbox-action="report">
+            Report via Reporter
+          </button>
         </div>
-      </header>
-      <article class="reporter-sandbox__viewer-body${sandbox.hintsVisible ? " reporter-sandbox__viewer-body--hint" : ""}">
-        ${formatBody(message.body)}
-      </article>
-      <div class="reporter-sandbox__controls">
-        <button type="button" class="button-pill button-pill--ghost" data-sandbox-toggle="hints">
-          ${sandbox.hintsVisible ? "Hide hints" : "Reveal signals"}
-        </button>
-        <button type="button" class="button-pill button-pill--primary" data-sandbox-action="report">
-          Report via Reporter
-        </button>
+        <section class="outlook-signals">
+          <h3>Detection checklist</h3>
+          <div class="outlook-signals__grid">
+            ${renderSignalsChecklist(message, sandbox)}
+          </div>
+        </section>
       </div>
-      ${submissionSummary}
-      <section class="reporter-sandbox__signals">
-        <h2>Detection checklist</h2>
-        <div class="reporter-sandbox__signals-grid">
-          ${renderSignalsChecklist(message, sandbox, sandbox.hintsVisible)}
-        </div>
-      </section>
     `;
   };
 
   const renderLayout = state => {
     const sandbox = getSandboxSlice(state);
-    const activeMessage = sandbox.messages.find(message => message.id === sandbox.activeMessageId) || sandbox.messages[0];
+    const activeMessage = sandbox.messages.find(message => message.id === sandbox.activeMessageId) || null;
     const listMarkup = renderMessageList(sandbox, activeMessage ? activeMessage.id : null);
-    const viewerMarkup = renderViewer(sandbox, activeMessage);
+    const readingMarkup = renderReadingPane(sandbox, activeMessage);
+    const layoutClass = `outlook-layout${activeMessage ? " outlook-layout--reading" : ""}`;
     return `
-      <div class="reporter-sandbox">
-        <aside class="reporter-sandbox__list" data-sandbox-list>
-          ${listMarkup}
-        </aside>
-        <section class="reporter-sandbox__viewer" data-sandbox-viewer>
-          ${viewerMarkup}
-        </section>
-        <aside class="reporter-sandbox__addin" data-sandbox-addin>
-          <div class="reporter-sandbox__addin-empty">
-            <p>Select a message to dock the Reporter add-in.</p>
-          </div>
-        </aside>
+      <div class="reporter-sandbox outlook-shell">
+        ${renderAppBar()}
+        <div class="${layoutClass}">
+          ${renderFolders()}
+          <section class="outlook-mail outlook-panel">
+            <div class="outlook-toolbar">
+              <button class="outlook-btn">New mail</button>
+              <button class="outlook-btn outlook-btn--ghost">Mark as unread</button>
+              <button class="outlook-btn outlook-btn--ghost">Move to</button>
+              <button class="outlook-btn outlook-btn--ghost">Sweep</button>
+              <span class="outlook-toolbar__density">Display density: Comfortable ▾</span>
+            </div>
+            ${renderTabs(sandbox.activeTab)}
+            <div class="outlook-mail__columns">
+              <div class="outlook-list" data-sandbox-list>
+                ${listMarkup}
+              </div>
+              ${readingMarkup}
+            </div>
+          </section>
+          <aside class="outlook-reporter" data-sandbox-addin>
+            <div class="reporter-sandbox__addin-empty">
+              <p>Select a message to dock the Reporter add-in.</p>
+            </div>
+          </aside>
+        </div>
       </div>
     `;
   };
 
-  const renderTemplate = state => renderLayout(state || getState());
-
   reporterSandboxFeature.template = function templateReporterSandbox(state) {
-    return renderTemplate(state);
+    return renderLayout(state || getState());
   };
 
   reporterSandboxFeature.attach = function attachReporterSandbox(container, providedState) {
@@ -191,6 +251,15 @@
     const sandbox = getSandboxSlice(state);
     const addinTarget = container.querySelector("[data-sandbox-addin]");
     mountReporterDock(addinTarget, sandbox, state);
+
+    container.querySelectorAll("[data-sandbox-tab]").forEach(button => {
+      button.addEventListener("click", () => {
+        const tab = button.getAttribute("data-sandbox-tab");
+        if (WeldServices && typeof WeldServices.setSandboxTab === "function") {
+          WeldServices.setSandboxTab(tab);
+        }
+      });
+    });
 
     container.querySelectorAll("[data-sandbox-message]").forEach(button => {
       button.addEventListener("click", () => {
@@ -201,38 +270,39 @@
       });
     });
 
-    const toggle = container.querySelector("[data-sandbox-toggle='hints']");
-    if (toggle) {
-      toggle.addEventListener("click", () => {
+    const hintToggle = container.querySelector("[data-sandbox-toggle='hints']");
+    if (hintToggle) {
+      hintToggle.addEventListener("click", () => {
         if (WeldServices && typeof WeldServices.toggleSandboxHints === "function") {
           WeldServices.toggleSandboxHints();
         }
       });
     }
 
-    container.querySelectorAll("input[data-sandbox-signal]").forEach(input => {
-      input.addEventListener("change", () => {
-        const viewer = input.closest("[data-sandbox-viewer]");
-        if (!viewer) return;
-        const messageId = sandbox.activeMessageId;
-        if (!messageId) return;
-        const selected = Array.from(viewer.querySelectorAll("input[data-sandbox-signal]:checked")).map(element =>
-          element.value.trim().toLowerCase()
-        );
-        if (WeldServices && typeof WeldServices.updateSandboxFindings === "function") {
-          WeldServices.updateSandboxFindings(messageId, selected);
-        }
+    const readingPane = container.querySelector("[data-reading-pane]");
+    if (readingPane) {
+      readingPane.querySelectorAll("input[data-sandbox-signal]").forEach(input => {
+        input.addEventListener("change", () => {
+          const messageId = sandbox.activeMessageId;
+          if (!messageId) return;
+          const selected = Array.from(readingPane.querySelectorAll("input[data-sandbox-signal]:checked")).map(el =>
+            el.value.trim().toLowerCase()
+          );
+          if (WeldServices && typeof WeldServices.updateSandboxFindings === "function") {
+            WeldServices.updateSandboxFindings(messageId, selected);
+          }
+        });
       });
-    });
 
-    const reportButton = container.querySelector("[data-sandbox-action='report']");
-    if (reportButton) {
-      reportButton.addEventListener("click", () => {
-        const stateSnapshot = getState();
-        const sandboxSnapshot = getSandboxSlice(stateSnapshot);
-        const activeMessage = sandboxSnapshot.messages.find(message => message.id === sandboxSnapshot.activeMessageId);
-        mountReporterDock(addinTarget, sandboxSnapshot, stateSnapshot, activeMessage);
-      });
+      const reportButton = readingPane.querySelector("[data-sandbox-action='report']");
+      if (reportButton) {
+        reportButton.addEventListener("click", () => {
+          const snapshot = getState();
+          const snapshotSandbox = getSandboxSlice(snapshot);
+          const activeMessage = snapshotSandbox.messages.find(message => message.id === snapshotSandbox.activeMessageId);
+          mountReporterDock(addinTarget, snapshotSandbox, snapshot, activeMessage);
+        });
+      }
     }
   };
 
@@ -251,10 +321,7 @@
     reporterFeature.render(container, state, {
       sandboxContext: {
         sandboxMessageId: message.id,
-        subject: message.subject,
-        previewText: message.previewText,
-        body: message.body,
-        expectedSignalIds: message.signalIds
+        expectedSignalIds: Array.isArray(message.signalIds) ? message.signalIds : []
       }
     });
   }

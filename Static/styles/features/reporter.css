@@ -1004,35 +1004,3 @@
 .points-celebration--aurora .points-celebration__label {
   text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
 }
-
-.addin-sandbox-callout {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  background: linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(14, 165, 233, 0.08));
-}
-
-.addin-sandbox-callout__eyebrow {
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.75);
-}
-
-.addin-sandbox-callout__title {
-  margin: 0.25rem 0;
-  font-size: 1.1rem;
-}
-
-.addin-sandbox-callout__preview {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.addin-sandbox-callout__body p {
-  margin: 0.5rem 0;
-  line-height: 1.4;
-}
-}
-

@@ -340,7 +340,8 @@
         activeMessageId: null,
         hintsVisible: false,
         findings: {},
-        submissions: []
+        submissions: [],
+        activeTab: "focused"
       };
     } else {
       const sandboxMessages = Array.isArray(state.reporterSandbox.messages)
@@ -365,6 +366,8 @@
     ) {
       state.reporterSandbox.activeMessageId = state.reporterSandbox.messages[0]?.id || null;
     }
+    const tabValue = typeof state.reporterSandbox.activeTab === "string" ? state.reporterSandbox.activeTab : "focused";
+    state.reporterSandbox.activeTab = tabValue.trim().toLowerCase() === "other" ? "other" : "focused";
     return state.reporterSandbox;
   };
 
@@ -1285,6 +1288,21 @@
     saveState(state);
     renderShell();
     return { success: true, submission };
+  };
+
+  WeldServices.setSandboxTab = function setSandboxTab(tab, providedState) {
+    const state = resolveState(providedState);
+    if (!state) return { success: false, reason: "State missing." };
+    const sandbox = ensureReporterSandboxState(state);
+    const normalized = typeof tab === "string" && tab.trim().toLowerCase() === "other" ? "other" : "focused";
+    if (sandbox.activeTab === normalized) {
+      return { success: true, activeTab: sandbox.activeTab };
+    }
+    sandbox.activeTab = normalized;
+    syncGlobalState(state);
+    saveState(state);
+    renderShell();
+    return { success: true, activeTab: sandbox.activeTab };
   };
 
   const DEFAULT_PHISHING_SIM_STATE = {

@@ -467,7 +467,8 @@
             activeMessageId: DEFAULT_SANDBOX_MESSAGES[0]?.id || null,
             hintsVisible: false,
             findings: {},
-            submissions: []
+            submissions: [],
+            activeTab: "focused"
           };
     const fallbackMessages =
       Array.isArray(base.messages) && base.messages.length > 0
@@ -494,12 +495,18 @@
             .map((entry, index) => normalizeSandboxSubmission(entry, index))
             .filter(Boolean)
         : [];
+    const normalizeTab = value => {
+      const normalized = typeof value === "string" ? value.trim().toLowerCase() : "";
+      return normalized === "other" ? "other" : "focused";
+    };
+    const activeTab = normalizeTab(source?.activeTab || base.activeTab);
     return {
       messages,
       activeMessageId,
       hintsVisible: source?.hintsVisible === true,
       findings: normalizeSandboxFindings(source?.findings || base.findings),
-      submissions
+      submissions,
+      activeTab
     };
   };
 
@@ -718,7 +725,8 @@
       activeMessageId: DEFAULT_SANDBOX_MESSAGES[0]?.id || null,
       hintsVisible: false,
       findings: {},
-      submissions: []
+      submissions: [],
+      activeTab: "focused"
     }
   };
 

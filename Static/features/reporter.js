@@ -34,44 +34,16 @@
   function normalizeSandboxContext(context) {
     if (!context || typeof context !== "object") return null;
     const sandboxMessageId = typeof context.sandboxMessageId === "string" ? context.sandboxMessageId : null;
-    const subject = typeof context.subject === "string" ? context.subject : "";
-    const previewText = typeof context.previewText === "string" ? context.previewText : "";
-    const body = typeof context.body === "string" ? context.body : "";
     const expectedSignalIds = Array.isArray(context.expectedSignalIds)
       ? context.expectedSignalIds.map(id => (typeof id === "string" ? id.trim().toLowerCase() : null)).filter(Boolean)
       : [];
-    if (!sandboxMessageId && !subject && !body) {
+    if (!sandboxMessageId) {
       return null;
     }
     return {
       sandboxMessageId,
-      subject,
-      previewText,
-      body,
       expectedSignalIds
     };
-  }
-
-  function renderSandboxContextSummary(context) {
-    if (!context) return "";
-    const subject = context.subject || "Sandbox message";
-    const preview = context.previewText || "";
-    const bodyMarkup = context.body
-      ? context.body
-          .split("\n")
-          .map(line => `<p>${WeldUtil.escapeHtml(line)}</p>`)
-          .join("")
-      : "";
-    return `
-      <section class="addin-sandbox-callout" aria-live="polite">
-        <header class="addin-sandbox-callout__header">
-          <span class="addin-sandbox-callout__eyebrow">Reporter sandbox</span>
-          <h2 class="addin-sandbox-callout__title">${WeldUtil.escapeHtml(subject)}</h2>
-          ${preview ? `<p class="addin-sandbox-callout__preview">${WeldUtil.escapeHtml(preview)}</p>` : ""}
-        </header>
-        ${bodyMarkup ? `<div class="addin-sandbox-callout__body">${bodyMarkup}</div>` : ""}
-      </section>
-    `;
   }
 
   function renderAddIn() {
@@ -112,9 +84,7 @@
       })
       .filter(Boolean)
       .join("");
-    const sandboxBanner = renderSandboxContextSummary(sandboxContext);
     const reportForm = `
-      ${sandboxBanner}
       <div class="addin-body">
         <fieldset class="addin-field">
           <legend>${WeldUtil.escapeHtml(reasonPrompt)}</legend>
