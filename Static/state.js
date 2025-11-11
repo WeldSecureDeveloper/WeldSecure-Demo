@@ -468,7 +468,12 @@
             hintsVisible: false,
             findings: {},
             submissions: [],
-            activeTab: "focused"
+            selectedUserId: null,
+            layout: {
+              compactRows: false,
+              showSnippets: true,
+              highlightReading: true
+            }
           };
     const fallbackMessages =
       Array.isArray(base.messages) && base.messages.length > 0
@@ -495,18 +500,28 @@
             .map((entry, index) => normalizeSandboxSubmission(entry, index))
             .filter(Boolean)
         : [];
-    const normalizeTab = value => {
-      const normalized = typeof value === "string" ? value.trim().toLowerCase() : "";
-      return normalized === "other" ? "other" : "focused";
+    const ensureUserId = value =>
+      typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+    const selectedUserId = ensureUserId(source?.selectedUserId || base.selectedUserId);
+    const layoutSource =
+      source?.layout && typeof source.layout === "object"
+        ? source.layout
+        : base.layout && typeof base.layout === "object"
+        ? base.layout
+        : {};
+    const layout = {
+      compactRows: layoutSource.compactRows === true,
+      showSnippets: layoutSource.showSnippets !== false,
+      highlightReading: layoutSource.highlightReading !== false
     };
-    const activeTab = normalizeTab(source?.activeTab || base.activeTab);
     return {
       messages,
       activeMessageId,
       hintsVisible: source?.hintsVisible === true,
       findings: normalizeSandboxFindings(source?.findings || base.findings),
       submissions,
-      activeTab
+      selectedUserId,
+      layout
     };
   };
 
@@ -726,7 +741,12 @@
       hintsVisible: false,
       findings: {},
       submissions: [],
-      activeTab: "focused"
+      selectedUserId: null,
+      layout: {
+        compactRows: false,
+        showSnippets: true,
+        highlightReading: true
+      }
     }
   };
 

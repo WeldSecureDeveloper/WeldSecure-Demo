@@ -341,7 +341,12 @@
         hintsVisible: false,
         findings: {},
         submissions: [],
-        activeTab: "focused"
+        selectedUserId: null,
+        layout: {
+          compactRows: false,
+          showSnippets: true,
+          highlightReading: true
+        }
       };
     } else {
       const sandboxMessages = Array.isArray(state.reporterSandbox.messages)
@@ -366,8 +371,22 @@
     ) {
       state.reporterSandbox.activeMessageId = state.reporterSandbox.messages[0]?.id || null;
     }
-    const tabValue = typeof state.reporterSandbox.activeTab === "string" ? state.reporterSandbox.activeTab : "focused";
-    state.reporterSandbox.activeTab = tabValue.trim().toLowerCase() === "other" ? "other" : "focused";
+    if (typeof state.reporterSandbox.selectedUserId !== "string") {
+      state.reporterSandbox.selectedUserId = state.reporterSandbox.selectedUserId && String(state.reporterSandbox.selectedUserId);
+    } else {
+      state.reporterSandbox.selectedUserId = state.reporterSandbox.selectedUserId.trim() || null;
+    }
+    if (!state.reporterSandbox.layout || typeof state.reporterSandbox.layout !== "object") {
+      state.reporterSandbox.layout = {
+        compactRows: false,
+        showSnippets: true,
+        highlightReading: true
+      };
+    } else {
+      state.reporterSandbox.layout.compactRows = state.reporterSandbox.layout.compactRows === true;
+      state.reporterSandbox.layout.showSnippets = state.reporterSandbox.layout.showSnippets !== false;
+      state.reporterSandbox.layout.highlightReading = state.reporterSandbox.layout.highlightReading !== false;
+    }
     return state.reporterSandbox;
   };
 
@@ -1290,19 +1309,42 @@
     return { success: true, submission };
   };
 
-  WeldServices.setSandboxTab = function setSandboxTab(tab, providedState) {
+  WeldServices.setSandboxUser = function setSandboxUser(userId, providedState) {
     const state = resolveState(providedState);
     if (!state) return { success: false, reason: "State missing." };
     const sandbox = ensureReporterSandboxState(state);
-    const normalized = typeof tab === "string" && tab.trim().toLowerCase() === "other" ? "other" : "focused";
-    if (sandbox.activeTab === normalized) {
-      return { success: true, activeTab: sandbox.activeTab };
-    }
-    sandbox.activeTab = normalized;
+    if (!sandbox) return { success: false, reason: "Sandbox missing." };
+    const normalized =
+      typeof userId === "string" && userId.trim().length > 0 ? userId.trim() : null;
+    sandbox.selectedUserId = normalized;
     syncGlobalState(state);
     saveState(state);
     renderShell();
-    return { success: true, activeTab: sandbox.activeTab };
+    return { success: true, selectedUserId: sandbox.selectedUserId };
+  };
+
+  const SANDBOX_LAYOUT_PREFS = new Set(["compactRows", "showSnippets", "highlightReading"]);
+
+  WeldServices.setSandboxLayoutPreference = function setSandboxLayoutPreference(prefName, enabled, providedState) {
+    const state = resolveState(providedState);
+    if (!state) return { success: false, reason: "State missing." };
+    const sandbox = ensureReporterSandboxState(state);
+    if (!sandbox) return { success: false, reason: "Sandbox missing." };
+    if (!SANDBOX_LAYOUT_PREFS.has(prefName)) {
+      return { success: false, reason: "Unknown layout preference." };
+    }
+    if (!sandbox.layout || typeof sandbox.layout !== "object") {
+      sandbox.layout = {
+        compactRows: false,
+        showSnippets: true,
+        highlightReading: true
+      };
+    }
+    sandbox.layout[prefName] = enabled === true;
+    syncGlobalState(state);
+    saveState(state);
+    renderShell();
+    return { success: true, layout: { ...sandbox.layout } };
   };
 
   const DEFAULT_PHISHING_SIM_STATE = {
