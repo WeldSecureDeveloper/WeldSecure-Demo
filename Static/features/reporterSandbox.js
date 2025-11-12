@@ -308,6 +308,27 @@
       .toUpperCase();
   };
 
+  const AVATAR_COLOR_PALETTE = [
+    { from: "A", to: "C", background: "#0078D4", color: "#ffffff" }, // Cornflower Blue
+    { from: "D", to: "F", background: "#107C10", color: "#ffffff" }, // Emerald Green
+    { from: "G", to: "I", background: "#D83B01", color: "#ffffff" }, // Orange
+    { from: "J", to: "L", background: "#038387", color: "#ffffff" }, // Teal
+    { from: "M", to: "O", background: "#5C2D91", color: "#ffffff" }, // Purple
+    { from: "P", to: "R", background: "#B4009E", color: "#ffffff" }, // Magenta Pink
+    { from: "S", to: "U", background: "#A4262C", color: "#ffffff" }, // Red
+    { from: "V", to: "X", background: "#FFB900", color: "#2f2f2f" }, // Gold/Amber needs dark text
+    { from: "Y", to: "Z", background: "#2B88D8", color: "#ffffff" } // Steel Blue
+  ];
+
+  const avatarToneFor = name => {
+    const fallback = { background: "#1f2440", color: "#ffffff" };
+    if (!name || typeof name !== "string") return fallback;
+    const initial = name.trim().charAt(0).toUpperCase();
+    if (!initial || initial < "A" || initial > "Z") return fallback;
+    const tone = AVATAR_COLOR_PALETTE.find(entry => initial >= entry.from && initial <= entry.to);
+    return tone || fallback;
+  };
+
   const resolveIdentity = (state, sandbox) => {
     const directory = getDirectorySnapshot(state);
     const selected =
@@ -495,6 +516,7 @@
     const senderAddress = message.sender?.address || "security@weldsecure.com";
     const senderIsInternal = isInternalSender(senderAddress, activeState);
     const senderDisplay = senderIsInternal ? senderName : `${senderName} <${senderAddress}>`;
+    const avatarTone = avatarToneFor(senderName);
     const subject = message.subject || "Sandbox simulation";
     const messageBody = formatBody(message.body);
     const statusTone = submission
@@ -532,7 +554,12 @@
         </div>
         <div class="reading-card reading-card--message">
           <div class="reading-message-header">
-            <div class="reading-avatar">${escapeHtml(initialsFor(message.sender?.displayName))}</div>
+            <div
+              class="reading-avatar"
+              style="background:${avatarTone.background};color:${avatarTone.color};"
+            >
+              ${escapeHtml(initialsFor(message.sender?.displayName))}
+            </div>
             <div class="reading-header__content">
               <div class="reading-sender-row">
                 <span class="reading-sender">${escapeHtml(senderDisplay)}</span>
@@ -665,11 +692,6 @@
         iconSrc: fluentColorIcon("assets/People/SVG/ic_fluent_people_48_color.svg?raw=true")
       },
       {
-        id: "people-team",
-        label: "Approvals",
-        iconSrc: fluentColorIcon("assets/People%20Team/SVG/ic_fluent_people_team_48_color.svg?raw=true")
-      },
-      {
         id: "todo",
         label: "To Do",
         iconSrc: fluentColorIcon("assets/Checkmark%20Circle/SVG/ic_fluent_checkmark_circle_48_color.svg?raw=true")
@@ -688,15 +710,15 @@
         id: "files",
         label: "OneDrive",
         iconSrc: fluentColorIcon("assets/Cloud/SVG/ic_fluent_cloud_48_color.svg?raw=true")
+      },
+      {
+        id: "more-apps",
+        label: "More apps",
+        iconSrc: fluentColorIcon("assets/Apps/SVG/ic_fluent_apps_48_color.svg?raw=true"),
+        variant: "more",
+        toggleable: false
       }
     ];
-    const moreApps = {
-      id: "more-apps",
-      label: "More apps",
-      iconSrc: fluentColorIcon("assets/Apps/SVG/ic_fluent_apps_48_color.svg?raw=true"),
-      variant: "more",
-      toggleable: false
-    };
 
     const renderRailButton = app => {
       const isActive = Boolean(app.pressed);
@@ -722,9 +744,6 @@
         <nav class="app-rail" aria-label="Outlook app rail">
           <div class="app-rail__stack">
             ${railApps.map(renderRailButton).join("")}
-          </div>
-          <div class="app-rail__stack app-rail__stack--end">
-            ${renderRailButton(moreApps)}
           </div>
         </nav>
       </aside>
