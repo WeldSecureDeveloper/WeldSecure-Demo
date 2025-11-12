@@ -144,6 +144,7 @@
       attachMethods: ["attachLeaderboards"]
     }),
     "reporter-sandbox": featureRoute("reporterSandbox", {
+      pageClass: "page page--sandbox",
       templateMethods: ["template"],
       attachMethods: ["attach"]
     }),

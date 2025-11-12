@@ -1,3 +1,12 @@
+.page--sandbox .page__inner {
+  padding-top: 0.5rem;
+}
+
+.page--sandbox .layout-content {
+  padding-top: 1rem;
+  padding-bottom: 2rem;
+}
+
 .sandbox-window {
   --blue-900: #0078d4;
   --blue-800: #006cbe;

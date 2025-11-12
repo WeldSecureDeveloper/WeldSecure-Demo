@@ -825,20 +825,8 @@
     }
 
     function renderHeader(state) {
-      const role = state?.meta?.role;
-      const navMarkup = renderGlobalNav(state?.meta?.route || "landing", state);
-      const chipMarkup =
-        role && ROLE_LABELS[role]
-          ? `<span class="chip ${ROLE_LABELS[role].chip}"><span class="chip__dot"></span>${ROLE_LABELS[role].label}</span>`
-          : "";
-      return `
-    ${navMarkup}
-    <header class="header">
-      <div class="header__actions">
-        ${chipMarkup}
-      </div>
-    </header>
-  `;
+      // Keep the header hook in place for future actions, but drop persona chips entirely.
+      return renderGlobalNav(state?.meta?.route || "landing", state);
     }
 
     return {
