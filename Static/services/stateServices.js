@@ -223,12 +223,40 @@
     return null;
   };
 
+  const SANDBOX_TIMESTAMP_META_KEY = "__timestampOffsetMs";
+
   const normalizeSandboxSignalId = value => {
     if (typeof value === "string") {
       const trimmed = value.trim();
       return trimmed.length > 0 ? trimmed.toLowerCase() : null;
     }
     return null;
+  };
+
+  const resolveSandboxCreatedAt = (sourceValue, metadata) => {
+    const now = Date.now();
+    const storedOffset =
+      metadata && typeof metadata[SANDBOX_TIMESTAMP_META_KEY] === "number"
+        ? metadata[SANDBOX_TIMESTAMP_META_KEY]
+        : null;
+    const parsedTime =
+      typeof sourceValue === "string" && sourceValue.trim().length > 0
+        ? new Date(sourceValue).getTime()
+        : NaN;
+    let offset = Number.isFinite(storedOffset)
+      ? storedOffset
+      : Number.isFinite(parsedTime)
+      ? now - parsedTime
+      : 0;
+    if (!Number.isFinite(offset) || offset < 0) {
+      offset = 0;
+    } else {
+      offset = Math.round(offset);
+    }
+    if (metadata) {
+      metadata[SANDBOX_TIMESTAMP_META_KEY] = offset;
+    }
+    return new Date(now - offset).toISOString();
   };
 
   const cloneSandboxAttachments = list => {
@@ -249,10 +277,9 @@
   const normalizeSandboxMessage = (source, fallbackId) => {
     if (!source || typeof source !== "object") return null;
     const id = normalizeSandboxMessageId(source.id) || fallbackId || getGenerateId("sandbox-msg");
-    const createdAt =
-      typeof source.createdAt === "string" && source.createdAt.trim().length > 0
-        ? new Date(source.createdAt).toISOString()
-        : new Date().toISOString();
+    const metadata =
+      source.metadata && typeof source.metadata === "object" ? { ...source.metadata } : {};
+    const createdAt = resolveSandboxCreatedAt(source.createdAt, metadata);
     const channel =
       typeof source.channel === "string" && source.channel.trim().length > 0
         ? source.channel.trim().toLowerCase()
@@ -269,8 +296,6 @@
     const signalIds = Array.isArray(source.signalIds)
       ? source.signalIds.map(normalizeSandboxSignalId).filter(Boolean)
       : [];
-    const metadata =
-      source.metadata && typeof source.metadata === "object" ? { ...source.metadata } : {};
     Object.keys(metadata).forEach(key => {
       if (metadata[key] === undefined) {
         delete metadata[key];

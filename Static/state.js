@@ -357,6 +357,8 @@
       .filter(Boolean);
   };
 
+  const SANDBOX_TIMESTAMP_META_KEY = "__timestampOffsetMs";
+
   const normalizeSandboxMetadata = metadata => {
     if (!metadata || typeof metadata !== "object") return {};
     const copy = { ...metadata };
@@ -368,16 +370,40 @@
     return copy;
   };
 
+  const resolveSandboxCreatedAt = (sourceValue, metadata) => {
+    const now = Date.now();
+    const storedOffset =
+      metadata && typeof metadata[SANDBOX_TIMESTAMP_META_KEY] === "number"
+        ? metadata[SANDBOX_TIMESTAMP_META_KEY]
+        : null;
+    const parsedTime =
+      typeof sourceValue === "string" && sourceValue.trim().length > 0
+        ? new Date(sourceValue).getTime()
+        : NaN;
+    let offset = Number.isFinite(storedOffset)
+      ? storedOffset
+      : Number.isFinite(parsedTime)
+      ? now - parsedTime
+      : 0;
+    if (!Number.isFinite(offset) || offset < 0) {
+      offset = 0;
+    } else {
+      offset = Math.round(offset);
+    }
+    if (metadata) {
+      metadata[SANDBOX_TIMESTAMP_META_KEY] = offset;
+    }
+    return new Date(now - offset).toISOString();
+  };
+
   const normalizeSandboxMessage = (source, fallbackId) => {
     if (!source || typeof source !== "object") return null;
     const id =
       typeof source.id === "string" && source.id.trim().length > 0
         ? source.id.trim()
         : fallbackId || getGenerateId("sandbox-msg");
-    const createdAt =
-      typeof source.createdAt === "string" && source.createdAt.trim().length > 0
-        ? new Date(source.createdAt).toISOString()
-        : new Date().toISOString();
+    const metadata = normalizeSandboxMetadata(source.metadata);
+    const createdAt = resolveSandboxCreatedAt(source.createdAt, metadata);
     const channel =
       typeof source.channel === "string" && source.channel.trim().length > 0
         ? source.channel.trim().toLowerCase()
@@ -405,7 +431,7 @@
       body,
       signalIds,
       attachments: normalizeSandboxAttachments(source.attachments),
-      metadata: normalizeSandboxMetadata(source.metadata)
+      metadata
     };
   };
 

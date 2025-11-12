@@ -35,13 +35,16 @@
     if (!value) return "Date unknown";
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) return "Date unknown";
-    return parsed.toLocaleString("en-GB", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
+    const weekday = parsed.toLocaleDateString("en-GB", { weekday: "short" });
+    const day = parsed.toLocaleDateString("en-GB", { day: "numeric" });
+    const month = parsed.toLocaleDateString("en-GB", { month: "short" });
+    const year = parsed.getFullYear();
+    const time = parsed.toLocaleTimeString("en-GB", {
       hour: "2-digit",
-      minute: "2-digit"
+      minute: "2-digit",
+      hour12: false
     });
+    return `${weekday} ${day} ${month} ${year} ${time}`;
   };
 
   const inferInternalDomains = state => {
@@ -369,7 +372,9 @@
             const submission = latestSubmissionFor(sandbox.submissions, message.id);
             const classes = ["message-row"];
             if (message.id === sandbox.activeMessageId) classes.push("is-active");
-            if (message.metadata?.unread === true || (!submission && index === 0)) {
+            const hasExplicitUnread = message.metadata?.unread === true;
+            const hasExplicitRead = message.metadata?.unread === false;
+            if (hasExplicitUnread || (!hasExplicitRead && !submission && index === 0)) {
               classes.push("is-unread");
             }
             const preview = messagePreview(message);
@@ -811,7 +816,11 @@
     const addinVisible = sandbox.layout.showAddin === true;
     const activeMessage = sandbox.messages.find(message => message.id === sandbox.activeMessageId) || null;
     const readingRegionClasses = ["reading-region"];
-    if (!addinVisible) readingRegionClasses.push("reading-region--addin-hidden");
+    const sandboxContentClasses = ["sandbox-content"];
+    const stageClasses = ["sandbox-stage"];
+    if (addinVisible) {
+      stageClasses.push("sandbox-stage--addin-visible");
+    }
 
     return `
       <div class="${rootClasses.join(" ")}">
@@ -854,41 +863,49 @@
         </header>
         <div class="sandbox-main">
           ${renderSidebar()}
-          <div class="sandbox-content">
-            ${renderRibbon(addinVisible)}
-            <div class="sandbox-content__body">
-              <section class="message-column">
-                <div class="message-toolbar" role="toolbar" aria-label="Mailbox view controls">
-                  <div class="message-toolbar__title">
-                    <span class="message-toolbar__folder">Inbox</span>
-                    <button type="button" class="message-toolbar__favorite" aria-label="Toggle favorite">
-                      ${fluentIconImg("star-16-filled.svg")}
-                    </button>
-                  </div>
-                  <div class="message-toolbar__actions">
-                    <button type="button" aria-label="Copy message">
-                      ${fluentIconImg("copy-16-regular.svg")}
-                    </button>
-                    <button type="button" aria-label="Jump to folder">
-                      ${fluentIconImg("arrow-turn-down-right-20-regular.svg")}
-                    </button>
-                    <button type="button" aria-label="Filter messages">
-                      ${fluentIconImg("filter-24-regular.svg")}
-                    </button>
-                    <button type="button" aria-label="Sort order">
-                      ${fluentIconImg("arrow-sort-24-regular.svg")}
-                    </button>
+          <div
+            class="${stageClasses.join(" ")}"
+            data-sandbox-stage
+            data-addin-visible="${addinVisible ? 'true' : 'false'}"
+          >
+            <div class="${sandboxContentClasses.join(" ")}">
+              <div class="sandbox-content__main">
+                ${renderRibbon(addinVisible)}
+                <div class="sandbox-content__body">
+                  <section class="message-column">
+                    <div class="message-toolbar" role="toolbar" aria-label="Mailbox view controls">
+                      <div class="message-toolbar__title">
+                        <span class="message-toolbar__folder">Inbox</span>
+                        <button type="button" class="message-toolbar__favorite" aria-label="Toggle favorite">
+                          ${fluentIconImg("star-16-filled.svg")}
+                        </button>
+                      </div>
+                      <div class="message-toolbar__actions">
+                        <button type="button" aria-label="Copy message">
+                          ${fluentIconImg("copy-16-regular.svg")}
+                        </button>
+                        <button type="button" aria-label="Jump to folder">
+                          ${fluentIconImg("arrow-turn-down-right-20-regular.svg")}
+                        </button>
+                        <button type="button" aria-label="Filter messages">
+                          ${fluentIconImg("filter-24-regular.svg")}
+                        </button>
+                        <button type="button" aria-label="Sort order">
+                          ${fluentIconImg("arrow-sort-24-regular.svg")}
+                        </button>
+                      </div>
+                    </div>
+                    <div class="message-list" data-sandbox-list>
+                      ${renderMessageGroups(sandbox, state)}
+                    </div>
+                  </section>
+                  <div class="${readingRegionClasses.join(" ")}" data-reading-region data-addin-visible="${addinVisible ? 'true' : 'false'}">
+                    ${renderReadingPane(sandbox, activeMessage, identity, state)}
                   </div>
                 </div>
-                <div class="message-list" data-sandbox-list>
-                  ${renderMessageGroups(sandbox, state)}
-                </div>
-              </section>
-              <div class="${readingRegionClasses.join(" ")}" data-reading-region data-addin-visible="${addinVisible ? 'true' : 'false'}">
-                ${renderReadingPane(sandbox, activeMessage, identity, state)}
-                ${renderReporterSidebar(addinVisible)}
               </div>
             </div>
+            ${renderReporterSidebar(addinVisible)}
           </div>
         </div>
       </div>
@@ -908,6 +925,7 @@
     const reporterSidebar = container.querySelector("[data-reporter-sidebar]");
     const reporterBody = container.querySelector("[data-reporter-sidebar-body]");
     const readingRegion = container.querySelector("[data-reading-region]");
+    const sandboxStage = container.querySelector("[data-sandbox-stage]");
     const toggleAddinButton = container.querySelector("[data-action='toggle-addin']");
     const activeMessage =
       sandbox.messages.find(message => message.id === sandbox.activeMessageId) || null;
@@ -937,7 +955,10 @@
       }
       if (readingRegion) {
         readingRegion.setAttribute("data-addin-visible", addinVisible ? "true" : "false");
-        readingRegion.classList.toggle("reading-region--addin-hidden", !addinVisible);
+      }
+      if (sandboxStage) {
+        sandboxStage.classList.toggle("sandbox-stage--addin-visible", addinVisible);
+        sandboxStage.setAttribute("data-addin-visible", addinVisible ? "true" : "false");
       }
       updateCommandButton(addinVisible);
     };
