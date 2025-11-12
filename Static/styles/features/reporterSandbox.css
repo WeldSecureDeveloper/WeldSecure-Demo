@@ -367,7 +367,7 @@
   padding: 0 0 1.5rem 0;
   max-width: 1800px;
   width: 100%;
-  margin: 0 auto;
+  margin: -1.15rem auto 0;
   align-items: stretch;
   min-height: 0;
 }
@@ -397,9 +397,9 @@
 .sandbox-stage--addin-visible .reporter-sidebar {
   display: flex;
   position: relative;
-  top: calc(-1.2rem - 1px);
+  top: calc(-1.35rem - 4px);
   margin-top: 0;
-  height: calc(100% + 1.2rem + 1px);
+  height: calc(100% + 1.35rem + 4px);
 }
 
 .sandbox-content {
