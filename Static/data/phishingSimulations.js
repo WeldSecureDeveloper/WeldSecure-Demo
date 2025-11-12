@@ -10,6 +10,13 @@
     return date.toISOString();
   };
 
+  const relativeDate = (daysAgo = 0, hour = 9, minute = 0) => {
+    const date = new Date();
+    date.setHours(hour, minute, 0, 0);
+    date.setDate(date.getDate() - daysAgo);
+    return date;
+  };
+
   AppData.phishingSimulations = {
     campaigns: [
       {
@@ -121,7 +128,7 @@
         id: "sandbox-msg-wire-escalation",
         campaignId: "sim-q4-finance",
         channel: "email",
-        createdAt: iso("2025-11-08T08:00:00Z"),
+        createdAt: iso(relativeDate(0, 8, 0)),
         sender: {
           displayName: "Treasury Escalations",
           address: "alerts@everq4-treasury.com"
@@ -150,7 +157,7 @@ Amelia`,
         id: "sandbox-msg-benefits-renewal",
         campaignId: "sim-hr-benefits",
         channel: "email",
-        createdAt: iso("2025-11-09T11:45:00Z"),
+        createdAt: iso(relativeDate(1, 11, 45)),
         sender: {
           displayName: "Benefits Desk",
           address: "benefits@evergreen-benefits.com"
@@ -178,6 +185,104 @@ Jess, Benefits`,
         metadata: {
           microLesson: "Unexpected portals and macro-enabled attachments should be escalated immediately.",
           linkPreview: "Vendor portal (override)"
+        }
+      },
+      {
+        id: "sandbox-msg-ledger-guardrails",
+        campaignId: null,
+        channel: "email",
+        createdAt: iso(relativeDate(0, 10, 35)),
+        sender: {
+          displayName: "Daniel Harper",
+          address: "daniel.harper@weld.onmicrosoft.com"
+        },
+        subject: "RE: Ledger guardrails checklist",
+        previewText: "Looping Amelia + Priya so we can close the comments on today's workbook.",
+        body: `Hi ${"${{FIRST_NAME}}"},
+
+Cc: Amelia Reed; Priya Nair
+
+Appreciate you jumping on the guardrails review this morning. Priya has already patched the spend trend tab, so the only open items on my end are:
+- Add the Ops variance note for July
+- Confirm Olivia's approvals folder is synced in OneDrive
+
+If you can drop your commentary straight into the shared workbook I'll package it for Amelia before LT.
+
+Thanks,
+Daniel`,
+        signalIds: [],
+        attachments: [],
+        metadata: {
+          conversation: true,
+          conversationReplies: 3,
+          cc: ["amelia.reed@weld.onmicrosoft.com", "priya.nair@weld.onmicrosoft.com"]
+        }
+      },
+      {
+        id: "sandbox-msg-controls-huddle",
+        campaignId: null,
+        channel: "email",
+        createdAt: iso(relativeDate(0, 14, 5)),
+        sender: {
+          displayName: "Priya Nair",
+          address: "priya.nair@weld.onmicrosoft.com"
+        },
+        subject: "Controls huddle recap + checklist",
+        previewText: "Sending the notes for tomorrow's walkthrough with Mateo and Ops.",
+        body: `Hello ${"${{FIRST_NAME}}"},
+
+Cc: Daniel Harper; Sofia Marques
+
+Attached are the tidy notes from today's controls huddle. Nothing scary - just a few reminders we promised Ops:
+- Track the open PO list for the robotics pilot
+- Share the updated supplier attestation wording
+- Confirm which queue Mateo wants highlighted in the deck
+
+Can you skim the attachment and flag anything we missed before I post it in Teams?
+
+Regards,
+Priya`,
+        signalIds: [],
+        attachments: [
+          {
+            id: "att-controls-huddle-notes",
+            name: "Controls_Huddle_Notes.docx",
+            type: "docx"
+          }
+        ],
+        metadata: {
+          conversation: true,
+          conversationReplies: 2,
+          cc: ["daniel.harper@weld.onmicrosoft.com", "sofia.marques@weld.onmicrosoft.com"]
+        }
+      },
+      {
+        id: "sandbox-msg-recognition-draft",
+        campaignId: null,
+        channel: "email",
+        createdAt: iso(relativeDate(1, 15, 20)),
+        sender: {
+          displayName: "Emily Chen",
+          address: "emily.chen@weld.onmicrosoft.com"
+        },
+        subject: "Jumping on the recognition draft?",
+        previewText: "Mateo and Hannah left comments in the deck - need your eyes before I publish.",
+        body: `Hi ${"${{FIRST_NAME}}"},
+
+Cc: Mateo Alvarez; Hannah O'Neill
+
+Thanks for volunteering to polish the recognition draft. Mateo and Hannah have each left comments in the insights section, so we're basically down to formatting and the intro paragraph.
+
+If you can give it one more pass tonight I'll ship it to LT first thing. Happy to jump on a quick call if anything feels fuzzy.
+
+Cheers,
+Emily`,
+        signalIds: [],
+        attachments: [],
+        metadata: {
+          conversation: true,
+          conversationReplies: 4,
+          cc: ["mateo.alvarez@weld.onmicrosoft.com", "hannah.oneill@weld.onmicrosoft.com"]
         }
       }
     ]

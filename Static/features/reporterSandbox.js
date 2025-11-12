@@ -236,6 +236,7 @@
   const fluentSvgIcon = fileName => `svg/fluent/${fileName}`;
   const fluentIconImg = fileName =>
     `<img src="${fluentSvgIcon(fileName)}" alt="" class="icon-img" loading="lazy" decoding="async" />`;
+  const fluentChevronImg = () => fluentIconImg("chevron-down-16-regular.svg");
 
   const messagePreview = message => {
     if (!message) return "";
@@ -343,7 +344,7 @@
         } else if (diffDays === 1) {
           label = "Yesterday";
         } else {
-          label = date.toLocaleDateString("en-GB", { month: "short", day: "numeric" });
+          label = "Earlier";
         }
       }
       let group = groups.find(entry => entry.label === label);
@@ -375,6 +376,13 @@
             const sender = escapeHtml(message.sender?.displayName || "Security Desk");
             const subject = escapeHtml(message.subject || "Sandbox simulation");
             const time = formatTime(message.createdAt);
+            const hasConversation =
+              message.metadata?.conversation === true ||
+              (typeof message.metadata?.conversationReplies === "number" &&
+                message.metadata.conversationReplies > 0);
+            const conversationIcon = hasConversation
+              ? `<span class="message-row__conversation" aria-hidden="true">${fluentIconImg("chevron-right-12-regular.svg")}</span>`
+              : "";
             return `
               <li class="${classes.join(" ")}" data-sandbox-message="${escapeHtml(message.id)}">
                 <div class="message-row__sender-line">
@@ -382,6 +390,7 @@
                 </div>
                 <div class="message-row__subject-line">
                   <div class="message-row__subject-wrap">
+                    ${conversationIcon}
                     <span class="message-row__subject">${subject}</span>
                   </div>
                   <span class="message-row__time">${escapeHtml(time)}</span>
@@ -392,7 +401,10 @@
           })
           .join("");
         return `
-          <div class="message-group">${escapeHtml(group.label)}</div>
+          <div class="message-group">
+            <span class="message-group__chevron" aria-hidden="true">${fluentChevronImg()}</span>
+            <span class="message-group__label">${escapeHtml(group.label)}</span>
+          </div>
           <ul class="message-rows">
             ${rows}
           </ul>
@@ -478,14 +490,18 @@
     const timestamp = formatFullDate(message.createdAt);
     const recipientMarkup = toLine ? escapeHtml(toLine) : "&nbsp;";
     const headerActions = [
-      { id: "reply", label: "Reply", asset: "arrow-reply-24-regular.svg" },
-      { id: "reply-all", label: "Reply all", asset: "arrow-reply-all-24-regular.svg" },
-      { id: "forward", label: "Forward", asset: "arrow-forward-24-regular.svg" },
-      { id: "more", label: "More actions", asset: "more-horizontal-24-regular.svg" }
+      { id: "reply", label: "Reply", asset: "arrow-reply-24-regular.svg", tone: "accent" },
+      { id: "reply-all", label: "Reply all", asset: "arrow-reply-all-24-regular.svg", tone: "accent" },
+      { id: "forward", label: "Forward", asset: "arrow-forward-24-regular.svg", tone: "link" },
+      { id: "more", label: "More actions", asset: "more-horizontal-24-regular.svg", tone: "muted" }
     ]
       .map(
         action => `
-          <button type="button" class="reading-icon-button" aria-label="${escapeHtml(action.label)}">
+          <button
+            type="button"
+            class="reading-icon-button${action.tone ? ` command-icon--${action.tone}` : ""}"
+            aria-label="${escapeHtml(action.label)}"
+          >
             ${fluentIconImg(action.asset)}
           </button>
         `
@@ -553,13 +569,13 @@
     const isAddinVisible = addinVisible === true;
     const weldButtonLabel = isAddinVisible ? "Hide WeldSecure add-in" : "Show WeldSecure add-in";
     const commandIcons = [
-      { id: "delete", label: "Delete", asset: "delete-24-regular.svg", tone: "muted" },
+      { id: "delete", label: "Delete", asset: "delete-24-regular.svg", tone: "muted", flyout: true },
       { id: "archive", label: "Archive", asset: "archive-24-regular.svg", tone: "success" },
-      { id: "report", label: "Report", asset: "shield-error-24-regular.svg", tone: "danger" },
-      { id: "move", label: "Move to", asset: "folder-arrow-right-24-regular.svg", tone: "link" },
+      { id: "report", label: "Report", asset: "shield-error-24-regular.svg", tone: "danger", flyout: true },
+      { id: "move", label: "Move to", asset: "folder-arrow-right-24-regular.svg", tone: "link", flyout: true },
       { id: "reply", label: "Reply", asset: "arrow-reply-24-regular.svg", tone: "accent" },
       { id: "reply-all", label: "Reply all", asset: "arrow-reply-all-24-regular.svg", tone: "accent" },
-      { id: "forward", label: "Forward", asset: "arrow-forward-24-regular.svg", tone: "link" }
+      { id: "forward", label: "Forward", asset: "arrow-forward-24-regular.svg", tone: "link", flyout: true }
     ];
 
     return `
@@ -568,22 +584,29 @@
           <button type="button" class="command-primary">
             <span class="command-primary__icon" aria-hidden="true">${fluentIconImg("mail-add-24-regular.svg")}</span>
             <span>New mail</span>
-            <span class="command-primary__chevron" aria-hidden="true">&#9662;</span>
+            <span class="command-primary__chevron" aria-hidden="true">${fluentChevronImg()}</span>
           </button>
           <div class="command-divider" aria-hidden="true"></div>
           <div class="command-icon-strip">
             ${commandIcons
-              .map(
-                action => `
+              .map(action => {
+                const classes = ["command-icon"];
+                if (action.tone) classes.push(`command-icon--${action.tone}`);
+                if (action.flyout) classes.push("command-icon--flyout");
+                const chevronMarkup = action.flyout
+                  ? `<span class="command-icon__chevron" aria-hidden="true">${fluentChevronImg()}</span>`
+                  : "";
+                return `
                   <button
                     type="button"
-                    class="command-icon${action.tone ? ` command-icon--${action.tone}` : ""}"
+                    class="${classes.join(" ")}"
                     aria-label="${escapeHtml(action.label)}"
                   >
                     ${fluentIconImg(action.asset)}
+                    ${chevronMarkup}
                   </button>
-                `
-              )
+                `;
+              })
               .join("")}
           </div>
           <div class="command-divider command-divider--brand" aria-hidden="true"></div>
@@ -843,11 +866,11 @@
                     </button>
                   </div>
                   <div class="message-toolbar__actions">
-                    <button type="button" aria-label="Select conversations">
-                      ${fluentIconImg("checkbox-checked-24-regular.svg")}
+                    <button type="button" aria-label="Copy message">
+                      ${fluentIconImg("copy-16-regular.svg")}
                     </button>
-                    <button type="button" aria-label="Snooze settings">
-                      ${fluentIconImg("clock-arrow-download-24-regular.svg")}
+                    <button type="button" aria-label="Jump to folder">
+                      ${fluentIconImg("arrow-turn-down-right-20-regular.svg")}
                     </button>
                     <button type="button" aria-label="Filter messages">
                       ${fluentIconImg("filter-24-regular.svg")}
