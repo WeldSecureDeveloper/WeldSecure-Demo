@@ -235,7 +235,18 @@
   box-shadow: none;
 }
 
-.command-primary__icon {\n  display: inline-flex;\n  align-items: center;\n}\n\n.command-primary__icon img {\n  width: 19px;\n  height: 19px;\n  display: block;\n}
+.command-primary__icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.command-primary__icon img {
+  width: 19px;
+  height: 19px;
+  display: block;
+  filter: brightness(0) invert(1);
+}
+
 
 .command-primary__chevron {
   font-size: 0.75rem;
@@ -1053,6 +1064,10 @@
     display: none;
   }
 }
+
+
+
+
 
 
 
