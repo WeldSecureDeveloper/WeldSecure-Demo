@@ -484,7 +484,6 @@
           <button type="button" class="btn ghost" data-action="toggle-hints">
             ${sandbox.hintsVisible ? "Hide hints" : "Reveal signals"}
           </button>
-          <button type="button" class="btn primary" data-action="report">Open Reporter add-in</button>
         </div>
         ${renderSubmissionFeedback(submission)}
       </section>
@@ -536,6 +535,10 @@
               )
               .join("")}
           </div>
+          <div class="command-divider command-divider--brand" aria-hidden="true"></div>
+          <button type="button" class="command-icon command-icon--brand" aria-label="Open WeldSecure">
+            ${fluentIconImg("weldsecure-logo.svg")}
+          </button>
         </div>
       </section>
     `;
@@ -630,31 +633,6 @@
       </aside>
     `;
   };
-
-  const renderStatusBar = (identity, sandbox) => `
-    <div class="status-bar">
-      <div class="status-bar__count">
-        <span id="status-items">Items: ${sandbox.messages.length}</span>
-        <span id="status-context">
-          Previewing ${escapeHtml(identity.name || "a sandbox user")}'s ${escapeHtml(identity.department || "team")} mailbox.
-        </span>
-      </div>
-      <div class="status-bar__actions">
-        <button class="identity-chip" id="user-picker-trigger" aria-haspopup="dialog" data-open="user-picker">
-          <span class="identity-chip__avatar" data-profile-avatar>${escapeHtml(identity.initials)}</span>
-          <span class="identity-chip__meta">
-            <strong data-profile-name>${escapeHtml(identity.name || "Sandbox User")}</strong>
-            <small data-profile-role>${escapeHtml(identity.role || "Security Analyst")}</small>
-          </span>
-          <span class="identity-chip__chevron">&#9662;</span>
-        </button>
-        <button class="status-settings" aria-haspopup="dialog" data-open="settings">
-          <span aria-hidden="true">${placeholderIcon("settings", "#6b7280")}</span>
-          <span class="sr-only">Inbox layout settings</span>
-        </button>
-      </div>
-    </div>
-  `;
 
   const renderUserPicker = (identity, sandbox) => {
     const { users, departments } = identity.directory;
@@ -765,10 +743,10 @@
               <button type="button" class="topbar-icon topbar-icon--ghost" aria-label="Search mailbox">
                 ${fluentIconImg("search-28-regular.svg")}
               </button>
-              <button type="button" class="topbar-icon topbar-icon--ghost" aria-label="More actions">
+              <button type="button" class="topbar-icon topbar-icon--ghost" aria-label="Open settings" data-open="settings">
                 ${fluentIconImg("more-horizontal-24-regular.svg")}
               </button>
-              <button type="button" class="topbar-avatar" aria-label="Open profile">
+              <button type="button" class="topbar-avatar" aria-label="Choose sandbox user" data-open="user-picker">
                 <span>${escapeHtml(identity.initials)}</span>
               </button>
             </div>
@@ -829,7 +807,6 @@
             </div>
           </div>
         </div>
-        ${renderStatusBar(identity, sandbox)}
       </div>
       ${renderUserPicker(identity, sandbox)}
       ${renderSettingsDrawer(sandbox)}
@@ -844,6 +821,9 @@
     if (!container) return;
     const state = providedState || getState();
     const sandbox = getSandboxSlice(state);
+    if (WeldServices && typeof WeldServices.setGuidedTourEnabled === "function") {
+      WeldServices.setGuidedTourEnabled(false, state);
+    }
     const reporterSidebar = container.querySelector("[data-reporter-sidebar]");
     const reporterBody = container.querySelector("[data-reporter-sidebar-body]");
     const activeMessage =
