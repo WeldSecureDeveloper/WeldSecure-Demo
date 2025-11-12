@@ -303,6 +303,10 @@
 
   const groupMessages = messages => {
     if (!Array.isArray(messages) || messages.length === 0) return [];
+    const now = new Date();
+    const todayKey = now.toDateString();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const msPerDay = 1000 * 60 * 60 * 24;
     const sorted = messages
       .slice()
       .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
@@ -311,9 +315,10 @@
       const date = message.createdAt ? new Date(message.createdAt) : null;
       let label = "Earlier";
       if (date && !Number.isNaN(date.getTime())) {
-        const now = new Date();
-        const sameDay = date.toDateString() === now.toDateString();
-        const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+        const messageKey = date.toDateString();
+        const sameDay = messageKey === todayKey;
+        const startOfMessageDay = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+        const diffDays = Math.floor((startOfToday - startOfMessageDay) / msPerDay);
         if (sameDay) {
           label = "Today";
         } else if (diffDays === 1) {
@@ -332,17 +337,6 @@
     return groups;
   };
 
-  const rowStatus = (submission, message) => {
-    if (submission && submission.success) {
-      return { label: "Reported accurately", className: "message-row__status message-row__status--success" };
-    }
-    if (submission && !submission.success) {
-      return { label: "Needs review", className: "message-row__status message-row__status--warn" };
-    }
-    const signalCount = Array.isArray(message.signalIds) ? message.signalIds.length : 0;
-    return { label: `${signalCount} signals`, className: "message-row__status" };
-  };
-
   const renderMessageGroups = (sandbox, state) => {
     if (!sandbox.messages.length) {
       return '<div class="message-empty"><p>No sandbox messages published yet.</p></div>';
@@ -353,7 +347,6 @@
         const rows = group.items
           .map((message, index) => {
             const submission = latestSubmissionFor(sandbox.submissions, message.id);
-            const status = rowStatus(submission, message);
             const classes = ["message-row"];
             if (message.id === sandbox.activeMessageId) classes.push("is-active");
             if (message.metadata?.unread === true || (!submission && index === 0)) {
@@ -365,14 +358,15 @@
             const time = formatTime(message.createdAt);
             return `
               <li class="${classes.join(" ")}" data-sandbox-message="${escapeHtml(message.id)}">
-                <div>
-                  <div class="message-row__subject">
-                    ${subject}
-                    <span class="${status.className}">${escapeHtml(status.label)}</span>
-                  </div>
-                  <div class="message-row__sender">${sender}</div>
+                <div class="message-row__sender-line">
+                  <span class="message-row__sender">${sender}</span>
                 </div>
-                <div class="message-row__time">${escapeHtml(time)}</div>
+                <div class="message-row__subject-line">
+                  <div class="message-row__subject-wrap">
+                    <span class="message-row__subject">${subject}</span>
+                  </div>
+                  <span class="message-row__time">${escapeHtml(time)}</span>
+                </div>
                 <div class="message-row__preview">${escapeHtml(preview)}</div>
               </li>
             `;
@@ -449,36 +443,55 @@
       `;
     }
     const submission = latestSubmissionFor(sandbox.submissions, message.id);
-    const senderName = escapeHtml(message.sender?.displayName || "Security Desk");
-    const senderAddress = escapeHtml(message.sender?.address || "security@weldsecure.com");
-    const subject = escapeHtml(message.subject || "Sandbox simulation");
+    const senderName = message.sender?.displayName || "Security Desk";
+    const senderAddress = message.sender?.address || "security@weldsecure.com";
+    const subject = message.subject || "Sandbox simulation";
     const messageBody = formatBody(message.body);
     const statusTone = submission
       ? submission.success
-        ? '<div class="reading-status reading-status--success">Accurate report logged</div>'
-        : '<div class="reading-status reading-status--warn">Signals missing - try again</div>'
+        ? '<div class="reading-card reading-status reading-status--success">Accurate report logged</div>'
+        : '<div class="reading-card reading-status reading-status--warn">Signals missing - try again</div>'
       : "";
-    const toLine = identity && identity.name ? `To: ${escapeHtml(identity.name)}` : "";
+    const toLine = identity && identity.name ? `To: ${identity.name}` : "";
+    const headerActions = [
+      { id: "reply", label: "Reply", asset: "arrow-reply-24-regular.svg" },
+      { id: "reply-all", label: "Reply all", asset: "arrow-reply-all-24-regular.svg" },
+      { id: "forward", label: "Forward", asset: "arrow-forward-24-regular.svg" },
+      { id: "more", label: "More actions", asset: "more-horizontal-24-regular.svg" }
+    ]
+      .map(
+        action => `
+          <button type="button" class="reading-icon-button" aria-label="${escapeHtml(action.label)}">
+            ${fluentIconImg(action.asset)}
+          </button>
+        `
+      )
+      .join("");
+    const headerClasses = ["reading-card", "reading-card--header"];
+    if (message.metadata?.unread === true) headerClasses.push("is-unread");
     return `
       <section class="reading-pane" data-reading-pane>
-            <div class="reading-header">
-              <h1>${subject}</h1>
-              <div class="reading-meta">
-                <div>
-                  <div class="reading-meta__time">${escapeHtml(formatFullDate(message.createdAt))}</div>
-                  <div class="reading-meta__to">${escapeHtml(toLine)}</div>
-                </div>
+        <div class="${headerClasses.join(" ")}">
+          <div class="reading-header__subject-row">
+            <h1 class="reading-subject">${escapeHtml(subject)}</h1>
+            <div class="reading-header__actions">
+              ${headerActions}
+            </div>
+          </div>
+          <div class="reading-header__info">
+            <div class="reading-avatar">${escapeHtml(initialsFor(message.sender?.displayName))}</div>
+            <div class="reading-header__details">
+              <div class="reading-sender-row">
+                <span class="reading-sender">${escapeHtml(senderName)}</span>
+                <span class="reading-timestamp">${escapeHtml(formatFullDate(message.createdAt))}</span>
               </div>
-              <div class="reading-envelope">
-                <div class="reading-avatar">${initialsFor(message.sender?.displayName)}</div>
-                <div class="reading-envelope__details">
-                  <strong>${senderName}</strong>
-              <span>${senderAddress}</span>
+              ${toLine ? `<div class="reading-recipient">${escapeHtml(toLine)}</div>` : ""}
+              <div class="reading-address">${escapeHtml(senderAddress)}</div>
             </div>
           </div>
         </div>
         ${statusTone}
-        <article class="reading-body${sandbox.hintsVisible ? " reading-body--hint" : ""}">
+        <article class="reading-card reading-card--body reading-body${sandbox.hintsVisible ? " reading-body--hint" : ""}">
           ${messageBody}
         </article>
         <div class="reading-actions">
