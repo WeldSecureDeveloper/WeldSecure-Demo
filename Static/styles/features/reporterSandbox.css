@@ -441,7 +441,7 @@
 }
 
 .sandbox-sidebar--rail {
-  width: 72px;
+  width: 64px;
   min-height: 100%;
   align-self: stretch;
   margin-top: -1.15rem;
@@ -471,9 +471,9 @@
 }
 
 .app-rail__button {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   border: 1px solid transparent;
   background: transparent;
   display: grid;
@@ -489,7 +489,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid rgba(37, 99, 235, 0.25);
   opacity: 0;
   pointer-events: none;
@@ -541,16 +541,16 @@
 }
 
 .app-rail__glyph {
-  width: 32px;
-  height: 32px;
+  width: 26px;
+  height: 26px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
 .app-rail__glyph img {
-  width: 32px;
-  height: 32px;
+  width: 26px;
+  height: 26px;
   display: block;
 }
 
