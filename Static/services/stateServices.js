@@ -516,6 +516,31 @@
     return simData;
   };
 
+  const markSandboxMessageRead = (sandboxState, target) => {
+    if (!sandboxState) return false;
+    const message =
+      target && typeof target === "object" && target.id ? target : findSandboxMessage(sandboxState, target);
+    if (!message) return false;
+    if (!message.metadata || typeof message.metadata !== "object") {
+      message.metadata = {};
+    }
+    if (message.metadata.unread === false) {
+      return false;
+    }
+    message.metadata.unread = false;
+    const simData = ensureSimData();
+    if (Array.isArray(simData.sandboxMessages)) {
+      const seed = simData.sandboxMessages.find(entry => entry && entry.id === message.id);
+      if (seed) {
+        if (!seed.metadata || typeof seed.metadata !== "object") {
+          seed.metadata = {};
+        }
+        seed.metadata.unread = false;
+      }
+    }
+    return true;
+  };
+
   function resolveState(providedState) {
     if (providedState && typeof providedState === "object") return providedState;
     if (window.state && typeof window.state === "object") return window.state;
@@ -1251,6 +1276,7 @@
     if (!message) {
       return { success: false, reason: "Message not found." };
     }
+    markSandboxMessageRead(sandbox, message);
     const changed = sandbox.activeMessageId !== message.id;
     sandbox.activeMessageId = message.id;
     if (changed) {

@@ -944,10 +944,44 @@
       sandbox.messages.find(message => message.id === sandbox.activeMessageId) || null;
     let reporterPulseHandle = null;
     let addinVisible = sandbox.layout && sandbox.layout.showAddin === true;
+    let hasAppliedAddinVisibility = false;
 
     const persistAddinPreference = nextValue => {
       if (WeldServices && typeof WeldServices.setSandboxLayoutPreference === "function") {
         WeldServices.setSandboxLayoutPreference("showAddin", nextValue);
+      }
+    };
+
+    const disableGuidedTourForSandboxAddin = () => {
+      const tour = window.WeldGuidedTour;
+      const guidedMeta = state?.meta?.guidedTour;
+      const isEnabled =
+        tour && typeof tour.isEnabled === "function"
+          ? tour.isEnabled()
+          : guidedMeta
+          ? guidedMeta.enabled !== false
+          : true;
+      if (!isEnabled) {
+        return;
+      }
+      if (tour && typeof tour.setEnabled === "function") {
+        tour.setEnabled(false);
+        return;
+      }
+      if (tour && typeof tour.toggle === "function") {
+        tour.toggle();
+        return;
+      }
+      if (!state || typeof state !== "object") {
+        return;
+      }
+      if (!state.meta || typeof state.meta !== "object") {
+        state.meta = {};
+      }
+      if (!state.meta.guidedTour || typeof state.meta.guidedTour !== "object") {
+        state.meta.guidedTour = { enabled: false, dismissedRoutes: {} };
+      } else {
+        state.meta.guidedTour.enabled = false;
       }
     };
 
@@ -960,7 +994,13 @@
     };
 
     const applyAddinVisibility = visible => {
-      addinVisible = visible === true;
+      const wasVisible = hasAppliedAddinVisibility ? addinVisible === true : false;
+      const nextVisible = visible === true;
+      addinVisible = nextVisible;
+      hasAppliedAddinVisibility = true;
+      if (nextVisible && !wasVisible) {
+        disableGuidedTourForSandboxAddin();
+      }
       if (reporterSidebar) {
         reporterSidebar.hidden = !addinVisible;
         reporterSidebar.setAttribute("aria-hidden", addinVisible ? "false" : "true");

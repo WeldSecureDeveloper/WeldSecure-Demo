@@ -305,6 +305,27 @@
   box-shadow: 0 10px 22px rgba(79, 70, 229, 0.25);
 }
 
+.global-nav__group[data-role='customer'] .global-nav__menu .global-nav__item:hover,
+.global-nav__group[data-role='customer'] .global-nav__menu .global-nav__item:focus-visible {
+  background: linear-gradient(135deg, #6f47ff, #3623de);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(54, 35, 222, 0.3);
+}
+
+.global-nav__group[data-role='client'] .global-nav__menu .global-nav__item:hover,
+.global-nav__group[data-role='client'] .global-nav__menu .global-nav__item:focus-visible {
+  background: linear-gradient(135deg, #ff8a80, #ff4d6d);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(255, 77, 109, 0.25);
+}
+
+.global-nav__group[data-role='admin'] .global-nav__menu .global-nav__item:hover,
+.global-nav__group[data-role='admin'] .global-nav__menu .global-nav__item:focus-visible {
+  background: linear-gradient(135deg, #22c55e, #15803d);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(21, 128, 61, 0.25);
+}
+
 .global-nav__item--active[data-role='customer'],
 .global-nav__menu .global-nav__item--active[data-role='customer'] {
   background: linear-gradient(135deg, #6f47ff, #3623de);
