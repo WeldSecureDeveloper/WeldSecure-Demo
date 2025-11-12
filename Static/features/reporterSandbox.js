@@ -44,6 +44,180 @@
     });
   };
 
+  const placeholderIcon = (variant, color = "#ffffff") => {
+    const stroke = color;
+    switch (variant) {
+      case "waffle":
+        return `
+          <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+            ${[4, 10, 16]
+              .map(
+                x =>
+                  [4, 10, 16]
+                    .map(
+                      y => `<circle cx="${x}" cy="${y}" r="1.2" fill="${color}" opacity="0.9" />`
+                    )
+                    .join("")
+              )
+              .join("")}
+          </svg>
+        `;
+      case "menu":
+        return `
+          <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+            <path d="M4 7h16M4 12h14M4 17h10" stroke="${stroke}" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
+        `;
+      case "folder":
+        return `
+          <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+            <path d="M4 9h16a1.5 1.5 0 0 1 1.5 1.5v7a2.5 2.5 0 0 1-2.5 2.5H6A2.5 2.5 0 0 1 3.5 17V8A2 2 0 0 1 5.5 6h4l2 2H20" stroke="${stroke}" stroke-width="1.6" fill="none" stroke-linejoin="round" />
+          </svg>
+        `;
+      case "shield":
+        return `
+          <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+            <path d="M12 4l7 3v5.5c0 4.3-3.1 8-7 8.5-3.9-.5-7-4.2-7-8.5V7z" stroke="${stroke}" stroke-width="1.6" fill="none" stroke-linejoin="round" />
+          </svg>
+        `;
+      case "spark":
+        return `
+          <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+            <circle cx="8" cy="8" r="3" fill="${color}" />
+            <circle cx="16" cy="8" r="2" fill="${color}" opacity="0.8" />
+            <circle cx="9" cy="16" r="2.2" fill="${color}" opacity="0.7" />
+            <circle cx="16" cy="16" r="3" fill="${color}" opacity="0.9" />
+          </svg>
+        `;
+      case "search":
+        return `
+          <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+            <circle cx="11" cy="11" r="6" stroke="${stroke}" stroke-width="1.8" fill="none" />
+            <path d="M15.5 15.5L20 20" stroke="${stroke}" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
+        `;
+      case "settings":
+        return `
+          <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="4.2" stroke="${stroke}" stroke-width="1.6" fill="none" />
+            <path d="M12 4v2.2M12 17.8V20M4 12h2.2M17.8 12H20M6.5 6.5l1.6 1.6M15.9 15.9l1.6 1.6M6.5 17.5l1.6-1.6M15.9 8.1l1.6-1.6" stroke="${stroke}" stroke-width="1.4" stroke-linecap="round" />
+          </svg>
+        `;
+      case "help":
+        return `
+          <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="8" stroke="${stroke}" stroke-width="1.6" fill="none" />
+            <path d="M9.8 9a2.2 2.2 0 0 1 4.4 0c0 1.8-2.2 2-2.2 3.6" stroke="${stroke}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+            <circle cx="12" cy="17" r="0.9" fill="${stroke}" />
+          </svg>
+        `;
+      case "compose":
+        return `
+          <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+            <path d="M5 19l3.8-.7 9.4-9.4a1.5 1.5 0 0 0 0-2.1l-1.4-1.4a1.5 1.5 0 0 0-2.1 0L5.7 14.8 5 19z" stroke="${stroke}" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M12.3 7.7l3 3" stroke="${stroke}" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+        `;
+      case "ignore":
+        return `
+          <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="7" stroke="${stroke}" stroke-width="1.7" fill="none" />
+            <path d="M7 17l10-10" stroke="${stroke}" stroke-width="1.7" stroke-linecap="round" />
+          </svg>
+        `;
+      case "block":
+        return `
+          <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+            <path d="M12 4l7 3v5.5c0 4.3-3.1 8-7 8.5-3.9-.5-7-4.2-7-8.5V7z" stroke="${stroke}" stroke-width="1.6" fill="none" stroke-linejoin="round" />
+            <path d="M9 9l6 6m0-6-6 6" stroke="${stroke}" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+        `;
+      case "delete":
+        return `
+          <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+            <path d="M9 6h6l.8 1.5H20" stroke="${stroke}" stroke-width="1.6" stroke-linecap="round" />
+            <path d="M8 9v8.5A1.5 1.5 0 0 0 9.5 19h5a1.5 1.5 0 0 0 1.5-1.5V9" stroke="${stroke}" stroke-width="1.6" fill="none" />
+            <path d="M10.5 11.5v5m3-5v5" stroke="${stroke}" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+        `;
+      case "archive":
+        return `
+          <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+            <rect x="5" y="5" width="14" height="5" rx="1.2" stroke="${stroke}" stroke-width="1.6" fill="none" />
+            <path d="M7 10v7.5A1.5 1.5 0 0 0 8.5 19h7a1.5 1.5 0 0 0 1.5-1.5V10" stroke="${stroke}" stroke-width="1.6" fill="none" />
+            <path d="M10 13.5h4" stroke="${stroke}" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+        `;
+      case "report":
+        return `
+          <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+            <path d="M12 4l9 16H3z" stroke="${stroke}" stroke-width="1.6" fill="none" stroke-linejoin="round" />
+            <path d="M12 10v4.5" stroke="${stroke}" stroke-width="1.6" stroke-linecap="round" />
+            <circle cx="12" cy="17.5" r="0.8" fill="${stroke}" />
+          </svg>
+        `;
+      case "panes":
+        return `
+          <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+            <rect x="4.5" y="6" width="6.5" height="12" rx="1.2" stroke="${stroke}" stroke-width="1.6" fill="none" />
+            <rect x="13" y="6" width="6.5" height="12" rx="1.2" stroke="${stroke}" stroke-width="1.6" fill="none" />
+          </svg>
+        `;
+      case "layout":
+        return `
+          <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+            <rect x="4.5" y="5" width="15" height="14" rx="1.6" stroke="${stroke}" stroke-width="1.6" fill="none" />
+            <path d="M4.5 10.5h15" stroke="${stroke}" stroke-width="1.4" stroke-linecap="round" />
+            <path d="M12 5v14" stroke="${stroke}" stroke-width="1.4" stroke-linecap="round" />
+          </svg>
+        `;
+      case "rows":
+        return `
+          <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+            <path d="M5 7h14M5 12h14M5 17h10" stroke="${stroke}" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+        `;
+      case "filter":
+        return `
+          <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+            <path d="M5 6h14l-5.5 6.5v4.5l-3 1.5V12.5z" stroke="${stroke}" stroke-width="1.6" fill="none" stroke-linejoin="round" />
+          </svg>
+        `;
+      case "refresh":
+        return `
+          <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+            <path d="M5.5 7.5A7 7 0 0 1 18 8.2" stroke="${stroke}" stroke-width="1.6" fill="none" stroke-linecap="round" />
+            <path d="M18 8.2V4.5m0 0-2.5 2.2" stroke="${stroke}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M18.5 16.5A7 7 0 0 1 6 15.8" stroke="${stroke}" stroke-width="1.6" fill="none" stroke-linecap="round" />
+            <path d="M6 15.8V19.5m0 0 2.5-2.2" stroke="${stroke}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        `;
+      case "undo":
+        return `
+          <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+            <path d="M8 7L4.5 10.5 8 14" stroke="${stroke}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+            <path d="M5 10.5h7a5 5 0 0 1 5 5V17" stroke="${stroke}" stroke-width="1.6" stroke-linecap="round" fill="none" />
+          </svg>
+        `;
+      case "redo":
+        return `
+          <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+            <path d="M16 7l3.5 3.5L16 14" stroke="${stroke}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+            <path d="M19 10.5h-7a5 5 0 0 0-5 5V17" stroke="${stroke}" stroke-width="1.6" stroke-linecap="round" fill="none" />
+          </svg>
+        `;
+      default:
+        return "";
+    }
+  };
+
+  const fluentColorIcon = relativePath =>
+    `https://raw.githubusercontent.com/microsoft/fluentui-system-icons/main/${relativePath}`;
+
+  const fluentSvgIcon = fileName => `svg/fluent/${fileName}`;
+  const fluentIconImg = fileName =>
+    `<img src="${fluentSvgIcon(fileName)}" alt="" class="icon-img" loading="lazy" decoding="async" />`;
+
   const messagePreview = message => {
     if (!message) return "";
     if (typeof message.previewText === "string" && message.previewText.trim().length > 0) {
@@ -281,7 +455,7 @@
     const statusTone = submission
       ? submission.success
         ? '<div class="reading-status reading-status--success">Accurate report logged</div>'
-        : '<div class="reading-status reading-status--warn">Signals missing — try again</div>'
+        : '<div class="reading-status reading-status--warn">Signals missing - try again</div>'
       : "";
     const toLine = identity && identity.name ? `To: ${escapeHtml(identity.name)}` : "";
     return `
@@ -311,38 +485,152 @@
           <button type="button" class="btn ghost" data-action="toggle-hints">
             ${sandbox.hintsVisible ? "Hide hints" : "Reveal signals"}
           </button>
-          <button type="button" class="btn primary" data-action="report">Report via Reporter</button>
+          <button type="button" class="btn primary" data-action="report">Open Reporter add-in</button>
         </div>
-        <section class="reading-signals">
-          <header>
-            <h3>Detection checklist</h3>
-            <p>Select every signal you spotted before submitting.</p>
-          </header>
-          <div class="reading-signals__grid">
-            ${renderSignalsChecklist(sandbox, message)}
-          </div>
-        </section>
         ${renderSubmissionFeedback(submission)}
       </section>
     `;
   };
 
-  const renderSidebar = () => `
-    <aside class="sandbox-sidebar">
-      <h3>Favorites</h3>
-      <button class="folder-button is-active">
-        <span>Inbox</span>
-        <span class="badge">1</span>
-      </button>
-      <button class="folder-button">Sent Items</button>
-      <button class="folder-button">Drafts</button>
-      <button class="folder-button">Archive</button>
-      <h3>Folders</h3>
-      <button class="folder-button">Approvals</button>
-      <button class="folder-button">Programs</button>
-      <button class="folder-button">Teams sync</button>
+  const renderReporterSidebar = () => `
+    <aside class="reporter-sidebar" data-reporter-sidebar>
+      <div class="reporter-sidebar__body" data-reporter-sidebar-body>
+        <div class="reporter-sidebar__placeholder">
+          <p>Select a sandbox message to load the Reporter add-in.</p>
+        </div>
+      </div>
     </aside>
   `;
+
+  const renderRibbon = () => {
+    const commandIcons = [
+      { id: "delete", label: "Delete", asset: "delete-24-regular.svg" },
+      { id: "archive", label: "Archive", asset: "archive-24-regular.svg" },
+      { id: "report", label: "Report", asset: "shield-error-24-regular.svg", tone: "danger" },
+      { id: "move", label: "Move to", asset: "folder-arrow-right-24-regular.svg", tone: "success" },
+      { id: "reply", label: "Reply", asset: "arrow-reply-24-regular.svg" },
+      { id: "reply-all", label: "Reply all", asset: "arrow-reply-all-24-regular.svg" },
+      { id: "forward", label: "Forward", asset: "arrow-forward-24-regular.svg" }
+    ];
+
+    return `
+      <section class="sandbox-ribbon" aria-label="Mailbox commands">
+        <div class="command-bar" role="toolbar">
+          <button type="button" class="command-primary">
+            <span class="command-primary__icon" aria-hidden="true">${fluentIconImg("mail-add-24-regular.svg")}</span>
+            <span>New mail</span>
+            <span class="command-primary__chevron" aria-hidden="true">&#9662;</span>
+          </button>
+          <div class="command-divider" aria-hidden="true"></div>
+          <div class="command-icon-strip">
+            ${commandIcons
+              .map(
+                action => `
+                  <button
+                    type="button"
+                    class="command-icon${action.tone ? ` command-icon--${action.tone}` : ""}"
+                    aria-label="${escapeHtml(action.label)}"
+                  >
+                    ${fluentIconImg(action.asset)}
+                  </button>
+                `
+              )
+              .join("")}
+          </div>
+        </div>
+      </section>
+    `;
+  };
+
+  const renderSidebar = () => {
+    const railApps = [
+      {
+        id: "mail",
+        label: "Mail",
+        iconSrc: fluentColorIcon("assets/Mail/SVG/ic_fluent_mail_48_color.svg?raw=true"),
+        pressed: true
+      },
+      {
+        id: "calendar",
+        label: "Calendar",
+        iconSrc: fluentColorIcon("assets/Calendar/SVG/ic_fluent_calendar_48_color.svg?raw=true")
+      },
+      {
+        id: "copilot",
+        label: "Copilot",
+        iconSrc: fluentColorIcon("assets/Bot%20Sparkle/SVG/ic_fluent_bot_sparkle_24_color.svg?raw=true")
+      },
+      {
+        id: "people",
+        label: "People",
+        iconSrc: fluentColorIcon("assets/People/SVG/ic_fluent_people_48_color.svg?raw=true")
+      },
+      {
+        id: "people-team",
+        label: "Approvals",
+        iconSrc: fluentColorIcon("assets/People%20Team/SVG/ic_fluent_people_team_48_color.svg?raw=true")
+      },
+      {
+        id: "todo",
+        label: "To Do",
+        iconSrc: fluentColorIcon("assets/Checkmark%20Circle/SVG/ic_fluent_checkmark_circle_48_color.svg?raw=true")
+      },
+      {
+        id: "notebook",
+        label: "Notebook",
+        iconSrc: fluentColorIcon("assets/Notebook/SVG/ic_fluent_notebook_32_color.svg?raw=true")
+      },
+      {
+        id: "org-explorer",
+        label: "Org Explorer",
+        iconSrc: fluentColorIcon("assets/Person/SVG/ic_fluent_person_48_color.svg?raw=true")
+      },
+      {
+        id: "files",
+        label: "OneDrive",
+        iconSrc: fluentColorIcon("assets/Cloud/SVG/ic_fluent_cloud_48_color.svg?raw=true")
+      }
+    ];
+    const moreApps = {
+      id: "more-apps",
+      label: "More apps",
+      iconSrc: fluentColorIcon("assets/Apps/SVG/ic_fluent_apps_48_color.svg?raw=true"),
+      variant: "more",
+      toggleable: false
+    };
+
+    const renderRailButton = app => {
+      const isActive = Boolean(app.pressed);
+      const pressedAttr =
+        app.toggleable === false
+          ? ""
+          : ` aria-pressed="${isActive ? "true" : "false"}"`;
+      const variantClass = app.variant ? ` app-rail__button--${app.variant}` : "";
+      return `
+        <button type="button" class="app-rail__button${variantClass}${isActive ? " is-active" : ""}" title="${escapeHtml(
+          app.label
+        )}" aria-label="${escapeHtml(app.label)}"${pressedAttr}>
+          <span class="app-rail__glyph" aria-hidden="true">
+            <img src="${app.iconSrc}" alt="" loading="lazy" decoding="async" />
+          </span>
+          <span class="sr-only">${escapeHtml(app.label)}</span>
+        </button>
+      `;
+    };
+
+    return `
+      <aside class="sandbox-sidebar sandbox-sidebar--rail">
+        <nav class="app-rail" aria-label="Outlook app rail">
+          <div class="app-rail__stack">
+            ${railApps.map(renderRailButton).join("")}
+          </div>
+          <div class="app-rail__stack app-rail__stack--end">
+            ${renderRailButton(moreApps)}
+          </div>
+        </nav>
+      </aside>
+    `;
+  };
 
   const renderStatusBar = (identity, sandbox) => `
     <div class="status-bar">
@@ -359,10 +647,10 @@
             <strong data-profile-name>${escapeHtml(identity.name || "Sandbox User")}</strong>
             <small data-profile-role>${escapeHtml(identity.role || "Security Analyst")}</small>
           </span>
-          <span class="identity-chip__chevron">▾</span>
+          <span class="identity-chip__chevron">&#9662;</span>
         </button>
         <button class="status-settings" aria-haspopup="dialog" data-open="settings">
-          <span aria-hidden="true">⚙️</span>
+          <span aria-hidden="true">${placeholderIcon("settings", "#6b7280")}</span>
           <span class="sr-only">Inbox layout settings</span>
         </button>
       </div>
@@ -454,26 +742,10 @@
     </div>
   `;
 
-  const renderAddinDrawer = () => `
-    <div class="sandbox-addin" data-sandbox-addin hidden>
-      <div class="sandbox-addin__backdrop" data-close-addin></div>
-      <div class="sandbox-addin__panel">
-        <header>
-          <strong>Reporter add-in</strong>
-          <button type="button" data-close-addin aria-label="Close">✕</button>
-        </header>
-        <div class="sandbox-addin__body" data-sandbox-addin-body>
-          <div class="reporter-sandbox__addin-empty">
-            <p>Select a message to dock the Reporter add-in.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-
   const renderLayout = state => {
     const sandbox = getSandboxSlice(state);
     const identity = resolveIdentity(state, sandbox);
+    const navTabs = ["File", "Home", "View", "Help"];
     const rootClasses = ["sandbox-window"];
     if (sandbox.layout.compactRows) rootClasses.push("is-compact");
     if (!sandbox.layout.showSnippets) rootClasses.push("hide-snippets");
@@ -483,48 +755,81 @@
     return `
       <div class="${rootClasses.join(" ")}">
         <header class="sandbox-topbar">
-          <div class="logo-chip">
-            <span>O</span>
-            <span>Outlook</span>
+          <div class="topbar-hero">
+            <div class="topbar-left">
+              <span class="topbar-wordmark" aria-label="Outlook">
+                <span class="topbar-wordmark__glyph" aria-hidden="true">${fluentIconImg("waffle-grid-24.svg")}</span>
+                <span class="topbar-wordmark__label">Outlook</span>
+              </span>
+            </div>
+            <div class="topbar-right">
+              <button type="button" class="topbar-icon topbar-icon--ghost" aria-label="Search mailbox">
+                ${fluentIconImg("search-28-regular.svg")}
+              </button>
+              <button type="button" class="topbar-icon topbar-icon--ghost" aria-label="More actions">
+                ${fluentIconImg("more-horizontal-24-regular.svg")}
+              </button>
+              <button type="button" class="topbar-avatar" aria-label="Open profile">
+                <span>${escapeHtml(identity.initials)}</span>
+              </button>
+            </div>
           </div>
-          <span class="topbar-route">Mail &gt; Sandbox inbox</span>
-          <div class="topbar-search">
-            <span aria-hidden="true">🔍</span>
-            <input type="search" placeholder="Search mail and people" disabled />
+          <div class="topbar-nav" role="navigation" aria-label="Mailbox navigation">
+            <button type="button" class="topbar-hamburger" aria-label="Open app launcher">
+              ${fluentIconImg("line-horizontal-3-24-regular.svg")}
+            </button>
+            <nav class="sandbox-tabs" role="tablist">
+              ${navTabs
+                .map(
+                  (tab, index) => `
+                    <button type="button" role="tab" class="sandbox-tab${index === 1 ? " is-active" : ""}">
+                      <span>${escapeHtml(tab)}</span>
+                    </button>
+                  `
+                )
+                .join("")}
+            </nav>
           </div>
-          <button class="status-settings" aria-haspopup="dialog" data-open="settings" title="Inbox settings">⚙️</button>
         </header>
-        <section class="sandbox-ribbon">
-          <div class="ribbon-tabs">
-            <button class="is-active">Message</button>
-            <button disabled>Home</button>
-            <button disabled>View</button>
-          </div>
-          <div class="ribbon-groups">
-            <button class="ribbon-button"><span>✉️</span>New email</button>
-            <button class="ribbon-button"><span>📎</span>Attach</button>
-            <button class="ribbon-button"><span>🗑️</span>Delete</button>
-            <button class="ribbon-button"><span>🚩</span>Follow up</button>
-          </div>
-        </section>
         <div class="sandbox-main">
           ${renderSidebar()}
-          <section class="message-column">
-            <div class="message-toolbar">
-              <span>Arrange By: <strong>Date</strong></span>
-              <span>Newest on top ▾</span>
+          <div class="sandbox-content">
+            ${renderRibbon()}
+            <div class="sandbox-content__body">
+              <section class="message-column">
+                <div class="message-toolbar" role="toolbar" aria-label="Message list filters">
+                  <div class="message-toolbar__tabs">
+                    ${["All", "Unread", "Mentions"]
+                      .map(
+                        (label, index) =>
+                          `<button type="button" class="message-tab${index === 0 ? " is-active" : ""}">${escapeHtml(label)}</button>`
+                      )
+                      .join("")}
+                  </div>
+                  <div class="message-toolbar__actions">
+                    <button type="button" aria-label="Refresh mailbox">
+                      ${placeholderIcon("refresh", "#1d2f54")}
+                    </button>
+                    <button type="button" aria-label="More message list options">
+                      <span aria-hidden="true">&#8942;</span>
+                    </button>
+                  </div>
+                </div>
+                <div class="message-list" data-sandbox-list>
+                  ${renderMessageGroups(sandbox, state)}
+                </div>
+              </section>
+              <div class="reading-region">
+                ${renderReadingPane(sandbox, activeMessage, identity)}
+                ${renderReporterSidebar()}
+              </div>
             </div>
-            <div class="message-list" data-sandbox-list>
-              ${renderMessageGroups(sandbox, state)}
-            </div>
-          </section>
-          ${renderReadingPane(sandbox, activeMessage, identity)}
+          </div>
         </div>
         ${renderStatusBar(identity, sandbox)}
       </div>
       ${renderUserPicker(identity, sandbox)}
       ${renderSettingsDrawer(sandbox)}
-      ${renderAddinDrawer()}
     `;
   };
 
@@ -536,8 +841,26 @@
     if (!container) return;
     const state = providedState || getState();
     const sandbox = getSandboxSlice(state);
-    const addinOverlay = container.querySelector("[data-sandbox-addin]");
-    const addinBody = container.querySelector("[data-sandbox-addin-body]");
+    const reporterSidebar = container.querySelector("[data-reporter-sidebar]");
+    const reporterBody = container.querySelector("[data-reporter-sidebar-body]");
+    const activeMessage =
+      sandbox.messages.find(message => message.id === sandbox.activeMessageId) || null;
+    let reporterPulseHandle = null;
+
+    if (reporterBody) {
+      reporterBody.classList.add("reporter-outlook-shell");
+      mountReporterDock(reporterBody, sandbox, state, activeMessage);
+    }
+
+    const focusReporterSidebar = () => {
+      if (!sandbox.activeMessageId || !reporterSidebar) return;
+      reporterSidebar.classList.add("is-hinted");
+      reporterSidebar.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      window.clearTimeout(reporterPulseHandle);
+      reporterPulseHandle = window.setTimeout(() => {
+        reporterSidebar.classList.remove("is-hinted");
+      }, 1400);
+    };
 
     const openUserPicker = () => {
       const picker = container.querySelector("[data-sandbox-user-picker]");
@@ -571,22 +894,6 @@
       if (!drawer) return;
       drawer.classList.remove("is-visible");
       drawer.hidden = true;
-    };
-
-    const closeAddin = () => {
-      if (!addinOverlay) return;
-      addinOverlay.classList.remove("is-visible");
-      addinOverlay.hidden = true;
-    };
-
-    const openAddin = () => {
-      if (!addinOverlay) return;
-      addinOverlay.hidden = false;
-      addinOverlay.classList.add("is-visible");
-      const snapshot = getState();
-      const snapshotSandbox = getSandboxSlice(snapshot);
-      const activeMessage = snapshotSandbox.messages.find(message => message.id === snapshotSandbox.activeMessageId);
-      mountReporterDock(addinBody, snapshotSandbox, snapshot, activeMessage);
     };
 
     container.querySelectorAll("[data-sandbox-message]").forEach(row => {
@@ -624,7 +931,7 @@
       if (reportButton) {
         reportButton.addEventListener("click", () => {
           if (!sandbox.activeMessageId) return;
-          openAddin();
+          focusReporterSidebar();
         });
       }
     }
@@ -687,13 +994,6 @@
       });
     }
 
-    if (addinOverlay) {
-      addinOverlay.addEventListener("click", event => {
-        if (event.target.hasAttribute("data-close-addin") || event.target === addinOverlay) {
-          closeAddin();
-        }
-      });
-    }
   };
 
   function toggleUserPickerEmptyState(picker) {
@@ -720,7 +1020,7 @@
     const overlay = container.closest("[data-sandbox-addin]");
     if (!activeMessage) {
       container.innerHTML =
-        '<div class="reporter-sandbox__addin-empty"><p>Select a message to dock the Reporter add-in.</p></div>';
+        '<div class="reporter-sandbox__addin-empty"><p>Select a sandbox message to load the Reporter add-in.</p></div>';
       if (overlay) {
         overlay.classList.remove("is-visible");
         overlay.hidden = true;
