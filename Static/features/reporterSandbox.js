@@ -460,19 +460,18 @@
     const toLine = identity && identity.name ? `To: ${escapeHtml(identity.name)}` : "";
     return `
       <section class="reading-pane" data-reading-pane>
-        <div class="reading-header">
-          <h1>${subject}</h1>
-          <div class="reading-meta">
-            <div>
-              <div class="reading-meta__time">${escapeHtml(formatFullDate(message.createdAt))}</div>
-              <div class="reading-meta__to">${escapeHtml(toLine)}</div>
-            </div>
-            <button class="link-button">Manage add-ins…</button>
-          </div>
-          <div class="reading-envelope">
-            <div class="reading-avatar">${initialsFor(message.sender?.displayName)}</div>
-            <div class="reading-envelope__details">
-              <strong>${senderName}</strong>
+            <div class="reading-header">
+              <h1>${subject}</h1>
+              <div class="reading-meta">
+                <div>
+                  <div class="reading-meta__time">${escapeHtml(formatFullDate(message.createdAt))}</div>
+                  <div class="reading-meta__to">${escapeHtml(toLine)}</div>
+                </div>
+              </div>
+              <div class="reading-envelope">
+                <div class="reading-avatar">${initialsFor(message.sender?.displayName)}</div>
+                <div class="reading-envelope__details">
+                  <strong>${senderName}</strong>
               <span>${senderAddress}</span>
             </div>
           </div>
@@ -504,13 +503,13 @@
 
   const renderRibbon = () => {
     const commandIcons = [
-      { id: "delete", label: "Delete", asset: "delete-24-regular.svg" },
-      { id: "archive", label: "Archive", asset: "archive-24-regular.svg" },
+      { id: "delete", label: "Delete", asset: "delete-24-regular.svg", tone: "muted" },
+      { id: "archive", label: "Archive", asset: "archive-24-regular.svg", tone: "success" },
       { id: "report", label: "Report", asset: "shield-error-24-regular.svg", tone: "danger" },
-      { id: "move", label: "Move to", asset: "folder-arrow-right-24-regular.svg", tone: "success" },
-      { id: "reply", label: "Reply", asset: "arrow-reply-24-regular.svg" },
-      { id: "reply-all", label: "Reply all", asset: "arrow-reply-all-24-regular.svg" },
-      { id: "forward", label: "Forward", asset: "arrow-forward-24-regular.svg" }
+      { id: "move", label: "Move to", asset: "folder-arrow-right-24-regular.svg", tone: "link" },
+      { id: "reply", label: "Reply", asset: "arrow-reply-24-regular.svg", tone: "accent" },
+      { id: "reply-all", label: "Reply all", asset: "arrow-reply-all-24-regular.svg", tone: "accent" },
+      { id: "forward", label: "Forward", asset: "arrow-forward-24-regular.svg", tone: "link" }
     ];
 
     return `
@@ -797,21 +796,25 @@
             ${renderRibbon()}
             <div class="sandbox-content__body">
               <section class="message-column">
-                <div class="message-toolbar" role="toolbar" aria-label="Message list filters">
-                  <div class="message-toolbar__tabs">
-                    ${["All", "Unread", "Mentions"]
-                      .map(
-                        (label, index) =>
-                          `<button type="button" class="message-tab${index === 0 ? " is-active" : ""}">${escapeHtml(label)}</button>`
-                      )
-                      .join("")}
+                <div class="message-toolbar" role="toolbar" aria-label="Mailbox view controls">
+                  <div class="message-toolbar__title">
+                    <span class="message-toolbar__folder">Inbox</span>
+                    <button type="button" class="message-toolbar__favorite" aria-label="Toggle favorite">
+                      ${fluentIconImg("star-16-filled.svg")}
+                    </button>
                   </div>
                   <div class="message-toolbar__actions">
-                    <button type="button" aria-label="Refresh mailbox">
-                      ${placeholderIcon("refresh", "#1d2f54")}
+                    <button type="button" aria-label="Select conversations">
+                      ${fluentIconImg("checkbox-checked-24-regular.svg")}
                     </button>
-                    <button type="button" aria-label="More message list options">
-                      <span aria-hidden="true">&#8942;</span>
+                    <button type="button" aria-label="Snooze settings">
+                      ${fluentIconImg("clock-arrow-download-24-regular.svg")}
+                    </button>
+                    <button type="button" aria-label="Filter messages">
+                      ${fluentIconImg("filter-24-regular.svg")}
+                    </button>
+                    <button type="button" aria-label="Sort order">
+                      ${fluentIconImg("arrow-sort-24-regular.svg")}
                     </button>
                   </div>
                 </div>
