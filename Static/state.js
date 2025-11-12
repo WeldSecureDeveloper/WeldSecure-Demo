@@ -472,7 +472,8 @@
             layout: {
               compactRows: false,
               showSnippets: true,
-              highlightReading: true
+              highlightReading: true,
+              showAddin: false
             }
           };
     const fallbackMessages =
@@ -512,7 +513,8 @@
     const layout = {
       compactRows: layoutSource.compactRows === true,
       showSnippets: layoutSource.showSnippets !== false,
-      highlightReading: layoutSource.highlightReading !== false
+      highlightReading: layoutSource.highlightReading !== false,
+      showAddin: layoutSource.showAddin === true
     };
     return {
       messages,
@@ -745,7 +747,8 @@
       layout: {
         compactRows: false,
         showSnippets: true,
-        highlightReading: true
+        highlightReading: true,
+        showAddin: false
       }
     }
   };

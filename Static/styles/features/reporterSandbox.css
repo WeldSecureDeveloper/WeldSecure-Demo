@@ -645,6 +645,18 @@
   margin-top: -0.4rem;
 }
 
+.reading-region--addin-hidden {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.reading-region--addin-hidden .reporter-sidebar {
+  display: none;
+}
+
+.reading-region--addin-hidden .reading-pane {
+  grid-column: 1 / -1;
+}
+
 .reporter-sidebar {
   border: 1px solid #e0e5f4;
   border-radius: 14px;

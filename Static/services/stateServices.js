@@ -345,7 +345,8 @@
         layout: {
           compactRows: false,
           showSnippets: true,
-          highlightReading: true
+          highlightReading: true,
+          showAddin: false
         }
       };
     } else {
@@ -380,13 +381,15 @@
       state.reporterSandbox.layout = {
         compactRows: false,
         showSnippets: true,
-        highlightReading: true
+        highlightReading: true,
+        showAddin: false
       };
     } else {
       state.reporterSandbox.layout.compactRows = state.reporterSandbox.layout.compactRows === true;
       state.reporterSandbox.layout.showSnippets = state.reporterSandbox.layout.showSnippets !== false;
       state.reporterSandbox.layout.highlightReading = state.reporterSandbox.layout.highlightReading !== false;
     }
+    state.reporterSandbox.layout.showAddin = state.reporterSandbox.layout.showAddin === true;
     return state.reporterSandbox;
   };
 
@@ -1323,7 +1326,7 @@
     return { success: true, selectedUserId: sandbox.selectedUserId };
   };
 
-  const SANDBOX_LAYOUT_PREFS = new Set(["compactRows", "showSnippets", "highlightReading"]);
+  const SANDBOX_LAYOUT_PREFS = new Set(["compactRows", "showSnippets", "highlightReading", "showAddin"]);
 
   WeldServices.setSandboxLayoutPreference = function setSandboxLayoutPreference(prefName, enabled, providedState) {
     const state = resolveState(providedState);
@@ -1337,7 +1340,8 @@
       sandbox.layout = {
         compactRows: false,
         showSnippets: true,
-        highlightReading: true
+        highlightReading: true,
+        showAddin: false
       };
     }
     sandbox.layout[prefName] = enabled === true;

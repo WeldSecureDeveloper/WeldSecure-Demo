@@ -251,7 +251,8 @@
       layout: {
         compactRows: layoutSource.compactRows === true,
         showSnippets: layoutSource.showSnippets !== false,
-        highlightReading: layoutSource.highlightReading !== false
+        highlightReading: layoutSource.highlightReading !== false,
+        showAddin: layoutSource.showAddin === true
       }
     };
   };
@@ -490,8 +491,17 @@
     `;
   };
 
-  const renderReporterSidebar = () => `
-    <aside class="reporter-sidebar" data-reporter-sidebar>
+  const renderReporterSidebar = addinVisible => {
+    const isVisible = addinVisible === true;
+    const hiddenAttr = isVisible ? "" : " hidden";
+    return `
+    <aside
+      class="reporter-sidebar"
+      data-reporter-sidebar
+      data-sandbox-addin
+      data-addin-visible="${isVisible ? 'true' : 'false'}"
+      aria-hidden="${isVisible ? 'false' : 'true'}"${hiddenAttr}
+    >
       <div class="reporter-sidebar__body" data-reporter-sidebar-body>
         <div class="reporter-sidebar__placeholder">
           <p>Select a sandbox message to load the Reporter add-in.</p>
@@ -499,8 +509,11 @@
       </div>
     </aside>
   `;
+  };
 
-  const renderRibbon = () => {
+  const renderRibbon = addinVisible => {
+    const isAddinVisible = addinVisible === true;
+    const weldButtonLabel = isAddinVisible ? "Hide WeldSecure add-in" : "Show WeldSecure add-in";
     const commandIcons = [
       { id: "delete", label: "Delete", asset: "delete-24-regular.svg", tone: "muted" },
       { id: "archive", label: "Archive", asset: "archive-24-regular.svg", tone: "success" },
@@ -536,7 +549,14 @@
               .join("")}
           </div>
           <div class="command-divider command-divider--brand" aria-hidden="true"></div>
-          <button type="button" class="command-icon command-icon--brand" aria-label="Open WeldSecure">
+          <button
+            type="button"
+            class="command-icon command-icon--brand"
+            data-action="toggle-addin"
+            aria-label="${escapeHtml(weldButtonLabel)}"
+            title="${escapeHtml(weldButtonLabel)}"
+            aria-pressed="${isAddinVisible ? 'true' : 'false'}"
+          >
             ${fluentIconImg("weldsecure-logo.svg")}
           </button>
         </div>
@@ -727,7 +747,10 @@
     if (sandbox.layout.compactRows) rootClasses.push("is-compact");
     if (!sandbox.layout.showSnippets) rootClasses.push("hide-snippets");
     if (sandbox.layout.highlightReading) rootClasses.push("highlight-reading");
+    const addinVisible = sandbox.layout.showAddin === true;
     const activeMessage = sandbox.messages.find(message => message.id === sandbox.activeMessageId) || null;
+    const readingRegionClasses = ["reading-region"];
+    if (!addinVisible) readingRegionClasses.push("reading-region--addin-hidden");
 
     return `
       <div class="${rootClasses.join(" ")}">
@@ -771,7 +794,7 @@
         <div class="sandbox-main">
           ${renderSidebar()}
           <div class="sandbox-content">
-            ${renderRibbon()}
+            ${renderRibbon(addinVisible)}
             <div class="sandbox-content__body">
               <section class="message-column">
                 <div class="message-toolbar" role="toolbar" aria-label="Mailbox view controls">
@@ -800,9 +823,9 @@
                   ${renderMessageGroups(sandbox, state)}
                 </div>
               </section>
-              <div class="reading-region">
+              <div class="${readingRegionClasses.join(" ")}" data-reading-region data-addin-visible="${addinVisible ? 'true' : 'false'}">
                 ${renderReadingPane(sandbox, activeMessage, identity)}
-                ${renderReporterSidebar()}
+                ${renderReporterSidebar(addinVisible)}
               </div>
             </div>
           </div>
@@ -821,22 +844,66 @@
     if (!container) return;
     const state = providedState || getState();
     const sandbox = getSandboxSlice(state);
-    if (WeldServices && typeof WeldServices.setGuidedTourEnabled === "function") {
-      WeldServices.setGuidedTourEnabled(false, state);
-    }
     const reporterSidebar = container.querySelector("[data-reporter-sidebar]");
     const reporterBody = container.querySelector("[data-reporter-sidebar-body]");
+    const readingRegion = container.querySelector("[data-reading-region]");
+    const toggleAddinButton = container.querySelector("[data-action='toggle-addin']");
     const activeMessage =
       sandbox.messages.find(message => message.id === sandbox.activeMessageId) || null;
     let reporterPulseHandle = null;
+    let addinVisible = sandbox.layout && sandbox.layout.showAddin === true;
+
+    const persistAddinPreference = nextValue => {
+      if (WeldServices && typeof WeldServices.setSandboxLayoutPreference === "function") {
+        WeldServices.setSandboxLayoutPreference("showAddin", nextValue);
+      }
+    };
+
+    const updateCommandButton = visible => {
+      if (!toggleAddinButton) return;
+      const label = visible ? "Hide WeldSecure add-in" : "Show WeldSecure add-in";
+      toggleAddinButton.setAttribute("aria-pressed", visible ? "true" : "false");
+      toggleAddinButton.setAttribute("aria-label", label);
+      toggleAddinButton.setAttribute("title", label);
+    };
+
+    const applyAddinVisibility = visible => {
+      addinVisible = visible === true;
+      if (reporterSidebar) {
+        reporterSidebar.hidden = !addinVisible;
+        reporterSidebar.setAttribute("aria-hidden", addinVisible ? "false" : "true");
+        reporterSidebar.setAttribute("data-addin-visible", addinVisible ? "true" : "false");
+      }
+      if (readingRegion) {
+        readingRegion.setAttribute("data-addin-visible", addinVisible ? "true" : "false");
+        readingRegion.classList.toggle("reading-region--addin-hidden", !addinVisible);
+      }
+      updateCommandButton(addinVisible);
+    };
 
     if (reporterBody) {
       reporterBody.classList.add("reporter-outlook-shell");
       mountReporterDock(reporterBody, sandbox, state, activeMessage);
     }
 
+    applyAddinVisibility(addinVisible);
+
+    if (toggleAddinButton) {
+      toggleAddinButton.addEventListener("click", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        const next = !addinVisible;
+        applyAddinVisibility(next);
+        persistAddinPreference(next);
+      });
+    }
+
     const focusReporterSidebar = () => {
       if (!sandbox.activeMessageId || !reporterSidebar) return;
+      if (!addinVisible) {
+        applyAddinVisibility(true);
+        persistAddinPreference(true);
+      }
       reporterSidebar.classList.add("is-hinted");
       reporterSidebar.scrollIntoView({ behavior: "smooth", block: "nearest" });
       window.clearTimeout(reporterPulseHandle);
@@ -1006,7 +1073,6 @@
         '<div class="reporter-sandbox__addin-empty"><p>Select a sandbox message to load the Reporter add-in.</p></div>';
       if (overlay) {
         overlay.classList.remove("is-visible");
-        overlay.hidden = true;
       }
       return;
     }
@@ -1014,6 +1080,9 @@
     if (!reporterFeature || typeof reporterFeature.render !== "function") {
       container.innerHTML =
         '<div class="reporter-sandbox__addin-empty"><p>Reporter add-in unavailable.</p></div>';
+      if (overlay) {
+        overlay.classList.remove("is-visible");
+      }
       return;
     }
     reporterFeature.render(container, state, {
@@ -1022,5 +1091,8 @@
         expectedSignalIds: Array.isArray(activeMessage.signalIds) ? activeMessage.signalIds : []
       }
     });
+    if (overlay) {
+      overlay.classList.add("is-visible");
+    }
   }
 })();
