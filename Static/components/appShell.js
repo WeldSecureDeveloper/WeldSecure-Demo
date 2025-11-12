@@ -511,9 +511,12 @@
       <div class="global-nav__groups">
         ${NAV_GROUPS.map(group => {
           const isGroupActive = group.items.some(item => item.route === activeRoute);
+          const activeItem = group.items.find(item => item.route === activeRoute);
+          const groupRole = group.role || (activeItem && activeItem.role) || "";
+          const groupRoleAttr = groupRole ? ` data-role="${groupRole}"` : "";
           return `
-            <div class="global-nav__group ${isGroupActive ? "global-nav__group--active" : ""}">
-              <button type="button" class="global-nav__trigger" data-group="${group.label}">
+            <div class="global-nav__group ${isGroupActive ? "global-nav__group--active" : ""}"${groupRoleAttr}>
+              <button type="button" class="global-nav__trigger" data-group="${group.label}"${groupRoleAttr}>
                 ${group.label}
                 <span class="global-nav__caret" aria-hidden="true"></span>
               </button>

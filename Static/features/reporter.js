@@ -1,8 +1,8 @@
 (function () {
   if (!window.Weld) return;
 
-  const DEFAULT_ADDIN_SHELL_HEIGHT = 760;
-  const MIN_ADDIN_SHELL_HEIGHT = 640;
+  const DEFAULT_ADDIN_SHELL_HEIGHT = 900;
+  const MIN_ADDIN_SHELL_HEIGHT = 820;
   const features = window.Weld.features || (window.Weld.features = {});
   const REPORTER_GUIDED_TOUR_KEYS = {
     report: "reporter:addin:report",

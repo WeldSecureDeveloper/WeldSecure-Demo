@@ -888,7 +888,7 @@ function renderCustomerHub(state) {
         <div class="customer-hero-actions__main">
           <button class="button-pill button-pill--primary customer-hero-actions__button" id="customer-report-button">Report other suspicious activity</button>
           <p class="customer-hero-actions__description">Log smishing, quishing, or any other suspicious behaviour you come across so the security team can jump on it.</p>
-          <button class="button-pill button-pill--ghost customer-hero-actions__button" id="customer-sandbox-button">Launch Sandbox Inbox</button>
+          <button class="button-pill button-pill--ghost customer-hero-actions__button" id="customer-sandbox-button">Launch Sandbox</button>
           <p class="customer-hero-actions__description">Practice spotting red flags inside the Reporter dock before the next live simulation.</p>
         </div>
         <div class="customer-hero-actions__meta">

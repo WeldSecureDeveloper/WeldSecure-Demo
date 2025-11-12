@@ -1,4 +1,4 @@
-﻿// data/state/defaultState.js - baseline demo payload kept separate from logic
+// data/state/defaultState.js - baseline demo payload kept separate from logic
 (function () {
   const AppData = window.AppData || {};
   const DirectoryData = window.DirectoryData || {};
@@ -78,7 +78,7 @@
     "role": null,
     "route": "landing",
     "addinScreen": "report",
-    "addinShellHeight": 760,
+    "addinShellHeight": 900,
     "lastReportedSubject": null,
     "lastReportPoints": null,
     "lastBalanceBefore": null,

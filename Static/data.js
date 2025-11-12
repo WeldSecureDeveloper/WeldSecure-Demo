@@ -89,14 +89,16 @@ Object.assign(AppData, {
   NAV_GROUPS: [
   {
     label: "Reporter",
+    role: "customer",
     items: [
       { label: "Reporter", route: "addin", role: "customer" },
       { label: "Hub", route: "customer", role: "customer" },
-      { label: "Sandbox Inbox", route: "reporter-sandbox", role: "customer" }
+      { label: "Sandbox", route: "reporter-sandbox", role: "customer" }
     ]
   },
   {
     label: "Organisation",
+    role: "client",
     items: [
       { label: "Organisation Hub", route: "client-dashboard", role: "client" },
       { label: "Security Team Dashboard", route: "client-reporting", role: "client" },
@@ -110,6 +112,7 @@ Object.assign(AppData, {
   },
   {
     label: "WeldSecure",
+    role: "admin",
     items: [
       { label: "Weld Admin", route: "weld-admin", role: "admin" },
       { label: "Phishing Sims", route: "phishing-sims", role: "admin" },

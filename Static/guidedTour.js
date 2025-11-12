@@ -15,6 +15,7 @@
   const LAYER_CLASS = "guided-tour-layer";
   const HIGHLIGHT_ATTR = "data-guided-tour-highlighted";
   const DEFAULT_GAP = 18;
+  const VIEWPORT_MARGIN = 16;
 
   let layerElement = null;
   let activeScenario = null;
@@ -126,6 +127,85 @@
       top: top + offsetY,
       left: left + offsetX
     };
+  }
+
+  function getViewportSize() {
+    const width = Math.max(document.documentElement?.clientWidth || 0, window.innerWidth || 0);
+    const height = Math.max(document.documentElement?.clientHeight || 0, window.innerHeight || 0);
+    return { width, height };
+  }
+
+  function calculateOverflow(stepElement, margin = VIEWPORT_MARGIN) {
+    if (!stepElement) {
+      return { fits: true, deltaX: 0, deltaY: 0, totalOverflow: 0 };
+    }
+    const rect = stepElement.getBoundingClientRect();
+    const viewport = getViewportSize();
+    const excessLeft = Math.max(0, margin - rect.left);
+    const excessRight = Math.max(0, rect.right - (viewport.width - margin));
+    const excessTop = Math.max(0, margin - rect.top);
+    const excessBottom = Math.max(0, rect.bottom - (viewport.height - margin));
+    const deltaX = excessLeft > 0 ? excessLeft : excessRight > 0 ? -excessRight : 0;
+    const deltaY = excessTop > 0 ? excessTop : excessBottom > 0 ? -excessBottom : 0;
+    const totalOverflow = excessLeft + excessRight + excessTop + excessBottom;
+    return { fits: totalOverflow === 0, deltaX, deltaY, totalOverflow };
+  }
+
+  function applyStepPosition(stepElement, placement, position) {
+    if (!stepElement || !position) return;
+    stepElement.dataset.placement = placement;
+    stepElement.style.setProperty("--tour-top", `${position.top}px`);
+    stepElement.style.setProperty("--tour-left", `${position.left}px`);
+    stepElement.style.setProperty("--tour-nudge-x", "0px");
+    stepElement.style.setProperty("--tour-nudge-y", "0px");
+  }
+
+  function applyNudge(stepElement, deltaX, deltaY) {
+    if (!stepElement) return;
+    stepElement.style.setProperty("--tour-nudge-x", `${deltaX}px`);
+    stepElement.style.setProperty("--tour-nudge-y", `${deltaY}px`);
+  }
+
+  function buildPlacementQueue(primary, extras) {
+    const order = [];
+    const fallback = ["bottom", "top", "right", "left", "center"];
+    const pushPlacement = value => {
+      if (typeof value !== "string") return;
+      const normalized = value.trim();
+      if (!normalized || order.includes(normalized)) return;
+      order.push(normalized);
+    };
+    pushPlacement(primary);
+    if (Array.isArray(extras)) {
+      extras.forEach(pushPlacement);
+    }
+    fallback.forEach(pushPlacement);
+    return order.length > 0 ? order : ["top"];
+  }
+
+  function selectPlacementWithinViewport(stepElement, rect, options) {
+    if (!stepElement || !rect) return;
+    const { placement, gap, offsetX, offsetY, altPlacements } = options;
+    const candidates = buildPlacementQueue(placement, altPlacements);
+    let best = null;
+
+    for (const candidate of candidates) {
+      const nextPosition = computePosition(rect, candidate, gap, offsetX, offsetY);
+      applyStepPosition(stepElement, candidate, nextPosition);
+      const overflow = calculateOverflow(stepElement);
+      if (overflow.fits) {
+        applyNudge(stepElement, 0, 0);
+        return;
+      }
+      if (!best || overflow.totalOverflow < best.overflow.totalOverflow) {
+        best = { placement: candidate, position: nextPosition, overflow };
+      }
+    }
+
+    if (best) {
+      applyStepPosition(stepElement, best.placement, best.position);
+      applyNudge(stepElement, best.overflow.deltaX, best.overflow.deltaY);
+    }
   }
 
   function normalizeNumber(value, fallback = 0) {
@@ -270,7 +350,10 @@
     const gap = normalizeNumber(step.gap, DEFAULT_GAP);
     const offsetX = normalizeNumber(step.offsetX);
     const offsetY = normalizeNumber(step.offsetY);
-    const position = computePosition(rect, placement, gap, offsetX, offsetY);
+    const altPlacements = []
+      .concat(Array.isArray(step.preferredPlacements) ? step.preferredPlacements : [])
+      .concat(Array.isArray(step.altPlacements) ? step.altPlacements : [])
+      .concat(Array.isArray(step.placements) ? step.placements : []);
     const label = step.indexLabel || step.index || index + 1;
     const title = step.title || "Guided tip";
     const description = step.description || "";
@@ -280,9 +363,8 @@
 
     const stepElement = document.createElement("article");
     stepElement.className = "guided-tour-step";
-    stepElement.dataset.placement = placement;
-    stepElement.style.setProperty("--tour-top", `${position.top}px`);
-    stepElement.style.setProperty("--tour-left", `${position.left}px`);
+    stepElement.style.visibility = "hidden";
+    stepElement.style.pointerEvents = "none";
     stepElement.innerHTML = `
       <span class="guided-tour-step__index">${WeldUtil.escapeHtml(String(label))}</span>
       <div class="guided-tour-step__body">
@@ -308,6 +390,15 @@
     highlightTarget(target);
     layer.appendChild(stepElement);
     layer.hidden = false;
+    selectPlacementWithinViewport(stepElement, rect, {
+      placement,
+      gap,
+      offsetX,
+      offsetY,
+      altPlacements
+    });
+    stepElement.style.visibility = "";
+    stepElement.style.pointerEvents = "";
     toggleViewportListeners(true);
   }
 

@@ -1,4 +1,4 @@
-﻿// state.js - state init & persistence helpers (namespaced)
+// state.js - state init & persistence helpers (namespaced)
 (function () {
   const appData = window.AppData || {};
   const STORAGE_KEY = appData.STORAGE_KEY || "WeldDemoState";
@@ -689,7 +689,7 @@
       route: "landing",
       theme: "light",
       addinScreen: "report",
-      addinShellHeight: 760,
+      addinShellHeight: 900,
       lastReportedSubject: null,
       lastReportPoints: null,
       lastBalanceBefore: null,

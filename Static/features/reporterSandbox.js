@@ -9,6 +9,8 @@
   const WeldServices = window.WeldServices || {};
   const WeldUtil = window.WeldUtil || {};
   const reporterSandboxFeature = (features.reporterSandbox = {});
+  const MIN_ADDIN_SHELL_HEIGHT = 820;
+  const DEFAULT_ADDIN_SHELL_HEIGHT = 900;
 
   const getState = () => window.state || (window.Weld && window.Weld.state) || {};
 
@@ -231,6 +233,15 @@
       default:
         return "";
     }
+  };
+
+  const resolveAddinShellHeight = state => {
+    if (!state || !state.meta) return DEFAULT_ADDIN_SHELL_HEIGHT;
+    const stored = Number(state.meta.addinShellHeight);
+    if (Number.isFinite(stored) && stored > 0) {
+      return Math.max(MIN_ADDIN_SHELL_HEIGHT, Math.ceil(stored));
+    }
+    return DEFAULT_ADDIN_SHELL_HEIGHT;
   };
 
   const fluentColorIcon = relativePath =>
@@ -818,6 +829,7 @@
     const readingRegionClasses = ["reading-region"];
     const sandboxContentClasses = ["sandbox-content"];
     const stageClasses = ["sandbox-stage"];
+    const addinShellHeight = resolveAddinShellHeight(state);
     if (addinVisible) {
       stageClasses.push("sandbox-stage--addin-visible");
     }
@@ -867,6 +879,7 @@
             class="${stageClasses.join(" ")}"
             data-sandbox-stage
             data-addin-visible="${addinVisible ? 'true' : 'false'}"
+            style="--sandbox-shell-height: ${addinShellHeight}px;"
           >
             <div class="${sandboxContentClasses.join(" ")}">
               <div class="sandbox-content__main">

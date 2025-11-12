@@ -13,7 +13,9 @@
   position: absolute;
   top: var(--tour-top, 50%);
   left: var(--tour-left, 50%);
-  transform: translate(-50%, -50%);
+  --tour-nudge-x: 0px;
+  --tour-nudge-y: 0px;
+  transform: translate(calc(-50% + var(--tour-nudge-x, 0px)), calc(-50% + var(--tour-nudge-y, 0px)));
   min-width: 220px;
   max-width: min(280px, calc(100vw - 32px));
   padding: 0.85rem 1rem;
@@ -39,7 +41,7 @@
   z-index: -1;
 }
 .guided-tour-step[data-placement="right"] {
-  transform: translate(0, -50%);
+  transform: translate(calc(0px + var(--tour-nudge-x, 0px)), calc(-50% + var(--tour-nudge-y, 0px)));
 }
 .guided-tour-step[data-placement="right"]::after {
   left: -7px;
@@ -47,7 +49,7 @@
   transform: translateY(-50%) rotate(45deg);
 }
 .guided-tour-step[data-placement="left"] {
-  transform: translate(-100%, -50%);
+  transform: translate(calc(-100% + var(--tour-nudge-x, 0px)), calc(-50% + var(--tour-nudge-y, 0px)));
 }
 .guided-tour-step[data-placement="left"]::after {
   right: -7px;
@@ -55,7 +57,7 @@
   transform: translateY(-50%) rotate(45deg);
 }
 .guided-tour-step[data-placement="top"] {
-  transform: translate(-50%, -100%);
+  transform: translate(calc(-50% + var(--tour-nudge-x, 0px)), calc(-100% + var(--tour-nudge-y, 0px)));
 }
 .guided-tour-step[data-placement="top"]::after {
   bottom: -7px;
@@ -63,7 +65,7 @@
   transform: translateX(-50%) rotate(45deg);
 }
 .guided-tour-step[data-placement="bottom"] {
-  transform: translate(-50%, 0);
+  transform: translate(calc(-50% + var(--tour-nudge-x, 0px)), calc(0px + var(--tour-nudge-y, 0px)));
 }
 .guided-tour-step[data-placement="bottom"]::after {
   top: -7px;
