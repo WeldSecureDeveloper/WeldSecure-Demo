@@ -44,6 +44,25 @@
     });
   };
 
+  const inferInternalDomains = state => {
+    const domains = new Set(["weldsecure.com", "weld.onmicrosoft.com"]);
+    const customerEmail = state && state.customer && state.customer.email;
+    if (customerEmail && customerEmail.includes("@")) {
+      domains.add(customerEmail.split("@").pop().toLowerCase());
+    }
+    return domains;
+  };
+
+  const isInternalSender = (address, state) => {
+    if (!address) return true;
+    const normalized = String(address).trim().toLowerCase();
+    if (!normalized) return true;
+    const domain = normalized.includes("@") ? normalized.split("@").pop() : normalized;
+    if (!domain) return true;
+    const domains = inferInternalDomains(state);
+    return domains.has(domain);
+  };
+
   const placeholderIcon = (variant, color = "#ffffff") => {
     const stroke = color;
     switch (variant) {
@@ -434,7 +453,7 @@
     `;
   };
 
-  const renderReadingPane = (sandbox, message, identity) => {
+  const renderReadingPane = (sandbox, message, identity, state) => {
     if (!message) {
       return `
         <section class="reading-pane reading-pane--empty" data-reading-pane>
@@ -442,17 +461,22 @@
         </section>
       `;
     }
+    const activeState = state || getState();
     const submission = latestSubmissionFor(sandbox.submissions, message.id);
     const senderName = message.sender?.displayName || "Security Desk";
     const senderAddress = message.sender?.address || "security@weldsecure.com";
+    const senderIsInternal = isInternalSender(senderAddress, activeState);
+    const senderDisplay = senderIsInternal ? senderName : `${senderName} <${senderAddress}>`;
     const subject = message.subject || "Sandbox simulation";
     const messageBody = formatBody(message.body);
     const statusTone = submission
       ? submission.success
-        ? '<div class="reading-card reading-status reading-status--success">Accurate report logged</div>'
-        : '<div class="reading-card reading-status reading-status--warn">Signals missing - try again</div>'
+        ? '<div class="reading-status reading-status--success">Accurate report logged</div>'
+        : '<div class="reading-status reading-status--warn">Signals missing - try again</div>'
       : "";
     const toLine = identity && identity.name ? `To: ${identity.name}` : "";
+    const timestamp = formatFullDate(message.createdAt);
+    const recipientMarkup = toLine ? escapeHtml(toLine) : "&nbsp;";
     const headerActions = [
       { id: "reply", label: "Reply", asset: "arrow-reply-24-regular.svg" },
       { id: "reply-all", label: "Reply all", asset: "arrow-reply-all-24-regular.svg" },
@@ -467,39 +491,40 @@
         `
       )
       .join("");
-    const headerClasses = ["reading-card", "reading-card--header"];
-    if (message.metadata?.unread === true) headerClasses.push("is-unread");
+    const subjectClasses = ["reading-card", "reading-card--subject"];
+    if (message.metadata?.unread === true) subjectClasses.push("is-unread");
     return `
       <section class="reading-pane" data-reading-pane>
-        <div class="${headerClasses.join(" ")}">
-          <div class="reading-header__subject-row">
-            <h1 class="reading-subject">${escapeHtml(subject)}</h1>
-            <div class="reading-header__actions">
-              ${headerActions}
-            </div>
-          </div>
-          <div class="reading-header__info">
+        <div class="${subjectClasses.join(" ")}">
+          <span class="reading-subject">${escapeHtml(subject)}</span>
+        </div>
+        <div class="reading-card reading-card--message">
+          <div class="reading-message-header">
             <div class="reading-avatar">${escapeHtml(initialsFor(message.sender?.displayName))}</div>
-            <div class="reading-header__details">
+            <div class="reading-header__content">
               <div class="reading-sender-row">
-                <span class="reading-sender">${escapeHtml(senderName)}</span>
-                <span class="reading-timestamp">${escapeHtml(formatFullDate(message.createdAt))}</span>
+                <span class="reading-sender">${escapeHtml(senderDisplay)}</span>
+                <div class="reading-header__actions">
+                  ${headerActions}
+                </div>
               </div>
-              ${toLine ? `<div class="reading-recipient">${escapeHtml(toLine)}</div>` : ""}
-              <div class="reading-address">${escapeHtml(senderAddress)}</div>
+              <div class="reading-recipient-row">
+                <span class="reading-recipient">${recipientMarkup}</span>
+                <span class="reading-timestamp">${escapeHtml(timestamp)}</span>
+              </div>
             </div>
           </div>
+          ${statusTone}
+          <article class="reading-body${sandbox.hintsVisible ? " reading-body--hint" : ""}">
+            ${messageBody}
+          </article>
+          <div class="reading-actions">
+            <button type="button" class="btn ghost" data-action="toggle-hints">
+              ${sandbox.hintsVisible ? "Hide hints" : "Reveal signals"}
+            </button>
+          </div>
+          ${renderSubmissionFeedback(submission)}
         </div>
-        ${statusTone}
-        <article class="reading-card reading-card--body reading-body${sandbox.hintsVisible ? " reading-body--hint" : ""}">
-          ${messageBody}
-        </article>
-        <div class="reading-actions">
-          <button type="button" class="btn ghost" data-action="toggle-hints">
-            ${sandbox.hintsVisible ? "Hide hints" : "Reveal signals"}
-          </button>
-        </div>
-        ${renderSubmissionFeedback(submission)}
       </section>
     `;
   };
@@ -837,7 +862,7 @@
                 </div>
               </section>
               <div class="${readingRegionClasses.join(" ")}" data-reading-region data-addin-visible="${addinVisible ? 'true' : 'false'}">
-                ${renderReadingPane(sandbox, activeMessage, identity)}
+                ${renderReadingPane(sandbox, activeMessage, identity, state)}
                 ${renderReporterSidebar(addinVisible)}
               </div>
             </div>
