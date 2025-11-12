@@ -282,7 +282,8 @@
   width: 20px;
   height: 20px;
   display: block;
-  filter: none;
+  filter: invert(42%) sepia(9%) saturate(356%) hue-rotate(187deg) brightness(95%) contrast(88%);
+  opacity: 0.9;
 }
 
 .command-icon:hover {
@@ -291,15 +292,15 @@
 }
 
 .command-icon--danger .icon-img {
-  filter: brightness(0) saturate(100%) sepia(63%) hue-rotate(-2deg) saturate(420%) brightness(0.9);
+  filter: invert(24%) sepia(80%) saturate(1420%) hue-rotate(1deg) brightness(95%) contrast(98%);
 }
 
 .command-icon--success .icon-img {
-  filter: brightness(0) saturate(100%) sepia(31%) hue-rotate(76deg) saturate(400%) brightness(1.1);
+  filter: invert(46%) sepia(66%) saturate(523%) hue-rotate(91deg) brightness(97%) contrast(92%);
 }
 
 .command-icon--accent .icon-img {
-  filter: brightness(0) saturate(100%) sepia(36%) hue-rotate(244deg) saturate(600%) brightness(1);
+  filter: invert(48%) sepia(52%) saturate(1182%) hue-rotate(238deg) brightness(96%) contrast(102%);
 }
 
 .sandbox-main {
