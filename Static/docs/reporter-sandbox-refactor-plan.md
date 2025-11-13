@@ -10,103 +10,82 @@ Goal: split the oversized `Static/features/reporterSandbox.js` (~1,230 lines) in
 
 ---
 
-## Track RS1 · Layout Renderer Extraction (`todo`)
-**Scope:** Move `renderLayout` plus the Outlook-style HTML scaffolding into `components/reporterSandbox/layout.js`.
+## Track RS1 · Layout Shell (Phase 1) (`todo`)
+**Goal:** Extract a minimal layout module (render + template delegations) without moving subcomponents yet.
 
-1. **Isolate pure render helpers**  
-   - Functions: `renderLayout`, `renderRibbon`, `renderMessageColumn`, `renderReporterSidebar`, `renderSettingsDrawer`, etc.  
-   - Ensure each helper only consumes explicit arguments (no hidden globals).  
-   - _Verification:_ unit-style call (`modules.use("components/reporterSandbox/layout").render(state)`) returns the same markup as today.
-
-2. **Create module + wrappers**  
-   - `modules.define("components/reporterSandbox/layout", () => ({ render }))`.  
-   - In `reporterSandbox.js`, lazy-load via `modules.use("components/reporterSandbox/layout")` and delegate `template`.
-
-3. **Smoke-test layout**  
-   - Render reporter sandbox via UI; confirm DOM structure (message list, reading pane, add-in sidebar, settings drawer placeholder) matches pre-refactor.
+1. **Snapshot current layout** (todo)  
+   - Capture DOM screenshot or save HTML snippet for reference.
+2. **Introduce `components/reporterSandbox/layout`** (todo)  
+   - Move `renderLayout`, `renderRibbon`, `renderReporterSidebar` into the module.  
+   - Proxy `reporterSandboxFeature.template` to the module.  
+   - _Verification:_ UI smoke focusing on layout structure (rail + message column + sidebar skeleton).
+3. **Document progress** (todo)  
+   - Update this plan (mark RS1 complete) before starting RS2.
 
 ---
 
-## Track RS2 · Message + Reading Pane Module (`todo`)
-**Scope:** Extract message list + reading pane renderers (`renderMessageGroups`, `renderMessagePreview`, `renderReadingPane`, etc.) into `components/reporterSandbox/messages.js`.
+## Track RS2 · Messages & Reading Pane (Phase 2) (`todo`)
+**Goal:** Move message list + reading pane render helpers into a dedicated module.
 
-1. **Move render helpers**  
-   - Keep shared utilities (e.g., `formatFullDate`, `formatTime`, `isInternalSender`) close to the module or into a `utils.js` if reused elsewhere.  
-   - Ensure no DOM mutations; module should only return strings.
-
-2. **Wire layout module**  
-   - Update `components/reporterSandbox/layout` to call the new message module instead of local helpers.
-
-3. **Verification**  
-   - Compare message list markup (group headers, message items, avatars) before/after using snapshot or manual DOM inspection.
-
----
-
-## Track RS3 · Add-in Shell & Reporter Dock (`todo`)
-**Scope:** Extract `clampAddinShellHeight`, `applyAddinVisibility`, `mountReporterDock`, guided-tour suppression, and add-in command button wiring into `components/reporterSandbox/addinShell.js`.
-
-1. **Module API**  
-   - Export `{ applyAddinVisibility(container, sandboxState, options), mountReporterDock(container, sandboxState, state) }`.  
-   - Keep stateful concerns (addinVisible flag, height clamp) encapsulated; expose callbacks for `persistLayoutPreference`.
-
-2. **Integrate with attach()**  
-   - `reporterSandboxFeature.attach` imports the module once and delegates add-in toggles to it.
-
-3. **Verification**  
-   - Toggle the add-in command button and confirm:  
-     - Sidebar visibility toggles  
-     - Guided tour turns off when add-in appears  
-     - Add-in shell height constraints remain intact.
+1. **Split helpers** (todo)  
+   - `components/reporterSandbox/messages` exports `{ renderMessageGroups, renderReadingPane }`.  
+   - Shared utilities (`formatTime`, `formatFullDate`, `isInternalSender`, etc.) live alongside or in `utils.js`.
+2. **Update layout module** (todo)  
+   - Replace inline helpers with calls to the new module.
+3. **Verification** (todo)  
+   - Manual DOM diff (message list, reading pane) + smoke (select message, ensure preview updates).  
+   - Update plan status.
 
 ---
 
-## Track RS4 · User Picker Module (`todo`)
-**Scope:** Move `renderUserPicker`, `openUserPicker`, `closeUserPicker`, `toggleUserPickerEmptyState`, and related event binding into `components/reporterSandbox/userPicker.js`.
+## Track RS3 · Add-in Shell (Phase 3) (`todo`)
+**Goal:** Modularize add-in shell logic (height clamp, visibility toggles, reporter dock).
 
-1. **Module responsibilities**  
-   - Rendering the picker markup  
-   - Handling filter input, empty state, and click-to-select logic (calling `WeldServices.setSandboxUser`).  
-   - Provide hooks: `renderUserPicker(state)`, `attachUserPicker(container, state)`.
-
-2. **Layout integration**  
-   - Layout render inserts the markup; attach phase calls the module to wire events.
-
-3. **Verification**  
-   - Open picker, filter users, select a persona → ensure state updates and picker closes just like today.
+1. **Create module** (todo)  
+   - `components/reporterSandbox/addinShell` exports `{ applyAddinVisibility, mountReporterDock }`.
+2. **Wire attach logic** (todo)  
+   - Replace inline functions with module calls; keep callbacks for persistence + guided-tour toggle.
+3. **Verification** (todo)  
+   - Toggle add-in button + report action to ensure add-in opens/closes; confirm guided tour disabled on first open.
 
 ---
 
-## Track RS5 · Settings Drawer Module (`todo`)
-**Scope:** Extract settings drawer rendering + preference binding into `components/reporterSandbox/settingsDrawer.js`.
+## Track RS4 · User Picker (Phase 4) (`todo`)
+**Goal:** Extract user picker rendering + events.
 
-1. **Module API**  
-   - `renderSettingsDrawer(sandboxState)` returning markup.  
-   - `attachSettingsDrawer(container, state)` to wire `data-layout-pref` checkboxes and overlay close events.
-
-2. **Hook up layout/attach**  
-   - Layout module calls `renderSettingsDrawer`.  
-   - `reporterSandboxFeature.attach` delegates wiring to the module.
-
-3. **Verification**  
-   - Open drawer, toggle layout preferences (compact view, snippets, highlighting), confirm `WeldServices.setSandboxLayoutPreference` fires.
+1. **Module** (todo)  
+   - `components/reporterSandbox/userPicker` exports `{ renderUserPicker, attachUserPicker }`.
+2. **Integrate** (todo)  
+   - Layout uses the render helper; attach delegates open/close/filter logic.
+3. **Verification** (todo)  
+   - Filter + select a user; ensure state updates and picker closes.  
+   - Update plan status.
 
 ---
 
-## Track RS6 · Reporter Sandbox Core Orchestrator (`todo`)
-**Scope:** Simplify `Static/features/reporterSandbox.js` after modules exist.
+## Track RS5 · Settings Drawer (Phase 5) (`todo`)
+**Goal:** Modularize the inbox settings drawer.
 
-1. **Refactor template/attach**  
-   - `template(state)` → `layoutModule.render(state)`.  
-   - `attach(container, state)` → orchestrates add-in shell, picker, settings drawer, message selection events.  
-   - Remove redundant helpers now hosted in modules.
+1. **Module** (todo)  
+   - `components/reporterSandbox/settingsDrawer` exports `{ renderSettingsDrawer, attachSettingsDrawer }`.
+2. **Integration** (todo)  
+   - Layout renders via module; attach wires open/close + checkbox events.
+3. **Verification** (todo)  
+   - Open drawer, toggle prefs, confirm `setSandboxLayoutPreference` fires.
 
-2. **Documentation**  
-   - Update `Static/docs/architecture-remediation-plan.md` (new sandbox track entry) + `Static/docs/fix-backlog.md` once tracks RS1–RS5 land.  
-   - Note any residual debt (e.g., reporter-specific utils) for future work.
+---
 
-3. **Full smoke**  
-   - Run through entire reporter sandbox flow: message list interactions, add-in, user picker, settings drawer, guided tour toggles.  
-   - Capture any regressions before closing the track.
+## Track RS6 · Orchestrator Cleanup & Final QA (`todo`)
+**Goal:** Simplify the reporter sandbox feature file once modules exist.
+
+1. **Refactor template/attach** (todo)  
+   - `template` delegates to layout module.  
+   - `attach` orchestrates the various modules + remaining event wiring.  
+   - Remove obsolete helpers.
+
+2. **Full regression smoke** (todo)  
+   - Message selection, add-in actions, user picker, settings drawer, guided tour toggles.  
+   - Fix backlog + this plan updated to mark RS6 complete.
 
 ---
 
