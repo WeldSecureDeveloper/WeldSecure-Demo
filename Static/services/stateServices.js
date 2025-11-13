@@ -605,6 +605,44 @@
     return state.meta.guidedTour;
   }
 
+  function ensureMeta(state) {
+    if (!state.meta || typeof state.meta !== "object") {
+      state.meta = {};
+    }
+    return state.meta;
+  }
+
+  function writeMetaField(state, key, value) {
+    const meta = ensureMeta(state);
+    if (meta[key] === value) {
+      return false;
+    }
+    meta[key] = value;
+    return true;
+  }
+
+  function findQuestById(state, questId) {
+    if (!state || !Array.isArray(state.quests)) return null;
+    const target = String(questId);
+    return (
+      state.quests.find(entry => {
+        const candidate = entry?.id;
+        return candidate !== undefined && candidate !== null && String(candidate) === target;
+      }) || null
+    );
+  }
+
+  function findRewardById(state, rewardId) {
+    if (!state || !Array.isArray(state.rewards)) return null;
+    const target = String(rewardId);
+    return (
+      state.rewards.find(entry => {
+        const candidate = entry?.id;
+        return candidate !== undefined && candidate !== null && String(candidate) === target;
+      }) || null
+    );
+  }
+
   WeldServices.navigate = function navigate(route, providedState) {
     const state = resolveState(providedState);
     if (!state || !state.meta) return;
@@ -642,19 +680,14 @@
     if (!WeldUtil || typeof WeldUtil.clone !== "function") return;
     const defaultState =
       typeof WeldState.initialState === "function" ? WeldState.initialState() : {};
-    state.meta = WeldUtil.clone(defaultState.meta);
-    state.customer = WeldUtil.clone(defaultState.customer);
-    state.rewards = WeldUtil.clone(defaultState.rewards);
-    state.quests = WeldUtil.clone(defaultState.quests);
-    state.badges = WeldUtil.clone(defaultState.badges);
-    state.rewardRedemptions = WeldUtil.clone(defaultState.rewardRedemptions);
-    state.settings = WeldUtil.clone(defaultState.settings);
-    state.messages = WeldUtil.clone(defaultState.messages);
-    state.clients = WeldUtil.clone(defaultState.clients);
-    state.departmentLeaderboard = WeldUtil.clone(defaultState.departmentLeaderboard);
-    state.engagementPrograms = WeldUtil.clone(defaultState.engagementPrograms);
-    state.labs = WeldUtil.clone(defaultState.labs);
-    state.phishingSimulation = WeldUtil.clone(defaultState.phishingSimulation);
+    Object.keys(defaultState).forEach(key => {
+      const value = defaultState[key];
+      if (value && typeof value === "object") {
+        state[key] = WeldUtil.clone(value);
+      } else {
+        state[key] = value;
+      }
+    });
 
     if (window.location && window.location.hash) {
       if (window.history && typeof window.history.replaceState === "function") {
@@ -708,6 +741,81 @@
     renderShell();
   };
 
+  WeldServices.setRewardFilter = function setRewardFilter(filter, providedState) {
+    const state = resolveState(providedState);
+    if (!state) return;
+    const normalized =
+      typeof filter === "string" && filter.trim().length > 0 ? filter.trim().toLowerCase() : null;
+    if (!writeMetaField(state, "rewardFilter", normalized)) return;
+    syncGlobalState(state);
+    saveState(state);
+    renderShell();
+  };
+
+  WeldServices.setRewardStatusFilter = function setRewardStatusFilter(status, providedState) {
+    const state = resolveState(providedState);
+    if (!state) return;
+    const value = typeof status === "string" ? status.trim().toLowerCase() : "";
+    const normalized = value === "published" || value === "unpublished" ? value : null;
+    if (!writeMetaField(state, "rewardStatusFilter", normalized)) return;
+    syncGlobalState(state);
+    saveState(state);
+    renderShell();
+  };
+
+  WeldServices.setCustomerReportFilter = function setCustomerReportFilter(filter, providedState) {
+    const state = resolveState(providedState);
+    if (!state) return;
+    const normalized =
+      typeof filter === "string" && filter.trim().toLowerCase() === "other" ? "other" : null;
+    if (!writeMetaField(state, "reportFilter", normalized)) return;
+    syncGlobalState(state);
+    saveState(state);
+    renderShell();
+  };
+
+  WeldServices.setCustomerRecognitionFilter = function setCustomerRecognitionFilter(
+    filter,
+    providedState
+  ) {
+    const state = resolveState(providedState);
+    if (!state) return;
+    const allowed = ["received", "given", "all"];
+    const normalized =
+      typeof filter === "string" ? filter.trim().toLowerCase() : "";
+    const next = allowed.includes(normalized) ? normalized : "received";
+    if (!writeMetaField(state, "recognitionFilter", next)) return;
+    syncGlobalState(state);
+    saveState(state);
+    renderShell();
+  };
+
+  WeldServices.setCustomerBadgeAvailabilityFilter = function setCustomerBadgeAvailabilityFilter(
+    filter,
+    providedState
+  ) {
+    const state = resolveState(providedState);
+    if (!state) return;
+    const value = typeof filter === "string" ? filter.trim().toLowerCase() : "";
+    const normalized = value === "locked" || value === "unlocked" ? value : null;
+    if (!writeMetaField(state, "customerBadgeAvailabilityFilter", normalized)) return;
+    syncGlobalState(state);
+    saveState(state);
+    renderShell();
+  };
+
+  WeldServices.setSettingsCategory = function setSettingsCategory(category, providedState) {
+    const state = resolveState(providedState);
+    if (!state) return;
+    const normalized =
+      typeof category === "string" && category.trim().length > 0 ? category.trim() : null;
+    if (!normalized) return;
+    if (!writeMetaField(state, "settingsCategory", normalized)) return;
+    syncGlobalState(state);
+    saveState(state);
+    renderShell();
+  };
+
   WeldServices.toggleGuidedTour = function toggleGuidedTour(providedState) {
     const state = resolveState(providedState);
     if (!state) return;
@@ -720,10 +828,7 @@
     if (!state || !state.customer) {
       return { success: false, reason: "State missing." };
     }
-    if (typeof window.questById !== "function") {
-      return { success: false, reason: "Quest lookup unavailable." };
-    }
-    const quest = window.questById(questId);
+    const quest = findQuestById(state, questId);
     if (!quest) {
       return { success: false, reason: "Quest not found." };
     }
@@ -811,10 +916,7 @@
     if (!state || !state.customer) {
       return { success: false, reason: "State missing." };
     }
-    if (typeof window.rewardById !== "function") {
-      return { success: false, reason: "Reward lookup unavailable." };
-    }
-    const reward = window.rewardById(rewardId);
+    const reward = findRewardById(state, rewardId);
     if (!reward) return { success: false, reason: "Reward not found." };
     if (!reward.published) {
       return { success: false, reason: "This reward is not currently published to hubs." };

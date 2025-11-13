@@ -1,4 +1,4 @@
-# WeldSecure Architecture & Contribution Guardrails
+﻿# WeldSecure Architecture & Contribution Guardrails
 
 This document captures the key structural decisions for the static WeldSecure demo so we can keep the repo maintainable, token-efficient, and easy for Codex (and humans) to navigate. Treat it as the source of truth when adding new screens, wiring data, or touching shared utilities.
 
@@ -49,6 +49,7 @@ ender() markup.
 **Guardrails:**
 - Add new datasets in data/ and export them through window.AppData instead of hard-coding arrays inside features.
 - Extend stateServices when a new mutation is required. Keep method names declarative (wardPoints, 	oggleQuest, etc.).
+- Route every UI mutation through a `WeldServices` helper (via the `window.<service>` wrappers) instead of mutating `window.Weld.state` or `state.meta` directly.
 - Always persist through the window.Weld.state helpers so the "Reset demo data" button remains accurate.
 
 ---
@@ -93,7 +94,7 @@ egistry.js with a human-friendly label and default route pointer.
 - `@layer base, components, features;` lives at the top of `styles.css`, and **every** file under `styles/base`, `styles/components`, and `styles/features` is wrapped in the appropriate layer.
 - Badge styles were split into `styles/components/badges/{tokens,cards,spotlight,grids}.css` and `styles/features/badges.css`, so the old `styles/badges.css` file is gone. When adding new badge UI, extend these files instead of creating another legacy sheet.
 - Regression expectations:
-  - **Phase B–E complete:** tokens/base/layout, reusable components, feature files, and badge gallery layers migrated and verified in both themes.
+  - **Phase BÔÇôE complete:** tokens/base/layout, reusable components, feature files, and badge gallery layers migrated and verified in both themes.
   - **Phase F outstanding:** whenever you touch layered CSS, load the key personas (landing, customer, client, admin, badges, reporter) and watch console output. Record any regressions in the fix backlog.
 - To validate the stack quickly, run `rg "@layer" Static/styles -g "*.css"`; the command should report every CSS file once. If it misses a file, wrap it before committing.
 

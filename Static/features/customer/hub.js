@@ -988,12 +988,16 @@ function attachCustomerHubEvents(container, state) {
     });
   }
   const historyBtn = container.querySelector("#customer-report-history-button");
-  if (historyBtn) {
-    historyBtn.addEventListener("click", () => {
-      state.meta.reportFilter = "other";
-      setRole("customer", "customer-reports");
-    });
-  }
+    if (historyBtn) {
+      historyBtn.addEventListener("click", () => {
+        if (typeof window.setCustomerReportFilter === "function") {
+          window.setCustomerReportFilter("other");
+        } else if (state.meta) {
+          state.meta.reportFilter = "other";
+        }
+        setRole("customer", "customer-reports");
+      });
+    }
   container.querySelectorAll(".reward-card__cta").forEach(button => {
     button.addEventListener("click", () => {
       const card = button.closest(".reward-card");
@@ -1055,14 +1059,23 @@ function attachCustomerHubEvents(container, state) {
       }
       const targetRoute = button.getAttribute("data-route");
       if (targetRoute) {
-        const filter = button.getAttribute("data-report-filter");
-        if (filter) {
-          state.meta.reportFilter = filter === "other" ? "other" : null;
-        } else if (targetRoute === "customer-reports") {
-          state.meta.reportFilter = null;
+          const filter = button.getAttribute("data-report-filter");
+          if (filter) {
+            const nextFilter = filter === "other" ? "other" : null;
+            if (typeof window.setCustomerReportFilter === "function") {
+              window.setCustomerReportFilter(nextFilter);
+            } else if (state.meta) {
+              state.meta.reportFilter = nextFilter;
+            }
+          } else if (targetRoute === "customer-reports") {
+            if (typeof window.setCustomerReportFilter === "function") {
+              window.setCustomerReportFilter(null);
+            } else if (state.meta) {
+              state.meta.reportFilter = null;
+            }
+          }
+          setRole("customer", targetRoute);
         }
-        setRole("customer", targetRoute);
-      }
     });
   });
   container.querySelectorAll(".quest-card__cta").forEach(button => {
@@ -1088,14 +1101,18 @@ function attachCustomerHubEvents(container, state) {
   container.querySelectorAll("[data-recognition-filter]").forEach(button => {
     button.addEventListener("click", () => {
       const value = (button.getAttribute("data-recognition-filter") || "").trim().toLowerCase();
-      const valid = ["received", "given", "all"];
-      const nextFilter = valid.includes(value) ? value : "received";
-      if (state.meta.recognitionFilter !== nextFilter) {
-        state.meta.recognitionFilter = nextFilter;
-        persist();
-        renderApp();
-      }
-    });
+        const valid = ["received", "given", "all"];
+        const nextFilter = valid.includes(value) ? value : "received";
+        if (state.meta.recognitionFilter !== nextFilter) {
+          if (typeof window.setCustomerRecognitionFilter === "function") {
+            window.setCustomerRecognitionFilter(nextFilter);
+          } else {
+            state.meta.recognitionFilter = nextFilter;
+            persist();
+            renderApp();
+          }
+        }
+      });
   });
   const recognitionButton = container.querySelector(".recognition-board__note-button");
   if (recognitionButton) {

@@ -328,12 +328,16 @@
 
     const activeCategory = resolveActiveSettingsCategory(state);
     if (activeCategory && state.meta.settingsCategory !== activeCategory.id) {
-      state.meta.settingsCategory = activeCategory.id;
-      if (WeldState && typeof WeldState.saveState === "function") {
-        WeldState.saveState(state);
-      }
-      if (typeof window.renderApp === "function") {
-        window.renderApp();
+      if (typeof window.setSettingsCategory === "function") {
+        window.setSettingsCategory(activeCategory.id);
+      } else {
+        state.meta.settingsCategory = activeCategory.id;
+        if (WeldState && typeof WeldState.saveState === "function") {
+          WeldState.saveState(state);
+        }
+        if (typeof window.renderApp === "function") {
+          window.renderApp();
+        }
       }
       return;
     }
@@ -344,12 +348,16 @@
         event.preventDefault();
         const category = button.getAttribute("data-settings-category");
         if (!category || state.meta.settingsCategory === category) return;
-        state.meta.settingsCategory = category;
-        if (WeldState && typeof WeldState.saveState === "function") {
-          WeldState.saveState(state);
-        }
-        if (typeof window.renderApp === "function") {
-          window.renderApp();
+        if (typeof window.setSettingsCategory === "function") {
+          window.setSettingsCategory(category);
+        } else {
+          state.meta.settingsCategory = category;
+          if (WeldState && typeof WeldState.saveState === "function") {
+            WeldState.saveState(state);
+          }
+          if (typeof window.renderApp === "function") {
+            window.renderApp();
+          }
         }
       });
     });

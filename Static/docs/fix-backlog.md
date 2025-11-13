@@ -6,6 +6,8 @@
 - Align add-in celebration pop animation timing with badge showcase (pending visual QA).
 
 ## Recently Fixed
+- Added WeldServices helpers + feature refactors for reward/report filters, recognition feed, badge availability, and settings category to keep mutations centralized (2025-11-13).
+- Reset demo now restores every state slice, including reporter sandbox and phishing designer payloads (2025-11-13).
 - Badge catalogue now fully layered: badges split into component/feature CSS, grid tightened to 5 columns, and right-edge popovers flip inward (2025-11-07).
 - Themes hub gains a persisted light/dark toggle, covering nav chrome and settings surfaces.
 - Catalogue, quest, and reward cards plus dialog shells now adopt themed tokens so dark mode matches the light layout.

@@ -95,6 +95,30 @@ function redeemReward(rewardId) {
   return invokeService("redeemReward", [rewardId, state]);
 }
 
+function setRewardFilter(filter) {
+  return invokeService("setRewardFilter", [filter, state]);
+}
+
+function setRewardStatusFilter(filter) {
+  return invokeService("setRewardStatusFilter", [filter, state]);
+}
+
+function setCustomerReportFilter(filter) {
+  return invokeService("setCustomerReportFilter", [filter, state]);
+}
+
+function setCustomerRecognitionFilter(filter) {
+  return invokeService("setCustomerRecognitionFilter", [filter, state]);
+}
+
+function setCustomerBadgeAvailabilityFilter(filter) {
+  return invokeService("setCustomerBadgeAvailabilityFilter", [filter, state]);
+}
+
+function setSettingsCategory(category) {
+  return invokeService("setSettingsCategory", [category, state]);
+}
+
 function openSettings(category) {
   return invokeService("openSettings", [category, state]);
 }
@@ -118,6 +142,12 @@ const serviceWrappers = {
   persist,
   completeQuest,
   redeemReward,
+  setRewardFilter,
+  setRewardStatusFilter,
+  setCustomerReportFilter,
+  setCustomerRecognitionFilter,
+  setCustomerBadgeAvailabilityFilter,
+  setSettingsCategory,
   openSettings,
   closeSettings,
   setTheme,

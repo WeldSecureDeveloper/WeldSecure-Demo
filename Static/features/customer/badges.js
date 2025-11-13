@@ -303,9 +303,13 @@
         const current = getProgressFilter(state);
         const nextValue = isAllFilter ? null : current === normalized ? null : normalized;
         if (current === nextValue) return;
-        state.meta.customerBadgeAvailabilityFilter = nextValue;
-        WeldState.saveState(state);
-        renderApp();
+        if (typeof window.setCustomerBadgeAvailabilityFilter === "function") {
+          window.setCustomerBadgeAvailabilityFilter(nextValue);
+        } else {
+          state.meta.customerBadgeAvailabilityFilter = nextValue;
+          WeldState.saveState(state);
+          renderApp();
+        }
       });
     }
 

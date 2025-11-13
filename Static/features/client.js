@@ -311,12 +311,16 @@
         const rawValue = (statusButton.getAttribute("data-reward-status") || "").trim().toLowerCase();
         const nextStatus = rawValue === "published" || rawValue === "unpublished" ? rawValue : null;
         if (state.meta.rewardStatusFilter !== nextStatus) {
-          state.meta.rewardStatusFilter = nextStatus;
-          if (typeof window.persist === "function") {
-            window.persist();
-          }
-          if (typeof window.renderApp === "function") {
-            window.renderApp();
+          if (typeof window.setRewardStatusFilter === "function") {
+            window.setRewardStatusFilter(nextStatus);
+          } else {
+            state.meta.rewardStatusFilter = nextStatus;
+            if (typeof window.persist === "function") {
+              window.persist();
+            }
+            if (typeof window.renderApp === "function") {
+              window.renderApp();
+            }
           }
         }
         return;
@@ -327,12 +331,16 @@
         const value = (filterButton.getAttribute("data-reward-filter") || "").trim().toLowerCase();
         const nextFilter = value.length > 0 ? value : null;
         if (state.meta.rewardFilter !== nextFilter) {
-          state.meta.rewardFilter = nextFilter;
-          if (typeof window.persist === "function") {
-            window.persist();
-          }
-          if (typeof window.renderApp === "function") {
-            window.renderApp();
+          if (typeof window.setRewardFilter === "function") {
+            window.setRewardFilter(nextFilter);
+          } else {
+            state.meta.rewardFilter = nextFilter;
+            if (typeof window.persist === "function") {
+              window.persist();
+            }
+            if (typeof window.renderApp === "function") {
+              window.renderApp();
+            }
           }
         }
         return;
