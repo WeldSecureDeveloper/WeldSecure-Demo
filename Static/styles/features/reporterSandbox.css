@@ -31,6 +31,7 @@
   --addin-offset: 4rem;
   --addin-width: 360px;
   --addin-gap: 1rem;
+  --addin-edge-overlap: 2px;
   font-family: "Segoe UI", "Helvetica Neue", system-ui, -apple-system, sans-serif;
   background: #f3f6fb;
   color: var(--gray-700);
@@ -45,6 +46,10 @@
   border-radius: 28px;
   box-shadow: var(--window-shadow);
   box-sizing: border-box;
+}
+
+.sandbox-window.has-addin {
+  border-right-color: transparent;
 }
 
 .sr-only {
@@ -190,9 +195,12 @@
 }
 
 .sandbox-window.has-addin .topbar-nav {
-  margin-right: calc(var(--addin-width, 360px) + var(--addin-gap, 1rem));
+  margin-right: calc(
+    var(--addin-width, 360px) + var(--addin-gap, 1rem) + var(--addin-edge-overlap, 2px)
+  );
   width: calc(
-    100% - var(--rail-width, 72px) - 0.25rem - var(--addin-width, 360px) - var(--addin-gap, 1rem)
+    100% - var(--rail-width, 72px) - 0.25rem - var(--addin-width, 360px) - var(--addin-gap, 1rem) -
+      var(--addin-edge-overlap, 2px)
   );
 }
 
@@ -433,6 +441,7 @@
   top: calc(-1 * var(--addin-offset, 1.65rem));
   margin-top: 0;
   height: calc(100% + var(--addin-offset, 1.65rem));
+  margin-right: calc(-1 * var(--addin-edge-overlap, 2px));
 }
 
 .sandbox-content {
