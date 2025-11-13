@@ -18,8 +18,8 @@ Static/
 -- docs/                 # Architecture notes, backlog, fix log, etc.
 `
 
-- **Never** drop new behaviour directly into root files (pp.js, styles.css) unless it is orchestrating imports.
-- Feature behaviour belongs in eatures/<name>.js; shared helpers live in util.js or purpose-built modules under components/ / services/.
+- **Never** drop new behaviour directly into root files (app.js, styles.css) unless it is orchestrating imports.
+- Feature behaviour belongs in features/<name>.js; shared helpers live in util.js or purpose-built modules under components/ / services/.
 
 ---
 
@@ -28,15 +28,15 @@ Static/
 1. main.js bootstraps window.Weld, hydrates state, and reads the current route (hash).
 2. 
 egistry.js maps each route to a feature module via window.WeldRegistry.register(route, featureModule).
-3. pp.js hosts 
+3. app.js hosts 
 enderApp():
    - Fetches the active entry from the registry.
    - Asks the feature for 
 ender() markup.
-   - Injects the markup into <div id="app"> and calls the feature's ttach() hook for DOM wiring.
+   - Injects the markup into <div id="app"> and calls the feature's attach() hook for DOM wiring.
 4. Features register any cleanup via optional destroy/teardown hooks.
 
-**Guardrail:** When adding a feature, expose { render, attach, destroy? } (mirroring existing modules) and register it through the registry rather than branching inside pp.js.
+**Guardrail:** When adding a feature, expose { render, attach, destroy? } (mirroring existing modules) and register it through the registry rather than branching inside app.js.
 
 ---
 
@@ -48,7 +48,7 @@ ender() markup.
 
 **Guardrails:**
 - Add new datasets in data/ and export them through window.AppData instead of hard-coding arrays inside features.
-- Extend stateServices when a new mutation is required. Keep method names declarative (wardPoints, 	oggleQuest, etc.).
+- Extend stateServices when a new mutation is required. Keep method names declarative (awardPoints, 	oggleQuest, etc.).
 - Route every UI mutation through a `WeldServices` helper (via the `window.<service>` wrappers) instead of mutating `window.Weld.state` or `state.meta` directly.
 - Always persist through the window.Weld.state helpers so the "Reset demo data" button remains accurate.
 
@@ -84,7 +84,7 @@ egistry.js with a human-friendly label and default route pointer.
 
 1. **Aggregator stays import-only** - Static/styles.css may contain @import lines and short comments documenting the order. Any selectors added here should be treated as debt and migrated immediately.
 2. **Layered directories** - Tokens/resets go in styles/base/, reusable building blocks in styles/components/, and route-scoped selectors in styles/features/<name>.css. Keep styles/badges.css for badge-specific selectors until the legacy file is retired.
-3. **Import order** - Google Fonts -> base -> components -> features -> legacy (adges.css). When adding a new file, insert its @import into the correct block; do not append to the end.
+3. **Import order** - Google Fonts -> base -> components -> features -> legacy (badges.css). When adding a new file, insert its @import into the correct block; do not append to the end.
 4. **Token-first styling** - Reference variables in styles/base/tokens.css for color, spacing, and shadows. Introduce new tokens there rather than sprinkling hard-coded values through feature files.
 5. **Scoped naming** - Use predictable prefixes (.landing__, .customer-, .quest-card__) to keep selectors isolated. Utilities that affect multiple screens belong in base/component files, not features.
 6. **Workflow for new styles** - Decide the layer, create/extend the appropriate file, add its import, delete temporary selectors from the aggregator, test the affected feature(s) (desktop plus at least one responsive breakpoint), and update docs/backlog entries if the structure changes. Always smoke-test the badge gallery and customer hub when badge styles move.
@@ -103,7 +103,7 @@ egistry.js with a human-friendly label and default route pointer.
 ## 6. Adding New Functionality
 
 1. **Define the feature:**
-   - Create eatures/<name>.js with 
+   - Create features/<name>.js with 
 ender/attach.
    - Add any required datasets under data/ and state defaults in state.js.
 2. **Update routing:**
@@ -124,7 +124,7 @@ egistry.js.
 
 ## 7. Examples of Anti-Patterns to Avoid
 
-- Adding route-specific conditions inside pp.js instead of the registry.
+- Adding route-specific conditions inside app.js instead of the registry.
 - Duplicating literal data inside features (pull from window.AppData instead).
 - Writing CSS directly in styles.css or mixing feature CSS into component files.
 - Manipulating localStorage or window.Weld.state directly in features without the service layer.
@@ -135,7 +135,7 @@ egistry.js.
 ## 8. Token & Context Efficiency (Codex Guidelines)
 
 - Reference this file instead of pasting large snippets into prompts.
-- When editing, name the specific file/section (e.g., eatures/customer.js:renderCustomerHub) so Codex loads only what is necessary.
+- When editing, name the specific file/section (e.g., features/customer.js:renderCustomerHub) so Codex loads only what is necessary.
 - Keep files focused; if a feature grows beyond ~500 lines consider splitting into submodules or helper files to reduce context size.
 
 ---

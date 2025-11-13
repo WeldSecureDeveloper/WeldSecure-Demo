@@ -43,19 +43,19 @@ Goal: `services/stateServices.js` resolves quests/rewards from the provided stat
 2. **Update `completeQuest` & `redeemReward`** (done)  
    - Swapped `window.questById` / `window.rewardById` for the new helpers.  
    - Verification: quest completion + reward redemption flows exercised via UI smoke.
-3. **Documentation** (todo)  
-   - Add a short note to the fix backlog once the decoupling ships (pending wording).
+3. **Documentation** (done)  
+   - Captured the decoupling in `Static/docs/fix-backlog.md`.
 
-## Track D - Documentation Encoding Cleanup (`in-progress`)
+## Track D - Documentation Encoding Cleanup (`done`)
 Goal: remove mojibake/control characters from `Static/README.md` and `Static/docs/architecture-overview.md` to keep prompts token-efficient.
 
 1. **Identify corrupted segments** (done)  
    - README and architecture overview showed mojibake around the guardrail sections.
-2. **Normalize files** (in-progress)  
-   - README re-saved with ASCII punctuation; architecture overview still needs the same treatment plus removal of stray control codes.  
-   - Verification: run `python ascii-check.py` (or equivalent) to ensure no characters above 0x7F remain.
-3. **Log the fix** (todo)  
-   - Add a fix-backlog entry once both documents are clean.
+2. **Normalize files** (done)  
+   - README and architecture overview re-saved as UTF-8 ASCII with control characters removed.  
+   - Verification: `python ascii-check.py`-style check confirms no characters above 0x7F remain.
+3. **Log the fix** (done)  
+   - Added an entry to `Static/docs/fix-backlog.md`.
 
 ## Track E - Split `components/appShell.js` (`todo`)
 Goal: keep shared shell logic under ~500 lines by extracting nav, badge showcase, and dialog/theme wiring into dedicated modules.
