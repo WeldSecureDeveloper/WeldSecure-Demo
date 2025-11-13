@@ -62,12 +62,12 @@ Goal: keep shared shell logic under ~500 lines by extracting nav, badge showcase
 
 1. **Scoping workshop** (done)  
    - Badge showcase extracted into `components/badgeShowcase.js`; nav/settings splits still pending.
-2. **Introduce submodules via `WeldModules`** (in-progress)  
-   - Badge showcase, global nav, and settings shell now live in their own modules; verify remaining shell hooks before marking done.
-3. **Update shell invocations** (in-progress)  
-   - `app.js` now proxies to the badge/nav/settings modules; smoke-test header/settings flows to confirm parity.
+2. **Introduce submodules via `WeldModules`** (done)  
+   - Badge showcase, global nav, and settings shell now live in dedicated modules; remaining shell hooks verified.
+3. **Update shell invocations** (done)  
+   - `app.js` now proxies to the badge/nav/settings modules and the browser smoke succeeds (logo → landing, reset/theme/guided toggles, settings drawer).
 4. **Docs & backlog** (todo)  
-   - Update this plan and the fix backlog once the split lands.
+   - Update this plan/fix backlog to close Track E officially.
 
 ---
 
