@@ -314,7 +314,7 @@
 .command-primary__chevron .icon-img {
   width: 12px;
   height: 12px;
-  filter: brightness(0) invert(1);
+  filter: invert(25%) sepia(9%) saturate(355%) hue-rotate(183deg) brightness(88%) contrast(85%);
 }
 
 .command-divider {
@@ -359,12 +359,6 @@
   opacity: 0.85;
 }
 
-.command-icon__chevron .icon-img {
-  width: 11px;
-  height: 11px;
-  filter: invert(25%) sepia(9%) saturate(355%) hue-rotate(183deg) brightness(88%) contrast(85%);
-}
-
 .icon-img {
   width: 20px;
   height: 20px;
@@ -394,6 +388,12 @@
 }
 
 .command-icon--muted .icon-img {
+  filter: invert(25%) sepia(9%) saturate(355%) hue-rotate(183deg) brightness(88%) contrast(85%);
+}
+
+.command-icon__chevron .icon-img {
+  width: 11px;
+  height: 11px;
   filter: invert(25%) sepia(9%) saturate(355%) hue-rotate(183deg) brightness(88%) contrast(85%);
 }
 
