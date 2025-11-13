@@ -746,7 +746,7 @@
       {
         id: "copilot",
         label: "Copilot",
-        iconSrc: fluentColorIcon("assets/Bot%20Sparkle/SVG/ic_fluent_bot_sparkle_24_color.svg?raw=true")
+        iconSrc: "svg/microsoft_copilot_logo.svg"
       },
       {
         id: "people",
@@ -756,7 +756,7 @@
       {
         id: "todo",
         label: "To Do",
-        iconSrc: fluentColorIcon("assets/Checkmark%20Circle/SVG/ic_fluent_checkmark_circle_48_color.svg?raw=true")
+        iconSrc: "svg/microsoft_to_do_icon.svg"
       },
       {
         id: "notebook",
