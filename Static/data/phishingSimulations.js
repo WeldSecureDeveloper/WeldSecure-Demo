@@ -215,7 +215,8 @@ Daniel`,
         metadata: {
           conversation: true,
           conversationReplies: 3,
-          cc: ["amelia.reed@weld.onmicrosoft.com", "priya.nair@weld.onmicrosoft.com"]
+          cc: ["amelia.reed@weld.onmicrosoft.com", "priya.nair@weld.onmicrosoft.com"],
+          attachmentIndicator: true
         }
       },
       {

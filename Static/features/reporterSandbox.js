@@ -421,6 +421,7 @@
             const sender = escapeHtml(message.sender?.displayName || "Security Desk");
             const subject = escapeHtml(message.subject || "Sandbox simulation");
             const time = formatTime(message.createdAt);
+            const escapedTime = escapeHtml(time);
             const hasConversation =
               message.metadata?.conversation === true ||
               (typeof message.metadata?.conversationReplies === "number" &&
@@ -428,17 +429,23 @@
             const conversationIcon = hasConversation
               ? `<span class="message-row__conversation" aria-hidden="true">${fluentIconImg("chevron-right-12-regular.svg")}</span>`
               : "";
+            const showAttachmentIndicator = message.metadata?.attachmentIndicator === true;
+            const attachmentMarkup = showAttachmentIndicator
+              ? `<span class="message-row__attachment" aria-hidden="true">${fluentIconImg("attach-16-regular.svg")}</span>`
+              : "";
+            const timeMarkup = `<span class="message-row__time">${escapedTime}</span>`;
             return `
               <li class="${classes.join(" ")}" data-sandbox-message="${escapeHtml(message.id)}">
                 <div class="message-row__sender-line">
                   <span class="message-row__sender">${sender}</span>
+                  ${attachmentMarkup}
                 </div>
                 <div class="message-row__subject-line">
                   <div class="message-row__subject-wrap">
                     ${conversationIcon}
                     <span class="message-row__subject">${subject}</span>
                   </div>
-                  <span class="message-row__time">${escapeHtml(time)}</span>
+                  ${timeMarkup}
                 </div>
                 <div class="message-row__preview">${escapeHtml(preview)}</div>
               </li>

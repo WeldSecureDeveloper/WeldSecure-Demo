@@ -314,7 +314,7 @@
 .command-primary__chevron .icon-img {
   width: 12px;
   height: 12px;
-  filter: invert(25%) sepia(9%) saturate(355%) hue-rotate(183deg) brightness(88%) contrast(85%);
+  filter: brightness(0) invert(1);
 }
 
 .command-divider {
@@ -735,7 +735,7 @@
 .message-row {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.2rem;
   padding: 0.75rem 1rem 0.75rem var(--message-list-gutter, 1.4rem);
   border-bottom: 1px solid #edf1fa;
   border-left: 3px solid transparent;
@@ -795,7 +795,7 @@
 .message-row__conversation {
   position: absolute;
   left: calc(var(--message-chevron-offset, 0.2rem) - var(--message-list-gutter, 1.4rem));
-  top: -0.42rem;
+  top: -0.5rem;
   transform: none;
   display: inline-flex;
   align-items: center;
@@ -814,6 +814,7 @@
 .message-row__subject {
   font-weight: 400;
   font-size: 12px;
+  line-height: 1.2;
   display: block;
   color: #005a9e;
   white-space: nowrap;
@@ -824,6 +825,7 @@
 .message-row__sender {
   font-size: 13px;
   font-weight: 700;
+  line-height: 1.2;
   color: #000;
   white-space: nowrap;
   overflow: hidden;
@@ -836,6 +838,20 @@
   color: #666666;
   white-space: nowrap;
   text-align: right;
+}
+
+.message-row__attachment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  margin-left: 0.4rem;
+}
+
+.message-row__attachment .icon-img {
+  width: 14px;
+  height: 14px;
+  filter: invert(41%) sepia(8%) saturate(412%) hue-rotate(188deg) brightness(94%) contrast(88%);
 }
 
 .message-row__preview {
