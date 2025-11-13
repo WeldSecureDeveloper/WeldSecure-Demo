@@ -434,19 +434,25 @@
               ? `<span class="message-row__attachment" aria-hidden="true">${fluentIconImg("attach-16-regular.svg")}</span>`
               : "";
             const timeMarkup = `<span class="message-row__time">${escapedTime}</span>`;
+            const metaMarkup =
+              attachmentMarkup || timeMarkup
+                ? `<div class="message-row__meta">
+                    ${attachmentMarkup}
+                    ${timeMarkup}
+                  </div>`
+                : "";
             return `
               <li class="${classes.join(" ")}" data-sandbox-message="${escapeHtml(message.id)}">
                 <div class="message-row__sender-line">
                   <span class="message-row__sender">${sender}</span>
-                  ${attachmentMarkup}
                 </div>
                 <div class="message-row__subject-line">
                   <div class="message-row__subject-wrap">
                     ${conversationIcon}
                     <span class="message-row__subject">${subject}</span>
                   </div>
-                  ${timeMarkup}
                 </div>
+                ${metaMarkup}
                 <div class="message-row__preview">${escapeHtml(preview)}</div>
               </li>
             `;
