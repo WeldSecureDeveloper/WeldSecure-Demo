@@ -60,12 +60,12 @@ Goal: remove mojibake/control characters from `Static/README.md` and `Static/doc
 ## Track E - Split `components/appShell.js` (`todo`)
 Goal: keep shared shell logic under ~500 lines by extracting nav, badge showcase, and dialog/theme wiring into dedicated modules.
 
-1. **Scoping workshop** (todo)  
-   - Outline the submodules (nav chrome, badge showcase, shell utilities) and define their WeldModules IDs.
-2. **Introduce submodules via `WeldModules`** (todo)  
-   - Move self-contained logic into new files; keep `components/appShell.js` as a thin orchestrator.
-3. **Update shell invocations** (todo)  
-   - Ensure `app.js` `invokeShell` calls still resolve and smoke-test nav/badge behaviours in both themes.
+1. **Scoping workshop** (done)  
+   - Badge showcase extracted into `components/badgeShowcase.js`; nav/settings splits still pending.
+2. **Introduce submodules via `WeldModules`** (in-progress)  
+   - Continue moving remaining concerns (nav chrome, settings shell) now that badge showcase lives in its own module.
+3. **Update shell invocations** (in-progress)  
+   - `app.js` now proxies to the badge showcase module; extend the same pattern once nav/settings split is ready.
 4. **Docs & backlog** (todo)  
    - Update this plan and the fix backlog once the split lands.
 

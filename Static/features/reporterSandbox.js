@@ -281,6 +281,70 @@
       .join("");
   };
 
+  const normalizeEmail = value => (typeof value === "string" ? value.trim().toLowerCase() : "");
+
+  const directoryDisplayForEmail = (users, email) => {
+    const normalized = normalizeEmail(email);
+    if (!normalized || !Array.isArray(users)) return null;
+    const match = users.find(user => {
+      const candidates = [user.mail, user.userPrincipalName, user.email];
+      return candidates.some(candidate => normalizeEmail(candidate) === normalized);
+    });
+    return match ? match.displayName || match.mail || match.userPrincipalName : null;
+  };
+
+  const normalizeCcEntries = (ccList, users) => {
+    if (!Array.isArray(ccList)) return [];
+    return ccList
+      .map(entry => {
+        if (!entry) return null;
+        if (typeof entry === "string") {
+          const trimmed = entry.trim();
+          if (!trimmed) return null;
+          return directoryDisplayForEmail(users, trimmed) || trimmed;
+        }
+        if (typeof entry === "object") {
+          const display =
+            (typeof entry.displayName === "string" && entry.displayName.trim().length > 0 && entry.displayName.trim()) ||
+            (typeof entry.name === "string" && entry.name.trim().length > 0 && entry.name.trim());
+          const address =
+            (typeof entry.address === "string" && entry.address.trim().length > 0 && entry.address.trim()) ||
+            (typeof entry.mail === "string" && entry.mail.trim().length > 0 && entry.mail.trim()) ||
+            (typeof entry.email === "string" && entry.email.trim().length > 0 && entry.email.trim());
+          if (display) return display;
+          if (address) return directoryDisplayForEmail(users, address) || address;
+          return null;
+        }
+        return null;
+      })
+      .filter(Boolean);
+  };
+
+  const stripCcLineFromBody = (body, hasCc) => {
+    if (!hasCc || typeof body !== "string") return body;
+    const lines = body.split(/\r?\n/);
+    let ccRemoved = false;
+    let skipNextBlank = false;
+    const cleaned = [];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (!ccRemoved && /^\s*Cc:/i.test(line)) {
+        ccRemoved = true;
+        skipNextBlank = true;
+        continue;
+      }
+      if (skipNextBlank) {
+        if (line.trim().length === 0) {
+          skipNextBlank = false;
+          continue;
+        }
+        skipNextBlank = false;
+      }
+      cleaned.push(line);
+    }
+    return cleaned.join("\n");
+  };
+
   const getSandboxSlice = state => {
     const slice = state && typeof state.reporterSandbox === "object" ? state.reporterSandbox : {};
     const layoutSource = slice.layout && typeof slice.layout === "object" ? slice.layout : {};
@@ -511,7 +575,10 @@
     const senderDisplay = senderIsInternal ? senderName : `${senderName} <${senderAddress}>`;
     const avatarTone = avatarToneFor(senderName);
     const subject = message.subject || "Sandbox simulation";
-    const messageBody = formatBody(message.body);
+    const directorySnapshot = (identity && identity.directory) || getDirectorySnapshot(activeState);
+    const directoryUsers = Array.isArray(directorySnapshot?.users) ? directorySnapshot.users : [];
+    const ccEntries = normalizeCcEntries(message.metadata?.cc, directoryUsers);
+    const messageBody = formatBody(stripCcLineFromBody(message.body, ccEntries.length > 0));
     const statusTone = submission
       ? submission.success
         ? '<div class="reading-status reading-status--success">Report sent to WeldSecure</div>'
@@ -520,6 +587,12 @@
     const toLine = identity && identity.name ? `To: ${identity.name}` : "";
     const timestamp = formatFullDate(message.createdAt);
     const recipientMarkup = toLine ? escapeHtml(toLine) : "&nbsp;";
+    const ccLine = ccEntries.length ? `Cc: ${ccEntries.join("; ")}` : "";
+    const ccMarkup = ccLine
+      ? `<div class="reading-cc-row">
+          <span class="reading-recipient reading-recipient--cc">${escapeHtml(ccLine)}</span>
+        </div>`
+      : "";
     const headerActions = [
       { id: "reply", label: "Reply", asset: "arrow-reply-24-regular.svg", tone: "accent" },
       { id: "reply-all", label: "Reply all", asset: "arrow-reply-all-24-regular.svg", tone: "accent" },
@@ -564,6 +637,7 @@
                 <span class="reading-recipient">${recipientMarkup}</span>
                 <span class="reading-timestamp">${escapeHtml(timestamp)}</span>
               </div>
+              ${ccMarkup}
             </div>
           </div>
           ${statusTone}
