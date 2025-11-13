@@ -287,10 +287,9 @@
     return {
       messages: Array.isArray(slice.messages) ? slice.messages : [],
       activeMessageId: slice.activeMessageId,
-      hintsVisible: slice.hintsVisible === true,
-      findings: slice.findings && typeof slice.findings === "object" ? slice.findings : {},
       submissions: Array.isArray(slice.submissions) ? slice.submissions : [],
-      selectedUserId: typeof slice.selectedUserId === "string" && slice.selectedUserId.trim().length > 0 ? slice.selectedUserId.trim() : null,
+      selectedUserId:
+        typeof slice.selectedUserId === "string" && slice.selectedUserId.trim().length > 0 ? slice.selectedUserId.trim() : null,
       layout: {
         compactRows: layoutSource.compactRows === true,
         showSnippets: layoutSource.showSnippets !== false,
@@ -459,54 +458,26 @@
       .join("");
   };
 
-  const renderSignalsChecklist = (sandbox, message) => {
-    if (!message || !Array.isArray(message.signalIds) || message.signalIds.length === 0) {
-      return '<p class="reading-signals__empty">No signals attached to this draft.</p>';
-    }
-    const selectedSignals =
-      sandbox.findings && Array.isArray(sandbox.findings[message.id]) ? sandbox.findings[message.id] : [];
-    return message.signalIds
-      .map(signalId => {
-        const checked = selectedSignals.includes(signalId) ? "checked" : "";
-        const label = signalId.replace(/-/g, " ");
-        return `
-          <label class="reading-signal">
-            <input type="checkbox" value="${escapeHtml(signalId)}" ${checked} data-sandbox-signal />
-            <span>${escapeHtml(label)}</span>
-          </label>
-        `;
-      })
-      .join("");
-  };
-
-  const renderSubmissionFeedback = submission => {
+  const renderSubmissionSummary = submission => {
     if (!submission) return "";
-    const correct = submission.correctSignals || [];
-    const missed = submission.missedSignals || [];
-    const extra = submission.extraSignals || [];
+    const summaryText =
+      typeof submission.summary === "string" && submission.summary.trim().length > 0
+        ? submission.summary.trim()
+        : submission.success
+        ? "Report synced to WeldSecure."
+        : "Follow-up required. Check WeldSecure for next steps.";
+    const notesText =
+      typeof submission.notes === "string" && submission.notes.trim().length > 0 ? submission.notes.trim() : "";
+    const timestamp = submission.submittedAt ? formatFullDate(submission.submittedAt) : "Just now";
+    const notesMarkup = notesText ? `<p class="reading-feedback__notes">${escapeHtml(notesText)}</p>` : "";
     return `
       <section class="reading-feedback">
         <header>
-          <strong>${submission.success ? "Great catch!" : "Keep iterating"}</strong>
-          <span>${submission.success ? "All expected signals were flagged." : "Review the missed signals below."}</span>
+          <strong>${submission.success ? "Report logged" : "Needs attention"}</strong>
+          <span>${escapeHtml(summaryText)}</span>
         </header>
-        <div class="reading-feedback__chips">
-          ${
-            correct.length
-              ? `<span class="feedback-chip feedback-chip--success">Correct: ${escapeHtml(correct.join(", "))}</span>`
-              : ""
-          }
-          ${
-            missed.length
-              ? `<span class="feedback-chip feedback-chip--warn">Missed: ${escapeHtml(missed.join(", "))}</span>`
-              : ""
-          }
-          ${
-            extra.length
-              ? `<span class="feedback-chip feedback-chip--muted">Extra: ${escapeHtml(extra.join(", "))}</span>`
-              : ""
-          }
-        </div>
+        <div class="reading-feedback__meta">Logged ${escapeHtml(timestamp)}</div>
+        ${notesMarkup}
       </section>
     `;
   };
@@ -530,8 +501,8 @@
     const messageBody = formatBody(message.body);
     const statusTone = submission
       ? submission.success
-        ? '<div class="reading-status reading-status--success">Accurate report logged</div>'
-        : '<div class="reading-status reading-status--warn">Signals missing - try again</div>'
+        ? '<div class="reading-status reading-status--success">Report sent to WeldSecure</div>'
+        : '<div class="reading-status reading-status--warn">Follow-up required in WeldSecure</div>'
       : "";
     const toLine = identity && identity.name ? `To: ${identity.name}` : "";
     const timestamp = formatFullDate(message.createdAt);
@@ -583,15 +554,10 @@
             </div>
           </div>
           ${statusTone}
-          <article class="reading-body${sandbox.hintsVisible ? " reading-body--hint" : ""}">
+          <article class="reading-body">
             ${messageBody}
           </article>
-          <div class="reading-actions">
-            <button type="button" class="btn ghost" data-action="toggle-hints">
-              ${sandbox.hintsVisible ? "Hide hints" : "Reveal signals"}
-            </button>
-          </div>
-          ${renderSubmissionFeedback(submission)}
+          ${renderSubmissionSummary(submission)}
         </div>
       </section>
     `;
@@ -853,6 +819,7 @@
     if (!sandbox.layout.showSnippets) rootClasses.push("hide-snippets");
     if (sandbox.layout.highlightReading) rootClasses.push("highlight-reading");
     const addinVisible = sandbox.layout.showAddin === true;
+    if (addinVisible) rootClasses.push("has-addin");
     const activeMessage = sandbox.messages.find(message => message.id === sandbox.activeMessageId) || null;
     const readingRegionClasses = ["reading-region"];
     const sandboxContentClasses = ["sandbox-content"];
@@ -970,7 +937,6 @@
     const toggleAddinButton = container.querySelector("[data-action='toggle-addin']");
     const activeMessage =
       sandbox.messages.find(message => message.id === sandbox.activeMessageId) || null;
-    let reporterPulseHandle = null;
     let addinVisible = sandbox.layout && sandbox.layout.showAddin === true;
     let hasAppliedAddinVisibility = false;
 
@@ -1041,6 +1007,9 @@
         sandboxStage.classList.toggle("sandbox-stage--addin-visible", addinVisible);
         sandboxStage.setAttribute("data-addin-visible", addinVisible ? "true" : "false");
       }
+      if (container && container.classList) {
+        container.classList.toggle("has-addin", addinVisible);
+      }
       updateCommandButton(addinVisible);
     };
 
@@ -1067,12 +1036,7 @@
         applyAddinVisibility(true);
         persistAddinPreference(true);
       }
-      reporterSidebar.classList.add("is-hinted");
       reporterSidebar.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      window.clearTimeout(reporterPulseHandle);
-      reporterPulseHandle = window.setTimeout(() => {
-        reporterSidebar.classList.remove("is-hinted");
-      }, 1400);
     };
 
     const openUserPicker = () => {
@@ -1120,26 +1084,6 @@
 
     const readingPane = container.querySelector("[data-reading-pane]");
     if (readingPane) {
-      readingPane.querySelectorAll("input[data-sandbox-signal]").forEach(input => {
-        input.addEventListener("change", () => {
-          const messageId = sandbox.activeMessageId;
-          if (!messageId) return;
-          const selected = Array.from(readingPane.querySelectorAll("input[data-sandbox-signal]:checked")).map(el =>
-            el.value.trim().toLowerCase()
-          );
-          if (WeldServices && typeof WeldServices.updateSandboxFindings === "function") {
-            WeldServices.updateSandboxFindings(messageId, selected);
-          }
-        });
-      });
-      const hintToggle = readingPane.querySelector("[data-action='toggle-hints']");
-      if (hintToggle) {
-        hintToggle.addEventListener("click", () => {
-          if (WeldServices && typeof WeldServices.toggleSandboxHints === "function") {
-            WeldServices.toggleSandboxHints();
-          }
-        });
-      }
       const reportButton = readingPane.querySelector("[data-action='report']");
       if (reportButton) {
         reportButton.addEventListener("click", () => {
@@ -1250,8 +1194,7 @@
     }
     reporterFeature.render(container, state, {
       sandboxContext: {
-        sandboxMessageId: activeMessage.id,
-        expectedSignalIds: Array.isArray(activeMessage.signalIds) ? activeMessage.signalIds : []
+        sandboxMessageId: activeMessage.id
       }
     });
     if (overlay) {

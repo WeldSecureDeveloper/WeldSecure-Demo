@@ -7,17 +7,17 @@ Companion feature that lets reporters receive simulated phishing emails assemble
 ## 1. Goal & Persona
 - **Persona:** Reporter / frontline employee exploring the Reporter journey (addin route).
 - **Objective:** Provide a safe “inbox” that streams designer-created phishing simulations, lets users inspect content, and submit reports with reason selection.
-- **Success criteria:** Sandbox reflects campaigns produced via the designer (signals, copy, channel). Reporter submissions update telemetry that admin views can reference (e.g., signal accuracy).
+- **Success criteria:** Sandbox reflects campaigns produced via the designer (copy, channel, targeting). Reporter submissions sync telemetry (timestamps, summary, reporter identity) that WeldSecure aggregates server-side for signal analytics.
 
 ---
 
 ## 2. Experience Outline
 1. **Sandbox switcher:** New nav tab under Reporter group (e.g., “Sandbox Inbox”) reachable from landing and nav shell.
 2. **Inbox canvas:** Two-column layout:
-   - Left: message list showing campaign name, channel icon, signal tags.
-   - Right: message viewer with metadata (sender, links, attachments) and hint toggles (show/hide signals).
-3. **Reporter sidebar integration:** Existing Reporter panel opens docked on the right; submissions specifically reference the sandbox message and pre-populate the required signals.
-4. **Feedback strip:** After submitting, show accuracy (signals found vs required) plus micro-lesson excerpt.
+   - Left: message list showing campaign name, channel icon, and submission status chips.
+   - Right: message viewer with metadata (sender, links, attachments) plus neutral body styling (no hint overlays).
+3. **Reporter sidebar integration:** Existing Reporter panel opens docked on the right; submissions reference the sandbox message id so WeldSecure can map reports server-side.
+4. **Feedback strip:** After submitting, show a lightweight confirmation (success/follow-up) with timestamp so reporters know the action synced.
 
 ---
 
@@ -29,9 +29,9 @@ Companion feature that lets reporters receive simulated phishing emails assemble
 | `Static/data.js` | Add route (`reporter-sandbox`) to `AppData.ROUTES`, add nav entry in Reporter group. |
 | `Static/index.html` | Load feature JS. |
 | `Static/registry.js` | Register new route referencing feature module. |
-| `Static/state.js` | Extend defaults with `reporterSandbox` slice (messages, activeMessageId, hints state, submission history). |
-| `Static/services/stateServices.js` | Mutations for selecting sandbox messages, tracking signal findings, syncing with Reporter submissions. |
-| `Static/features/reporter.js` | Expose hook to accept sandbox context (messageId, expectedSignalIds) when opening the panel. |
+| `Static/state.js` | Extend defaults with `reporterSandbox` slice (messages, activeMessageId, submission history). |
+| `Static/services/stateServices.js` | Mutations for selecting sandbox messages and capturing submission summaries. |
+| `Static/features/reporter.js` | Expose hook to accept sandbox context (messageId) when opening the panel. |
 | `Static/components/appShell.js` | Nav button under Reporter group -> sandbox route (role: customer). |
 
 ---
@@ -46,7 +46,7 @@ Companion feature that lets reporters receive simulated phishing emails assemble
     sender: { displayName, address },
     subject,
     body,
-    signalIds: ["lookalike-domain", "mismatched-link"],
+    signalIds: ["lookalike-domain", "mismatched-link"], // retained for WeldSecure-side analytics
     attachments: [],
     metadata: { linkPreview, urgencyScore }
   }
@@ -56,22 +56,20 @@ Companion feature that lets reporters receive simulated phishing emails assemble
   {
     messages: [],          // hydrated from AppData at init
     activeMessageId: null,
-    hintsVisible: false,
     submissions: [
-      { messageId, selectedSignals: [], success: true, submittedAt }
+      { messageId, summary: "Report synced", success: true, submittedAt }
     ]
   }
-  ```
+```
 - On load, copy from AppData once; subsequent submissions stay in state/localStorage.
 
 ---
 
 ## 5. Services & Hooks
-- `setActiveSandboxMessage(id)` – sets `activeMessageId`, resets hints.
-- `toggleSandboxHints(flag)` – flips hint overlay state.
-- `recordSandboxSubmission({ messageId, signalIds })` – invoked after Reporter panel submit; compares with expected signals and stores result.
+- `setActiveSandboxMessage(id)` – sets `activeMessageId`.
+- `recordSandboxSubmission({ messageId, summary?, notes?, success? })` – invoked after Reporter panel submit; stores a lightweight result that WeldSecure correlates with backend signal analytics.
 - Reporter panel should accept contextual metadata:
-  - `window.openReporterSandbox(messageId)` -> opens Reporter UI with read-only subject/body and preselected “suspected reasons” based on sandbox signals.
+  - `window.openReporterSandbox(messageId)` -> opens Reporter UI with read-only subject/body while WeldSecure tracks insights server-side.
   - When the reporter submits, call `recordSandboxSubmission` and optionally send toast via existing `lastSimFeedback`.
 
 Implementation detail: expose a `window.WeldReporterHooks` object or extend `features/reporter.js` with `setSandboxContext`.
@@ -79,10 +77,10 @@ Implementation detail: expose a `window.WeldReporterHooks` object or extend `fea
 ---
 
 ## 6. UI / Interaction Details
-- **Message list:** highlight active message, show badges for expected signal count, show whether the user already submitted a report (success/fail).
-- **Viewer:** show structured sections (Envelope, Body, Signals). Provide “Reveal signals” toggle which highlights inline spans (use dataset with `data-signal-id` attributes).
+- **Message list:** highlight active message, show badges for unread/read and whether the user already submitted a report (success/follow-up).
+- **Viewer:** show structured sections (Envelope + Body) with neutral copy—no inline hinting or signal overlays.
 - **Call-to-action:** Primary button “Report via Reporter” triggers existing reporter feature (maybe open modal/drawer). Use `data-route="addin"` flow but ensure we stay inside sandbox layout (dock Reporter UI).
-- **Feedback panel:** After submission, show chips for correct signals vs missed ones, plus link to micro-lesson copy (source from designer metadata).
+- **Feedback panel:** After submission, show confirmation text (success/follow-up) plus timestamp so the user knows WeldSecure captured the report.
 
 ---
 
@@ -91,22 +89,21 @@ Implementation detail: expose a `window.WeldReporterHooks` object or extend `fea
 - Mirror the nav link on the reporter landing hero (same CTA text/icon) so both the hub landing screen and persistent nav point to the sandbox route.
 - When `reporter-sandbox` route renders, ensure meta role is `customer`; re-use existing gating logic (if route requires role and meta.role mismatch, use `WeldServices.setRole` before navigate).
 - Reporter component should expose a method to accept sandbox payload:
-  ```js
-  window.Weld.features.reporter.openWithSandboxContext({
-    subject,
-    body,
-    sandboxMessageId,
-    expectedSignalIds
-  });
-  ```
-- Ensure state resets when leaving route (call `destroy` hook to clear sandbox hints/selection).
+```js
+window.Weld.features.reporter.openWithSandboxContext({
+  subject,
+  body,
+  sandboxMessageId
+});
+```
+- Ensure state resets when leaving route (call `destroy` hook to clear sandbox selection/history).
 
 ---
 
 ## 8. Implementation Phases
 1. **Routing & scaffolding** – add route, nav entry, empty feature + CSS, ensure guardrails (role-required) work.
 2. **State/services** – extend `state.js` defaults and `stateServices` helpers.
-3. **Inbox UI** – message list + viewer + hints toggle.
+3. **Inbox UI** – message list + viewer + submission confirmation panel.
 4. **Reporter hook** – integrate with Reporter panel, pass sandbox context, capture submissions.
 5. **Feedback & history** – show success/miss metrics, wiring to admin telemetry (optionally update `phishing-sims` metrics).
 6. **QA & documentation** – document flow in `phishing_designer_plan.md` / `phishing_simulation_module.md`.

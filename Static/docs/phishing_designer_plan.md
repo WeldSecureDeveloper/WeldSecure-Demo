@@ -129,8 +129,8 @@ window.AppData.phishingBlueprints = {
 ## 9. Reporter Sandbox Execution
 1. **Basic email playback:** When the designer publishes an email-channel draft, clone the envelope + body payload into `AppData.phishingSimulations.sandboxMessages` so the sandbox inbox can display the exact email copy admins composed.
 2. **Reporter add-in dock:** Selecting a sandbox email should automatically call `Weld.features.reporter.openWithSandboxContext(...)` and dock the Reporter add-in on the right (~360px). The preview stays on the left so reporters read the email and submit findings side-by-side.
-3. **Signal guidance:** Pass `expectedSignalIds`, micro-lesson snippets, and link metadata from the designer so the add-in can surface contextual hints. Toggling hints highlights the referenced spans inside the email preview.
-4. **Submission cycle:** When the Reporter add-in submission fires, invoke `recordSandboxSubmission` to record accuracy, annotate the inbox row with success/fail chips, and display feedback inline beneath the email body.
+3. **Telemetry hook:** Include metadata (`sandboxMessageId`, optional summary copy) so WeldSecure can correlate submissions with the authored campaign without surfacing signals inside the sandbox UI.
+4. **Submission cycle:** When the Reporter add-in submission fires, invoke `recordSandboxSubmission` to capture a success/follow-up flag plus timestamp so the inbox can reflect the latest status.
 
 ---
 

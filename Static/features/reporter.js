@@ -43,15 +43,11 @@
   function normalizeSandboxContext(context) {
     if (!context || typeof context !== "object") return null;
     const sandboxMessageId = typeof context.sandboxMessageId === "string" ? context.sandboxMessageId : null;
-    const expectedSignalIds = Array.isArray(context.expectedSignalIds)
-      ? context.expectedSignalIds.map(id => (typeof id === "string" ? id.trim().toLowerCase() : null)).filter(Boolean)
-      : [];
     if (!sandboxMessageId) {
       return null;
     }
     return {
-      sandboxMessageId,
-      expectedSignalIds
+      sandboxMessageId
     };
   }
 

@@ -338,21 +338,27 @@
     if (!entry || typeof entry !== "object") return null;
     const messageId = normalizeSandboxMessageId(entry.messageId);
     if (!messageId) return null;
-    const normalizeList = list =>
-      Array.isArray(list) ? list.map(normalizeSandboxSignalId).filter(Boolean) : [];
     const submittedAt =
       typeof entry.submittedAt === "string" && entry.submittedAt.trim().length > 0
         ? entry.submittedAt.trim()
         : new Date(Date.now() - index * 500).toISOString();
+    const summary =
+      typeof entry.summary === "string" && entry.summary.trim().length > 0 ? entry.summary.trim() : "";
+    const notes = typeof entry.notes === "string" && entry.notes.trim().length > 0 ? entry.notes.trim() : "";
+    const metadata =
+      entry.metadata && typeof entry.metadata === "object"
+        ? Object.keys(entry.metadata).reduce((acc, key) => {
+            acc[key] = entry.metadata[key];
+            return acc;
+          }, {})
+        : null;
     return {
       messageId,
-      selectedSignals: normalizeList(entry.selectedSignals),
-      correctSignals: normalizeList(entry.correctSignals),
-      missedSignals: normalizeList(entry.missedSignals),
-      extraSignals: normalizeList(entry.extraSignals),
+      summary,
+      notes,
       submittedAt,
-      usedHints: entry.usedHints === true,
-      success: entry.success === true
+      success: entry.success !== false,
+      metadata: metadata && Object.keys(metadata).length > 0 ? metadata : null
     };
   };
 
@@ -363,8 +369,6 @@
       state.reporterSandbox = {
         messages: cloneSandboxMessagesForState(sandboxSeed, "sandbox-state"),
         activeMessageId: null,
-        hintsVisible: false,
-        findings: {},
         submissions: [],
         selectedUserId: null,
         layout: {
@@ -379,9 +383,6 @@
         ? state.reporterSandbox.messages
         : sandboxSeed;
       state.reporterSandbox.messages = cloneSandboxMessagesForState(sandboxMessages, "sandbox-state");
-      if (!state.reporterSandbox.findings || typeof state.reporterSandbox.findings !== "object") {
-        state.reporterSandbox.findings = {};
-      }
       if (!Array.isArray(state.reporterSandbox.submissions)) {
         state.reporterSandbox.submissions = [];
       } else {
@@ -1277,47 +1278,11 @@
       return { success: false, reason: "Message not found." };
     }
     markSandboxMessageRead(sandbox, message);
-    const changed = sandbox.activeMessageId !== message.id;
     sandbox.activeMessageId = message.id;
-    if (changed) {
-      sandbox.hintsVisible = false;
-    }
     syncGlobalState(state);
     saveState(state);
     renderShell();
     return { success: true, message };
-  };
-
-  WeldServices.toggleSandboxHints = function toggleSandboxHints(forceValue, providedState) {
-    const state = resolveState(providedState);
-    if (!state) return { success: false, reason: "State missing." };
-    const sandbox = ensureReporterSandboxState(state);
-    sandbox.hintsVisible = forceValue === undefined ? !sandbox.hintsVisible : forceValue === true;
-    syncGlobalState(state);
-    saveState(state);
-    renderShell();
-    return { success: true, hintsVisible: sandbox.hintsVisible };
-  };
-
-  WeldServices.updateSandboxFindings = function updateSandboxFindings(messageId, signalIds = [], providedState) {
-    const state = resolveState(providedState);
-    if (!state) return { success: false, reason: "State missing." };
-    const sandbox = ensureReporterSandboxState(state);
-    const normalizedId = normalizeSandboxMessageId(messageId) || sandbox.activeMessageId;
-    if (!normalizedId) {
-      return { success: false, reason: "Message id missing." };
-    }
-    const message = findSandboxMessage(sandbox, normalizedId);
-    if (!message) {
-      return { success: false, reason: "Message not found." };
-    }
-    const normalizedSignals = Array.isArray(signalIds)
-      ? signalIds.map(normalizeSandboxSignalId).filter(Boolean)
-      : [];
-    sandbox.findings[normalizedId] = normalizedSignals;
-    syncGlobalState(state);
-    saveState(state);
-    return { success: true, selections: normalizedSignals };
   };
 
   WeldServices.recordSandboxSubmission = function recordSandboxSubmission(payload = {}, providedState) {
@@ -1332,31 +1297,27 @@
     if (!message) {
       return { success: false, reason: "Message not found." };
     }
-    const selectedSignalsSource =
-      Array.isArray(payload.signalIds) && payload.signalIds.length > 0
-        ? payload.signalIds
-        : sandbox.findings[normalizedId] || [];
-    const selectedSignals = selectedSignalsSource.map(normalizeSandboxSignalId).filter(Boolean);
-    const expectedSignals = Array.isArray(message.signalIds) ? message.signalIds : [];
-    const expectedSet = new Set(expectedSignals);
-    const selectedSet = new Set(selectedSignals);
-    const correctSignals = selectedSignals.filter(id => expectedSet.has(id));
-    const missedSignals = expectedSignals.filter(id => !selectedSet.has(id));
-    const extraSignals = selectedSignals.filter(id => !expectedSet.has(id));
+    const defaultSummary = `Report synced for "${message.subject || "Sandbox simulation"}"`;
+    const summary =
+      typeof payload.summary === "string" && payload.summary.trim().length > 0 ? payload.summary.trim() : defaultSummary;
+    const notes = typeof payload.notes === "string" && payload.notes.trim().length > 0 ? payload.notes.trim() : "";
+    const metadata =
+      payload.metadata && typeof payload.metadata === "object"
+        ? Object.keys(payload.metadata).reduce((acc, key) => {
+            acc[key] = payload.metadata[key];
+            return acc;
+          }, {})
+        : null;
     const submission = {
       messageId: message.id,
-      selectedSignals,
-      correctSignals,
-      missedSignals,
-      extraSignals,
+      summary,
+      notes,
       submittedAt: new Date().toISOString(),
-      usedHints: sandbox.hintsVisible === true || payload.usedHints === true
+      success: payload.success !== false,
+      metadata: metadata && Object.keys(metadata).length > 0 ? metadata : null
     };
-    submission.success = missedSignals.length === 0 && extraSignals.length === 0 && selectedSignals.length > 0;
     sandbox.submissions.unshift(submission);
     sandbox.submissions = sandbox.submissions.slice(0, 24);
-    sandbox.findings[message.id] = selectedSignals;
-    sandbox.hintsVisible = false;
     syncGlobalState(state);
     saveState(state);
     renderShell();

@@ -447,40 +447,32 @@
     "sandbox-seed"
   );
 
-  const normalizeSandboxFindings = source => {
-    if (!source || typeof source !== "object") return {};
-    const entries = {};
-    Object.entries(source).forEach(([messageId, signals]) => {
-      const normalizedId =
-        typeof messageId === "string" && messageId.trim().length > 0 ? messageId.trim() : null;
-      if (!normalizedId) return;
-      entries[normalizedId] = Array.isArray(signals)
-        ? signals.map(normalizeSandboxSignalId).filter(Boolean)
-        : [];
-    });
-    return entries;
-  };
-
   const normalizeSandboxSubmission = (entry, index = 0) => {
     if (!entry || typeof entry !== "object") return null;
     const messageId =
       typeof entry.messageId === "string" && entry.messageId.trim().length > 0 ? entry.messageId.trim() : null;
     if (!messageId) return null;
-    const normalizeList = list =>
-      Array.isArray(list) ? list.map(normalizeSandboxSignalId).filter(Boolean) : [];
     const submittedAt =
       typeof entry.submittedAt === "string" && entry.submittedAt.trim().length > 0
         ? entry.submittedAt.trim()
         : new Date(Date.now() - index * 1000).toISOString();
+    const summary =
+      typeof entry.summary === "string" && entry.summary.trim().length > 0 ? entry.summary.trim() : "";
+    const notes = typeof entry.notes === "string" && entry.notes.trim().length > 0 ? entry.notes.trim() : "";
+    const metadata =
+      entry.metadata && typeof entry.metadata === "object"
+        ? Object.keys(entry.metadata).reduce((acc, key) => {
+            acc[key] = entry.metadata[key];
+            return acc;
+          }, {})
+        : null;
     return {
       messageId,
-      selectedSignals: normalizeList(entry.selectedSignals),
-      correctSignals: normalizeList(entry.correctSignals),
-      missedSignals: normalizeList(entry.missedSignals),
-      extraSignals: normalizeList(entry.extraSignals),
+      summary,
+      notes,
       submittedAt,
-      usedHints: entry.usedHints === true,
-      success: entry.success === true
+      success: entry.success !== false,
+      metadata: metadata && Object.keys(metadata).length > 0 ? metadata : null
     };
   };
 
@@ -491,8 +483,6 @@
         : {
             messages: cloneSandboxMessages(DEFAULT_SANDBOX_MESSAGES),
             activeMessageId: DEFAULT_SANDBOX_MESSAGES[0]?.id || null,
-            hintsVisible: false,
-            findings: {},
             submissions: [],
             selectedUserId: null,
             layout: {
@@ -545,8 +535,6 @@
     return {
       messages,
       activeMessageId,
-      hintsVisible: source?.hintsVisible === true,
-      findings: normalizeSandboxFindings(source?.findings || base.findings),
       submissions,
       selectedUserId,
       layout
@@ -766,8 +754,6 @@
     reporterSandbox: {
       messages: cloneSandboxMessages(DEFAULT_SANDBOX_MESSAGES, "sandbox-default"),
       activeMessageId: DEFAULT_SANDBOX_MESSAGES[0]?.id || null,
-      hintsVisible: false,
-      findings: {},
       submissions: [],
       selectedUserId: null,
       layout: {
