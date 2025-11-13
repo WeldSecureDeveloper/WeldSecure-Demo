@@ -66,8 +66,8 @@ Goal: keep shared shell logic under ~500 lines by extracting nav, badge showcase
    - Badge showcase, global nav, and settings shell now live in dedicated modules; remaining shell hooks verified.
 3. **Update shell invocations** (done)  
    - `app.js` now proxies to the badge/nav/settings modules and the browser smoke succeeds (logo → landing, reset/theme/guided toggles, settings drawer).
-4. **Docs & backlog** (todo)  
-   - Update this plan/fix backlog to close Track E officially.
+4. **Docs & backlog** (done)  
+   - Logged the split in `Static/docs/fix-backlog.md`; plan complete.
 
 ---
 
