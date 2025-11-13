@@ -9,8 +9,17 @@
   const WeldServices = window.WeldServices || {};
   const WeldUtil = window.WeldUtil || {};
   const reporterSandboxFeature = (features.reporterSandbox = {});
-  const MIN_ADDIN_SHELL_HEIGHT = 820;
-  const DEFAULT_ADDIN_SHELL_HEIGHT = 900;
+  const MIN_ADDIN_SHELL_HEIGHT = 760;
+  const DEFAULT_ADDIN_SHELL_HEIGHT = 840;
+  const MAX_ADDIN_SHELL_HEIGHT = 920;
+
+  const clampAddinShellHeight = value => {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric) || numeric <= 0) {
+      return DEFAULT_ADDIN_SHELL_HEIGHT;
+    }
+    return Math.min(MAX_ADDIN_SHELL_HEIGHT, Math.max(MIN_ADDIN_SHELL_HEIGHT, Math.ceil(numeric)));
+  };
 
   const getState = () => window.state || (window.Weld && window.Weld.state) || {};
 
@@ -239,7 +248,7 @@
     if (!state || !state.meta) return DEFAULT_ADDIN_SHELL_HEIGHT;
     const stored = Number(state.meta.addinShellHeight);
     if (Number.isFinite(stored) && stored > 0) {
-      return Math.max(MIN_ADDIN_SHELL_HEIGHT, Math.ceil(stored));
+      return clampAddinShellHeight(stored);
     }
     return DEFAULT_ADDIN_SHELL_HEIGHT;
   };

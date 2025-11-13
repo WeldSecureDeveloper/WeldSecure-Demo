@@ -1,8 +1,17 @@
 (function () {
   if (!window.Weld) return;
 
-  const DEFAULT_ADDIN_SHELL_HEIGHT = 900;
-  const MIN_ADDIN_SHELL_HEIGHT = 820;
+  const DEFAULT_ADDIN_SHELL_HEIGHT = 840;
+  const MIN_ADDIN_SHELL_HEIGHT = 760;
+  const MAX_ADDIN_SHELL_HEIGHT = 920;
+
+  const clampAddinShellHeight = value => {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric) || numeric <= 0) {
+      return DEFAULT_ADDIN_SHELL_HEIGHT;
+    }
+    return Math.min(MAX_ADDIN_SHELL_HEIGHT, Math.max(MIN_ADDIN_SHELL_HEIGHT, Math.ceil(numeric)));
+  };
   const features = window.Weld.features || (window.Weld.features = {});
   const REPORTER_GUIDED_TOUR_KEYS = {
     report: "reporter:addin:report",
@@ -372,7 +381,7 @@
     const meta = state?.meta || (state.meta = {});
     const storedHeight = Number(meta.addinShellHeight);
     const commitHeight = value => {
-      const next = Math.max(MIN_ADDIN_SHELL_HEIGHT, Math.ceil(value));
+      const next = clampAddinShellHeight(value);
       if (meta.addinShellHeight === next) {
         return next;
       }
@@ -384,14 +393,12 @@
       }
       return next;
     };
-    let activeHeight =
-      Number.isFinite(storedHeight) && storedHeight > 0
-        ? Math.max(MIN_ADDIN_SHELL_HEIGHT, Math.ceil(storedHeight))
-        : DEFAULT_ADDIN_SHELL_HEIGHT;
+    const hasStoredHeight = Number.isFinite(storedHeight) && storedHeight > 0;
+    let activeHeight = hasStoredHeight ? clampAddinShellHeight(storedHeight) : DEFAULT_ADDIN_SHELL_HEIGHT;
 
     shell.style.setProperty("--addin-shell-height", `${activeHeight}px`);
 
-    if (!Number.isFinite(storedHeight) || storedHeight <= 0) {
+    if (!hasStoredHeight || activeHeight !== storedHeight) {
       activeHeight = commitHeight(activeHeight);
     }
 
@@ -401,7 +408,7 @@
         return;
       }
 
-      const sanitized = Math.max(MIN_ADDIN_SHELL_HEIGHT, measured);
+      const sanitized = clampAddinShellHeight(measured);
       if (sanitized <= activeHeight) {
         return;
       }
