@@ -362,6 +362,7 @@
 .command-icon__chevron .icon-img {
   width: 11px;
   height: 11px;
+  filter: invert(25%) sepia(9%) saturate(355%) hue-rotate(183deg) brightness(88%) contrast(85%);
 }
 
 .icon-img {
