@@ -9,17 +9,11 @@
   const WeldServices = window.WeldServices || {};
   const WeldUtil = window.WeldUtil || {};
   const reporterSandboxFeature = (features.reporterSandbox = {});
-  const MIN_ADDIN_SHELL_HEIGHT = 760;
-  const DEFAULT_ADDIN_SHELL_HEIGHT = 840;
-  const MAX_ADDIN_SHELL_HEIGHT = 920;
-
-  const clampAddinShellHeight = value => {
-    const numeric = Number(value);
-    if (!Number.isFinite(numeric) || numeric <= 0) {
-      return DEFAULT_ADDIN_SHELL_HEIGHT;
-    }
-    return Math.min(MAX_ADDIN_SHELL_HEIGHT, Math.max(MIN_ADDIN_SHELL_HEIGHT, Math.ceil(numeric)));
-  };
+  let layoutModuleInstance = null;
+  let messageModuleInstance = null;
+  let addinShellModuleInstance = null;
+  let userPickerModuleInstance = null;
+  let settingsDrawerModuleInstance = null;
 
   const getState = () => window.state || (window.Weld && window.Weld.state) || {};
 
@@ -244,15 +238,6 @@
     }
   };
 
-  const resolveAddinShellHeight = state => {
-    if (!state || !state.meta) return DEFAULT_ADDIN_SHELL_HEIGHT;
-    const stored = Number(state.meta.addinShellHeight);
-    if (Number.isFinite(stored) && stored > 0) {
-      return clampAddinShellHeight(stored);
-    }
-    return DEFAULT_ADDIN_SHELL_HEIGHT;
-  };
-
   const fluentColorIcon = relativePath =>
     `https://raw.githubusercontent.com/microsoft/fluentui-system-icons/main/${relativePath}`;
 
@@ -464,77 +449,6 @@
     return groups;
   };
 
-  const renderMessageGroups = (sandbox, state) => {
-    if (!sandbox.messages.length) {
-      return '<div class="message-empty"><p>No sandbox messages published yet.</p></div>';
-    }
-    const groups = groupMessages(sandbox.messages);
-    return groups
-      .map(group => {
-        const rows = group.items
-          .map((message, index) => {
-            const submission = latestSubmissionFor(sandbox.submissions, message.id);
-            const classes = ["message-row"];
-            if (message.id === sandbox.activeMessageId) classes.push("is-active");
-            const hasExplicitUnread = message.metadata?.unread === true;
-            const hasExplicitRead = message.metadata?.unread === false;
-            if (hasExplicitUnread || (!hasExplicitRead && !submission && index === 0)) {
-              classes.push("is-unread");
-            }
-            const preview = messagePreview(message);
-            const sender = escapeHtml(message.sender?.displayName || "Security Desk");
-            const subject = escapeHtml(message.subject || "Sandbox simulation");
-            const time = formatTime(message.createdAt);
-            const escapedTime = escapeHtml(time);
-            const hasConversation =
-              message.metadata?.conversation === true ||
-              (typeof message.metadata?.conversationReplies === "number" &&
-                message.metadata.conversationReplies > 0);
-            const conversationIcon = hasConversation
-              ? `<span class="message-row__conversation" aria-hidden="true">${fluentIconImg("chevron-right-12-regular.svg")}</span>`
-              : "";
-            const showAttachmentIndicator = message.metadata?.attachmentIndicator === true;
-            const attachmentMarkup = showAttachmentIndicator
-              ? `<span class="message-row__attachment" aria-hidden="true">${fluentIconImg("attach-16-regular.svg")}</span>`
-              : "";
-            const timeMarkup = `<span class="message-row__time">${escapedTime}</span>`;
-            const metaMarkup =
-              attachmentMarkup || timeMarkup
-                ? `<div class="message-row__meta">
-                    ${attachmentMarkup}
-                    ${timeMarkup}
-                  </div>`
-                : "";
-            return `
-              <li class="${classes.join(" ")}" data-sandbox-message="${escapeHtml(message.id)}">
-                <div class="message-row__sender-line">
-                  <span class="message-row__sender">${sender}</span>
-                </div>
-                <div class="message-row__subject-line">
-                  <div class="message-row__subject-wrap">
-                    ${conversationIcon}
-                    <span class="message-row__subject">${subject}</span>
-                  </div>
-                </div>
-                ${metaMarkup}
-                <div class="message-row__preview">${escapeHtml(preview)}</div>
-              </li>
-            `;
-          })
-          .join("");
-        return `
-          <div class="message-group">
-            <span class="message-group__chevron" aria-hidden="true">${fluentChevronImg()}</span>
-            <span class="message-group__label">${escapeHtml(group.label)}</span>
-          </div>
-          <ul class="message-rows">
-            ${rows}
-          </ul>
-        `;
-      })
-      .join("");
-  };
-
   const renderSubmissionSummary = submission => {
     if (!submission) return "";
     const summaryText =
@@ -555,97 +469,6 @@
         </header>
         <div class="reading-feedback__meta">Logged ${escapeHtml(timestamp)}</div>
         ${notesMarkup}
-      </section>
-    `;
-  };
-
-  const renderReadingPane = (sandbox, message, identity, state) => {
-    if (!message) {
-      return `
-        <section class="reading-pane reading-pane--empty" data-reading-pane>
-          <p>Select a sandbox message to preview the envelope and body copy.</p>
-        </section>
-      `;
-    }
-    const activeState = state || getState();
-    const submission = latestSubmissionFor(sandbox.submissions, message.id);
-    const senderName = message.sender?.displayName || "Security Desk";
-    const senderAddress = message.sender?.address || "security@weldsecure.com";
-    const senderIsInternal = isInternalSender(senderAddress, activeState);
-    const senderDisplay = senderIsInternal ? senderName : `${senderName} <${senderAddress}>`;
-    const avatarTone = avatarToneFor(senderName);
-    const subject = message.subject || "Sandbox simulation";
-    const directorySnapshot = (identity && identity.directory) || getDirectorySnapshot(activeState);
-    const directoryUsers = Array.isArray(directorySnapshot?.users) ? directorySnapshot.users : [];
-    const ccEntries = normalizeCcEntries(message.metadata?.cc, directoryUsers);
-    const messageBody = formatBody(stripCcLineFromBody(message.body, ccEntries.length > 0));
-    const statusTone = submission
-      ? submission.success
-        ? '<div class="reading-status reading-status--success">Report sent to WeldSecure</div>'
-        : '<div class="reading-status reading-status--warn">Follow-up required in WeldSecure</div>'
-      : "";
-    const toLine = identity && identity.name ? `To: ${identity.name}` : "";
-    const timestamp = formatFullDate(message.createdAt);
-    const recipientMarkup = toLine ? escapeHtml(toLine) : "&nbsp;";
-    const ccLine = ccEntries.length ? `Cc: ${ccEntries.join("; ")}` : "";
-    const ccMarkup = ccLine
-      ? `<div class="reading-cc-row">
-          <span class="reading-recipient reading-recipient--cc">${escapeHtml(ccLine)}</span>
-        </div>`
-      : "";
-    const headerActions = [
-      { id: "reply", label: "Reply", asset: "arrow-reply-24-regular.svg", tone: "accent" },
-      { id: "reply-all", label: "Reply all", asset: "arrow-reply-all-24-regular.svg", tone: "accent" },
-      { id: "forward", label: "Forward", asset: "arrow-forward-24-regular.svg", tone: "link" },
-      { id: "more", label: "More actions", asset: "more-horizontal-24-regular.svg", tone: "muted" }
-    ]
-      .map(
-        action => `
-          <button
-            type="button"
-            class="reading-icon-button${action.tone ? ` command-icon--${action.tone}` : ""}"
-            aria-label="${escapeHtml(action.label)}"
-          >
-            ${fluentIconImg(action.asset)}
-          </button>
-        `
-      )
-      .join("");
-    const subjectClasses = ["reading-card", "reading-card--subject"];
-    if (message.metadata?.unread === true) subjectClasses.push("is-unread");
-    return `
-      <section class="reading-pane" data-reading-pane>
-        <div class="${subjectClasses.join(" ")}">
-          <span class="reading-subject">${escapeHtml(subject)}</span>
-        </div>
-        <div class="reading-card reading-card--message">
-          <div class="reading-message-header">
-            <div
-              class="reading-avatar"
-              style="background:${avatarTone.background};color:${avatarTone.color};"
-            >
-              ${escapeHtml(initialsFor(message.sender?.displayName))}
-            </div>
-            <div class="reading-header__content">
-              <div class="reading-sender-row">
-                <span class="reading-sender">${escapeHtml(senderDisplay)}</span>
-                <div class="reading-header__actions">
-                  ${headerActions}
-                </div>
-              </div>
-              <div class="reading-recipient-row">
-                <span class="reading-recipient">${recipientMarkup}</span>
-                <span class="reading-timestamp">${escapeHtml(timestamp)}</span>
-              </div>
-              ${ccMarkup}
-            </div>
-          </div>
-          ${statusTone}
-          <article class="reading-body">
-            ${messageBody}
-          </article>
-          ${renderSubmissionSummary(submission)}
-        </div>
       </section>
     `;
   };
@@ -812,211 +635,60 @@
     `;
   };
 
-  const renderUserPicker = (identity, sandbox) => {
-    const { users, departments } = identity.directory;
-    const options = users
-      .map(user => {
-        const department = departments.find(dep => dep && dep.id === user.departmentId);
-        const searchText = [user.displayName, user.jobTitle, department ? department.name : ""]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-        const isActive = sandbox.selectedUserId
-          ? sandbox.selectedUserId === user.id
-          : users[0] && users[0].id === user.id;
-        return `
-          <button type="button" class="user-option${isActive ? " is-active" : ""}" data-user-id="${escapeHtml(
-            user.id
-          )}" data-search-text="${escapeHtml(searchText)}">
-            <strong>${escapeHtml(user.displayName)}</strong>
-            <span>${escapeHtml(user.jobTitle || "Team member")}</span>
-            <span>${escapeHtml(department ? department.name : "Cross-functional")}</span>
-          </button>
-        `;
-      })
-      .join("");
-    const emptyState = identity.directory.users.length
-      ? ""
-      : '<p class="user-picker__empty">Import demo users to populate this list.</p>';
-    return `
-      <div class="sandbox-modal" data-sandbox-user-picker hidden>
-        <div class="sandbox-modal__dialog">
-          <header>
-            <h2>Choose a sandbox identity</h2>
-            <button type="button" data-close-user-picker aria-label="Close">✕</button>
-          </header>
-          <div class="sandbox-modal__body">
-            ${
-              identity.hasDirectoryUsers
-                ? `<input type="search" data-user-filter placeholder="Search by name, role, or department" />`
-                : ""
-            }
-            <div data-user-picker-list>
-              ${options || emptyState}
-            </div>
-            <p class="user-picker__empty" data-user-empty hidden>No users found.</p>
-          </div>
-        </div>
-      </div>
-    `;
-  };
-
-  const renderSettingsDrawer = sandbox => `
-    <div class="sandbox-modal" data-sandbox-settings hidden>
-      <div class="sandbox-modal__dialog">
-        <header>
-          <h2>Inbox layout settings</h2>
-          <button type="button" data-close-settings aria-label="Close">✕</button>
-        </header>
-        <div class="sandbox-modal__body">
-          <form class="settings-form">
-            <label class="settings-option">
-              <input type="checkbox" data-layout-pref="compactRows" ${sandbox.layout.compactRows ? "checked" : ""} />
-              <div>
-                <strong>Compact message list</strong>
-                <span>Reduce row height for a denser triage queue.</span>
-              </div>
-            </label>
-            <label class="settings-option">
-              <input type="checkbox" data-layout-pref="showSnippets" ${sandbox.layout.showSnippets ? "checked" : ""} />
-              <div>
-                <strong>Show preview snippets</strong>
-                <span>Display the first line of each email beneath the subject.</span>
-              </div>
-            </label>
-            <label class="settings-option">
-              <input type="checkbox" data-layout-pref="highlightReading" ${sandbox.layout.highlightReading ? "checked" : ""} />
-              <div>
-                <strong>Emphasize reading pane</strong>
-                <span>Add a subtle focus ring when the add-in is docked.</span>
-              </div>
-            </label>
-          </form>
-        </div>
-      </div>
-    </div>
-  `;
-
-  const renderLayout = state => {
-    const sandbox = getSandboxSlice(state);
-    const identity = resolveIdentity(state, sandbox);
-    const navTabs = ["File", "Home", "View", "Help"];
-    const rootClasses = ["sandbox-window"];
-    if (sandbox.layout.compactRows) rootClasses.push("is-compact");
-    if (!sandbox.layout.showSnippets) rootClasses.push("hide-snippets");
-    if (sandbox.layout.highlightReading) rootClasses.push("highlight-reading");
-    const addinVisible = sandbox.layout.showAddin === true;
-    if (addinVisible) rootClasses.push("has-addin");
-    const activeMessage = sandbox.messages.find(message => message.id === sandbox.activeMessageId) || null;
-    const readingRegionClasses = ["reading-region"];
-    const sandboxContentClasses = ["sandbox-content"];
-    const stageClasses = ["sandbox-stage"];
-    const addinShellHeight = resolveAddinShellHeight(state);
-    if (addinVisible) {
-      stageClasses.push("sandbox-stage--addin-visible");
+  const getOrInitGuidedTourMeta = state => {
+    if (!state || typeof state !== "object") return null;
+    if (!state.meta || typeof state.meta !== "object") {
+      state.meta = {};
     }
-
-    return `
-      <div class="${rootClasses.join(" ")}">
-        <header class="sandbox-topbar">
-          <div class="topbar-hero">
-            <div class="topbar-left">
-              <span class="topbar-wordmark" aria-label="Outlook">
-                <span class="topbar-wordmark__glyph" aria-hidden="true">${fluentIconImg("waffle-grid-24.svg")}</span>
-                <span class="topbar-wordmark__label">Outlook</span>
-              </span>
-            </div>
-            <div class="topbar-right">
-              <button type="button" class="topbar-icon topbar-icon--ghost" aria-label="Search mailbox">
-                ${fluentIconImg("search-28-regular.svg")}
-              </button>
-              <button type="button" class="topbar-icon topbar-icon--ghost" aria-label="Open settings" data-open="settings">
-                ${fluentIconImg("more-horizontal-24-regular.svg")}
-              </button>
-              <button type="button" class="topbar-avatar" aria-label="Choose sandbox user" data-open="user-picker">
-                <span>${escapeHtml(identity.initials)}</span>
-              </button>
-            </div>
-          </div>
-          <div class="topbar-nav" role="navigation" aria-label="Mailbox navigation">
-            <button type="button" class="topbar-hamburger" aria-label="Open app launcher">
-              ${fluentIconImg("line-horizontal-3-24-regular.svg")}
-            </button>
-            <nav class="sandbox-tabs" role="tablist">
-              ${navTabs
-                .map(
-                  (tab, index) => `
-                    <button type="button" role="tab" class="sandbox-tab${index === 1 ? " is-active" : ""}">
-                      <span>${escapeHtml(tab)}</span>
-                    </button>
-                  `
-                )
-                .join("")}
-            </nav>
-          </div>
-        </header>
-        <div class="sandbox-main">
-          ${renderSidebar()}
-          <div
-            class="${stageClasses.join(" ")}"
-            data-sandbox-stage
-            data-addin-visible="${addinVisible ? 'true' : 'false'}"
-            style="--sandbox-shell-height: ${addinShellHeight}px;"
-          >
-            <div class="${sandboxContentClasses.join(" ")}">
-              <div class="sandbox-content__main">
-                ${renderRibbon(addinVisible)}
-                <div class="sandbox-content__body">
-                  <section class="message-column">
-                    <div class="message-toolbar" role="toolbar" aria-label="Mailbox view controls">
-                      <div class="message-toolbar__title">
-                        <span class="message-toolbar__folder">Inbox</span>
-                        <button type="button" class="message-toolbar__favorite" aria-label="Toggle favorite">
-                          ${fluentIconImg("star-16-filled.svg")}
-                        </button>
-                      </div>
-                      <div class="message-toolbar__actions">
-                        <button type="button" aria-label="Copy message">
-                          ${fluentIconImg("copy-16-regular.svg")}
-                        </button>
-                        <button type="button" aria-label="Jump to folder">
-                          ${fluentIconImg("arrow-turn-down-right-20-regular.svg")}
-                        </button>
-                        <button type="button" aria-label="Filter messages">
-                          ${fluentIconImg("filter-24-regular.svg")}
-                        </button>
-                        <button type="button" aria-label="Sort order">
-                          ${fluentIconImg("arrow-sort-24-regular.svg")}
-                        </button>
-                      </div>
-                    </div>
-                    <div class="message-list" data-sandbox-list>
-                      ${renderMessageGroups(sandbox, state)}
-                    </div>
-                  </section>
-                  <div class="${readingRegionClasses.join(" ")}" data-reading-region data-addin-visible="${addinVisible ? 'true' : 'false'}">
-                    ${renderReadingPane(sandbox, activeMessage, identity, state)}
-                  </div>
-                </div>
-              </div>
-            </div>
-            ${renderReporterSidebar(addinVisible)}
-          </div>
-        </div>
-      </div>
-      ${renderUserPicker(identity, sandbox)}
-      ${renderSettingsDrawer(sandbox)}
-    `;
+    const guided = state.meta.guidedTour;
+    if (!guided || typeof guided !== "object") {
+      state.meta.guidedTour = { enabled: true, dismissedRoutes: {}, sandboxManualOptIn: false };
+      return state.meta.guidedTour;
+    }
+    if (!guided.dismissedRoutes || typeof guided.dismissedRoutes !== "object") {
+      guided.dismissedRoutes = {};
+    }
+    if (typeof guided.sandboxManualOptIn !== "boolean") {
+      guided.sandboxManualOptIn = false;
+    }
+    return guided;
   };
 
-  reporterSandboxFeature.template = function templateReporterSandbox(state) {
-    return renderLayout(state || getState());
+  const disableGuidedTourForSandboxAddin = (state, force) => {
+    const guidedMeta = getOrInitGuidedTourMeta(state);
+    if (!guidedMeta) return;
+    if (!force && guidedMeta.sandboxManualOptIn) {
+      return;
+    }
+    if (guidedMeta.enabled === false && guidedMeta.dismissedRoutes.addin) {
+      return;
+    }
+    guidedMeta.sandboxManualOptIn = false;
+    guidedMeta.dismissedRoutes.addin = true;
+    if (window.WeldServices && typeof window.WeldServices.setGuidedTourEnabled === "function") {
+      window.WeldServices.setGuidedTourEnabled(false, state);
+      return;
+    }
+    const tour = window.WeldGuidedTour;
+    if (tour && typeof tour.clear === "function") {
+      tour.clear();
+    } else if (tour && typeof tour.setEnabled === "function") {
+      tour.setEnabled(false);
+    } else if (tour && typeof tour.toggle === "function") {
+      tour.toggle();
+    } else {
+      guidedMeta.enabled = false;
+    }
   };
 
   reporterSandboxFeature.attach = function attachReporterSandbox(container, providedState) {
     if (!container) return;
     const state = providedState || getState();
     const sandbox = getSandboxSlice(state);
+    const guidedMeta = getOrInitGuidedTourMeta(state);
+    if (!guidedMeta || guidedMeta.sandboxManualOptIn !== true) {
+      disableGuidedTourForSandboxAddin(state, true);
+    }
     const reporterSidebar = container.querySelector("[data-reporter-sidebar]");
     const reporterBody = container.querySelector("[data-reporter-sidebar-body]");
     const readingRegion = container.querySelector("[data-reading-region]");
@@ -1033,39 +705,6 @@
       }
     };
 
-    const disableGuidedTourForSandboxAddin = () => {
-      const tour = window.WeldGuidedTour;
-      const guidedMeta = state?.meta?.guidedTour;
-      const isEnabled =
-        tour && typeof tour.isEnabled === "function"
-          ? tour.isEnabled()
-          : guidedMeta
-          ? guidedMeta.enabled !== false
-          : true;
-      if (!isEnabled) {
-        return;
-      }
-      if (tour && typeof tour.setEnabled === "function") {
-        tour.setEnabled(false);
-        return;
-      }
-      if (tour && typeof tour.toggle === "function") {
-        tour.toggle();
-        return;
-      }
-      if (!state || typeof state !== "object") {
-        return;
-      }
-      if (!state.meta || typeof state.meta !== "object") {
-        state.meta = {};
-      }
-      if (!state.meta.guidedTour || typeof state.meta.guidedTour !== "object") {
-        state.meta.guidedTour = { enabled: false, dismissedRoutes: {} };
-      } else {
-        state.meta.guidedTour.enabled = false;
-      }
-    };
-
     const updateCommandButton = visible => {
       if (!toggleAddinButton) return;
       const label = visible ? "Hide WeldSecure add-in" : "Show WeldSecure add-in";
@@ -1079,8 +718,20 @@
       const nextVisible = visible === true;
       addinVisible = nextVisible;
       hasAppliedAddinVisibility = true;
+      const module = getAddinShellModule();
+      if (module && typeof module.applyAddinVisibility === "function") {
+        module.applyAddinVisibility({
+          visible: nextVisible,
+          refs: { reporterSidebar, readingRegion, sandboxStage, container },
+          state,
+          onGuidedTourDisable:
+            nextVisible && !wasVisible ? () => disableGuidedTourForSandboxAddin(state, false) : null,
+          onUpdateButton: updateCommandButton
+        });
+        return;
+      }
       if (nextVisible && !wasVisible) {
-        disableGuidedTourForSandboxAddin();
+        disableGuidedTourForSandboxAddin(state, false);
       }
       if (reporterSidebar) {
         reporterSidebar.hidden = !addinVisible;
@@ -1102,7 +753,7 @@
 
     if (reporterBody) {
       reporterBody.classList.add("reporter-outlook-shell");
-      mountReporterDock(reporterBody, sandbox, state, activeMessage);
+      mountReporterDockWithModule(reporterBody, sandbox, state, activeMessage);
     }
 
     applyAddinVisibility(addinVisible);
@@ -1126,40 +777,6 @@
       reporterSidebar.scrollIntoView({ behavior: "smooth", block: "nearest" });
     };
 
-    const openUserPicker = () => {
-      const picker = container.querySelector("[data-sandbox-user-picker]");
-      if (!picker) return;
-      picker.hidden = false;
-      picker.classList.add("is-visible");
-      const input = picker.querySelector("[data-user-filter]");
-      if (input) {
-        input.value = "";
-        input.focus();
-      }
-      toggleUserPickerEmptyState(picker);
-    };
-
-    const closeUserPicker = () => {
-      const picker = container.querySelector("[data-sandbox-user-picker]");
-      if (!picker) return;
-      picker.classList.remove("is-visible");
-      picker.hidden = true;
-    };
-
-    const openSettings = () => {
-      const drawer = container.querySelector("[data-sandbox-settings]");
-      if (!drawer) return;
-      drawer.hidden = false;
-      drawer.classList.add("is-visible");
-    };
-
-    const closeSettings = () => {
-      const drawer = container.querySelector("[data-sandbox-settings]");
-      if (!drawer) return;
-      drawer.classList.remove("is-visible");
-      drawer.hidden = true;
-    };
-
     container.querySelectorAll("[data-sandbox-message]").forEach(row => {
       row.addEventListener("click", () => {
         const messageId = row.getAttribute("data-sandbox-message");
@@ -1180,86 +797,13 @@
       }
     }
 
-    const userChip = container.querySelector("[data-open='user-picker']");
-    if (userChip) {
-      userChip.addEventListener("click", openUserPicker);
-    }
-    const pickerClose = container.querySelector("[data-close-user-picker]");
-    if (pickerClose) {
-      pickerClose.addEventListener("click", closeUserPicker);
-    }
-    const picker = container.querySelector("[data-sandbox-user-picker]");
-    if (picker) {
-      picker.addEventListener("click", event => {
-        if (event.target === picker) {
-          closeUserPicker();
-        }
-      });
-      const filterInput = picker.querySelector("[data-user-filter]");
-      if (filterInput) {
-        filterInput.addEventListener("input", () => toggleUserPickerEmptyState(picker));
-      }
-      const list = picker.querySelector("[data-user-picker-list]");
-      if (list) {
-        list.addEventListener("click", event => {
-          const button = event.target.closest("[data-user-id]");
-          if (!button) return;
-          const userId = button.getAttribute("data-user-id");
-          if (WeldServices && typeof WeldServices.setSandboxUser === "function") {
-            WeldServices.setSandboxUser(userId);
-          }
-          closeUserPicker();
-        });
-      }
-    }
+    attachUserPickerWithModule(container);
 
-    container.querySelectorAll("[data-open='settings']").forEach(button => {
-      button.addEventListener("click", openSettings);
-    });
-    const settingsClose = container.querySelector("[data-close-settings]");
-    if (settingsClose) {
-      settingsClose.addEventListener("click", closeSettings);
-    }
-    const settings = container.querySelector("[data-sandbox-settings]");
-    if (settings) {
-      settings.addEventListener("click", event => {
-        if (event.target === settings) {
-          closeSettings();
-        }
-      });
-      settings.querySelectorAll("[data-layout-pref]").forEach(input => {
-        input.addEventListener("change", event => {
-          const pref = event.target.getAttribute("data-layout-pref");
-          if (!pref) return;
-          if (WeldServices && typeof WeldServices.setSandboxLayoutPreference === "function") {
-            WeldServices.setSandboxLayoutPreference(pref, event.target.checked);
-          }
-        });
-      });
-    }
+    attachSettingsDrawerWithModule(container);
 
   };
 
-  function toggleUserPickerEmptyState(picker) {
-    if (!picker) return;
-    const filterInput = picker.querySelector("[data-user-filter]");
-    const list = picker.querySelector("[data-user-picker-list]");
-    const empty = picker.querySelector("[data-user-empty]");
-    if (!list) return;
-    const query = filterInput ? filterInput.value.trim().toLowerCase() : "";
-    let visibleCount = 0;
-    list.querySelectorAll("[data-user-id]").forEach(button => {
-      const haystack = button.getAttribute("data-search-text") || "";
-      const isMatch = !query || haystack.includes(query);
-      button.hidden = !isMatch;
-      if (isMatch) visibleCount += 1;
-    });
-    if (empty) {
-      empty.hidden = visibleCount !== 0;
-    }
-  }
-
-  function mountReporterDock(container, sandbox, state, activeMessage) {
+  function legacyMountReporterDock(container, sandbox, state, activeMessage) {
     if (!container) return;
     const overlay = container.closest("[data-sandbox-addin]");
     if (!activeMessage) {
@@ -1287,5 +831,227 @@
     if (overlay) {
       overlay.classList.add("is-visible");
     }
+  }
+
+  function renderUserPickerWithModule(identity, sandbox) {
+    const module = getUserPickerModule();
+    if (module && typeof module.renderUserPicker === "function") {
+      return module.renderUserPicker(identity, sandbox, { escapeHtml });
+    }
+    console.error("Reporter sandbox: user picker module unavailable.");
+    return "";
+  }
+
+  function attachUserPickerWithModule(container) {
+    if (!container) return;
+    const module = getUserPickerModule();
+    if (module && typeof module.attachUserPicker === "function") {
+      module.attachUserPicker({
+        container,
+        onSelectUser: userId => {
+          if (userId && WeldServices && typeof WeldServices.setSandboxUser === "function") {
+            WeldServices.setSandboxUser(userId);
+          }
+        }
+      });
+      return;
+    }
+    console.error("Reporter sandbox: user picker module unavailable; picker interactions disabled.");
+  }
+
+  function renderSettingsDrawerWithModule(sandbox) {
+    const module = getSettingsDrawerModule();
+    if (module && typeof module.renderSettingsDrawer === "function") {
+      return module.renderSettingsDrawer(sandbox, { escapeHtml });
+    }
+    console.error("Reporter sandbox: settings drawer module unavailable.");
+    return "";
+  }
+
+  function attachSettingsDrawerWithModule(container) {
+    if (!container) return;
+    const module = getSettingsDrawerModule();
+    if (module && typeof module.attachSettingsDrawer === "function") {
+      module.attachSettingsDrawer({
+        container,
+        onSetPreference: (pref, value) => {
+          if (pref && WeldServices && typeof WeldServices.setSandboxLayoutPreference === "function") {
+            WeldServices.setSandboxLayoutPreference(pref, Boolean(value));
+          }
+        }
+      });
+      return;
+    }
+    console.error("Reporter sandbox: settings drawer module unavailable; drawer disabled.");
+  }
+
+  function resolveAddinShellHeight(state) {
+    const module = getAddinShellModule();
+    if (module && typeof module.resolveAddinShellHeight === "function") {
+      return module.resolveAddinShellHeight(state);
+    }
+    return legacyResolveAddinShellHeight(state);
+  }
+
+  function legacyResolveAddinShellHeight(state) {
+    const fallbackDefault = 840;
+    const fallbackMin = 760;
+    const fallbackMax = 920;
+    const stored =
+      state && state.meta && typeof state.meta.addinShellHeight !== "undefined"
+        ? Number(state.meta.addinShellHeight)
+        : NaN;
+    if (Number.isFinite(stored) && stored > 0) {
+      return Math.min(fallbackMax, Math.max(fallbackMin, Math.ceil(stored)));
+    }
+    return fallbackDefault;
+  }
+
+  reporterSandboxFeature.template = function templateReporterSandbox(state) {
+    return renderReporterSandboxLayout(state || getState());
+  };
+
+  function renderReporterSandboxLayout(state) {
+    const layoutModule = getLayoutModule();
+    if (layoutModule && typeof layoutModule.renderLayout === "function") {
+      return layoutModule.renderLayout(state, {
+        getSandbox: getSandboxSlice,
+        resolveIdentity,
+        escapeHtml,
+        fluentIconImg,
+        resolveAddinShellHeight,
+        renderSidebar,
+        renderRibbon,
+        renderMessageGroups: (sandbox, currentState) =>
+          renderMessageGroupsWithModule(sandbox, currentState),
+        renderReadingPane: (sandbox, message, identity, currentState) =>
+          renderReadingPaneWithModule(sandbox, message, identity, currentState),
+        renderReporterSidebar,
+        renderUserPicker: (identity, sandbox) => renderUserPickerWithModule(identity, sandbox),
+        renderSettingsDrawer: sandbox => renderSettingsDrawerWithModule(sandbox)
+      });
+    }
+    throw new Error("Reporter sandbox: layout module missing");
+  }
+
+  function renderMessageModuleHelpers() {
+    return {
+      escapeHtml,
+      fluentIconImg,
+      formatTime,
+      formatFullDate,
+      messagePreview,
+      fluentChevronImg,
+      initialsFor,
+      avatarToneFor,
+      getDirectorySnapshot,
+      getState,
+      isInternalSender,
+      normalizeCcEntries,
+      formatBody,
+      stripCcLineFromBody
+    };
+  }
+
+  function renderMessageGroupsWithModule(sandbox, state) {
+    const module = getMessageModule();
+    if (module && typeof module.renderMessageGroups === "function") {
+      return module.renderMessageGroups(sandbox, state, renderMessageModuleHelpers());
+    }
+    console.error("Reporter sandbox: message module unavailable; skipping message list render.");
+    throw new Error("Reporter sandbox: message module missing");
+  }
+
+  function renderReadingPaneWithModule(sandbox, message, identity, state) {
+    const module = getMessageModule();
+    if (module && typeof module.renderReadingPane === "function") {
+      return module.renderReadingPane(
+        sandbox,
+        message,
+        identity,
+        state,
+        renderMessageModuleHelpers()
+      );
+    }
+    console.error("Reporter sandbox: reading pane module unavailable; skipping reading pane render.");
+    return `
+      <section class="reading-pane reading-pane--empty" data-reading-pane>
+        <p>Reading pane unavailable.</p>
+      </section>
+    `;
+  }
+
+  function mountReporterDockWithModule(container, sandbox, state, activeMessage) {
+    const module = getAddinShellModule();
+    if (module && typeof module.mountReporterDock === "function") {
+      module.mountReporterDock(container, sandbox, state, activeMessage);
+      return;
+    }
+    legacyMountReporterDock(container, sandbox, state, activeMessage);
+  }
+
+  function getLayoutModule() {
+    if (layoutModuleInstance) return layoutModuleInstance;
+    const weldModules = window.WeldModules;
+    if (!weldModules || typeof weldModules.use !== "function") return null;
+    try {
+      layoutModuleInstance = weldModules.use("components/reporterSandbox/layout");
+    } catch (error) {
+      console.warn("Reporter sandbox: failed to load layout module.", error);
+      layoutModuleInstance = null;
+    }
+    return layoutModuleInstance;
+  }
+
+  function getMessageModule() {
+    if (messageModuleInstance) return messageModuleInstance;
+    const weldModules = window.WeldModules;
+    if (!weldModules || typeof weldModules.use !== "function") return null;
+    try {
+      messageModuleInstance = weldModules.use("components/reporterSandbox/messages");
+    } catch (error) {
+      console.warn("Reporter sandbox: failed to load message module.", error);
+      messageModuleInstance = null;
+    }
+    return messageModuleInstance;
+  }
+
+  function getAddinShellModule() {
+    if (addinShellModuleInstance) return addinShellModuleInstance;
+    const weldModules = window.WeldModules;
+    if (!weldModules || typeof weldModules.use !== "function") return null;
+    try {
+      addinShellModuleInstance = weldModules.use("components/reporterSandbox/addinShell");
+    } catch (error) {
+      console.warn("Reporter sandbox: failed to load add-in shell module.", error);
+      addinShellModuleInstance = null;
+    }
+    return addinShellModuleInstance;
+  }
+
+  function getUserPickerModule() {
+    if (userPickerModuleInstance) return userPickerModuleInstance;
+    const weldModules = window.WeldModules;
+    if (!weldModules || typeof weldModules.use !== "function") return null;
+    try {
+      userPickerModuleInstance = weldModules.use("components/reporterSandbox/userPicker");
+    } catch (error) {
+      console.warn("Reporter sandbox: failed to load user picker module.", error);
+      userPickerModuleInstance = null;
+    }
+    return userPickerModuleInstance;
+  }
+
+  function getSettingsDrawerModule() {
+    if (settingsDrawerModuleInstance) return settingsDrawerModuleInstance;
+    const weldModules = window.WeldModules;
+    if (!weldModules || typeof weldModules.use !== "function") return null;
+    try {
+      settingsDrawerModuleInstance = weldModules.use("components/reporterSandbox/settingsDrawer");
+    } catch (error) {
+      console.warn("Reporter sandbox: failed to load settings drawer module.", error);
+      settingsDrawerModuleInstance = null;
+    }
+    return settingsDrawerModuleInstance;
   }
 })();

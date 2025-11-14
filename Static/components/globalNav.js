@@ -423,6 +423,9 @@
           if (window.WeldGuidedTour && typeof window.WeldGuidedTour.toggle === "function") {
             const next = window.WeldGuidedTour.toggle();
             applyGuidedTourState(next);
+            if (window.WeldServices && typeof window.WeldServices.setGuidedTourEnabled === "function") {
+              window.WeldServices.setGuidedTourEnabled(next, state);
+            }
           }
         });
       }

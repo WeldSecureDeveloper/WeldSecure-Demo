@@ -593,16 +593,17 @@
       state.meta = {};
     }
     if (!state.meta.guidedTour || typeof state.meta.guidedTour !== "object") {
-      state.meta.guidedTour = { ...DEFAULT_GUIDED_TOUR_META };
+      state.meta.guidedTour = { ...DEFAULT_GUIDED_TOUR_META, sandboxManualOptIn: false };
     }
-    state.meta.guidedTour.enabled = state.meta.guidedTour.enabled !== false;
-    if (
-      !state.meta.guidedTour.dismissedRoutes ||
-      typeof state.meta.guidedTour.dismissedRoutes !== "object"
-    ) {
-      state.meta.guidedTour.dismissedRoutes = {};
+    const guided = state.meta.guidedTour;
+    guided.enabled = guided.enabled !== false;
+    if (!guided.dismissedRoutes || typeof guided.dismissedRoutes !== "object") {
+      guided.dismissedRoutes = {};
     }
-    return state.meta.guidedTour;
+    if (typeof guided.sandboxManualOptIn !== "boolean") {
+      guided.sandboxManualOptIn = false;
+    }
+    return guided;
   }
 
   function ensureMeta(state) {
@@ -736,6 +737,10 @@
     const next = enabled !== false;
     if (guidedMeta.enabled === next) return;
     guidedMeta.enabled = next;
+    guidedMeta.sandboxManualOptIn = next;
+    if (next && guidedMeta.dismissedRoutes) {
+      delete guidedMeta.dismissedRoutes.addin;
+    }
     syncGlobalState(state);
     saveState(state);
     renderShell();
