@@ -7,20 +7,35 @@
 
   const ROUTES = AppData.ROUTES || {};
   const THEME_OPTIONS = ["light", "dark"];
-  const DEFAULT_REPORTER_PROMPT = AppData.DEFAULT_REPORTER_PROMPT || "";
-  const DEFAULT_EMERGENCY_LABEL = AppData.DEFAULT_EMERGENCY_LABEL || "";
-  const DEFAULT_REPORTER_REASONS = AppData.DEFAULT_REPORTER_REASONS || [];
-  const DEFAULT_GUIDED_TOUR_META = {
+  const designerDefaults = window.WeldDesignerDefaults || null;
+  const defaultsModule = (() => {
+    const loader = window.WeldModules;
+    if (loader && typeof loader.has === "function") {
+      try {
+        if (loader.has("data/state/defaults")) {
+          return loader.use("data/state/defaults");
+        }
+      } catch (error) {
+        console.warn("data/state/defaults module unavailable in stateServices.", error);
+      }
+    }
+    return window.WeldStateDefaults || null;
+  })();
+  const resolveDefault = key =>
+    defaultsModule && defaultsModule[key] !== undefined ? defaultsModule[key] : undefined;
+
+  const PHISHING_BLUEPRINTS = AppData.phishingBlueprints || {};
+  const DEFAULT_REPORTER_PROMPT = resolveDefault("DEFAULT_REPORTER_PROMPT") || "";
+  const DEFAULT_EMERGENCY_LABEL = resolveDefault("DEFAULT_EMERGENCY_LABEL") || "";
+  const DEFAULT_REPORTER_REASONS = Array.isArray(resolveDefault("DEFAULT_REPORTER_REASONS"))
+    ? resolveDefault("DEFAULT_REPORTER_REASONS").map(item =>
+        item && typeof item === "object" ? { ...item } : item
+      )
+    : [];
+  const DEFAULT_GUIDED_TOUR_META = resolveDefault("DEFAULT_GUIDED_TOUR_META") || {
     enabled: true,
     dismissedRoutes: {}
   };
-  const PHISHING_BLUEPRINTS = AppData.phishingBlueprints || {};
-  const DESIGNER_CHANNELS =
-    Array.isArray(AppData.PHISHING_CHANNELS) && AppData.PHISHING_CHANNELS.length > 0
-      ? AppData.PHISHING_CHANNELS.map(channel =>
-          typeof channel === "string" ? channel.trim().toLowerCase() : channel
-        ).filter(Boolean)
-      : ["email", "sms", "teams", "slack", "qr"];
   const blueprintDefaultForm =
     PHISHING_BLUEPRINTS.defaultForm && typeof PHISHING_BLUEPRINTS.defaultForm === "object"
       ? PHISHING_BLUEPRINTS.defaultForm
@@ -29,49 +44,73 @@
     blueprintDefaultForm.sender && typeof blueprintDefaultForm.sender === "object"
       ? blueprintDefaultForm.sender
       : {};
-  const DEFAULT_DESIGNER_FORM = {
-    id: null,
-    templateId:
-      typeof blueprintDefaultForm.templateId === "string" && blueprintDefaultForm.templateId.trim().length > 0
-        ? blueprintDefaultForm.templateId.trim()
-        : null,
-    name: typeof blueprintDefaultForm.name === "string" ? blueprintDefaultForm.name : "",
-    status: "draft",
-    channel:
-      typeof blueprintDefaultForm.channel === "string" && blueprintDefaultForm.channel.trim().length > 0
-        ? blueprintDefaultForm.channel.trim().toLowerCase()
-        : DESIGNER_CHANNELS[0] || "email",
-    sender: {
-      displayName:
-        typeof blueprintDefaultSender.displayName === "string" && blueprintDefaultSender.displayName.trim().length > 0
-          ? blueprintDefaultSender.displayName.trim()
-          : "Security Desk",
-      address:
-        typeof blueprintDefaultSender.address === "string" && blueprintDefaultSender.address.trim().length > 0
-          ? blueprintDefaultSender.address.trim()
-          : "security@weldsecure.com"
-    },
-    subject: typeof blueprintDefaultForm.subject === "string" ? blueprintDefaultForm.subject : "",
-    body: typeof blueprintDefaultForm.body === "string" ? blueprintDefaultForm.body : "",
-    signalIds: Array.isArray(blueprintDefaultForm.signalIds)
-      ? blueprintDefaultForm.signalIds.slice()
-      : Array.isArray(blueprintDefaultForm.defaultSignals)
-      ? blueprintDefaultForm.defaultSignals.slice()
-      : [],
-    targetIds: Array.isArray(blueprintDefaultForm.targetIds)
-      ? blueprintDefaultForm.targetIds.slice()
-      : Array.isArray(blueprintDefaultForm.suggestedTargets)
-      ? blueprintDefaultForm.suggestedTargets.slice()
-      : [],
-    schedule:
-      typeof blueprintDefaultForm.schedule === "string" && blueprintDefaultForm.schedule.trim().length > 0
-        ? blueprintDefaultForm.schedule
-        : null,
-    ownerId:
-      typeof blueprintDefaultForm.ownerId === "string" && blueprintDefaultForm.ownerId.trim().length > 0
-        ? blueprintDefaultForm.ownerId.trim()
-        : blueprintDefaultSender.address || "amelia-reed"
-  };
+  const DEFAULT_DESIGNER_FORM = (() => {
+    const form = resolveDefault("DEFAULT_DESIGNER_FORM");
+    if (form) {
+      return {
+        ...form,
+        sender: form.sender ? { ...form.sender } : {},
+        signalIds: Array.isArray(form.signalIds) ? form.signalIds.slice() : [],
+        targetIds: Array.isArray(form.targetIds) ? form.targetIds.slice() : []
+      };
+    }
+    return {
+      id: null,
+      templateId:
+        typeof blueprintDefaultForm.templateId === "string" && blueprintDefaultForm.templateId.trim().length > 0
+          ? blueprintDefaultForm.templateId.trim()
+          : null,
+      name: typeof blueprintDefaultForm.name === "string" ? blueprintDefaultForm.name : "",
+      status: "draft",
+      channel:
+        typeof blueprintDefaultForm.channel === "string" && blueprintDefaultForm.channel.trim().length > 0
+          ? blueprintDefaultForm.channel.trim().toLowerCase()
+          : DESIGNER_CHANNELS[0] || "email",
+      sender: {
+        displayName:
+          typeof blueprintDefaultSender.displayName === "string" && blueprintDefaultSender.displayName.trim().length > 0
+            ? blueprintDefaultSender.displayName.trim()
+            : "Security Desk",
+        address:
+          typeof blueprintDefaultSender.address === "string" && blueprintDefaultSender.address.trim().length > 0
+            ? blueprintDefaultSender.address.trim()
+            : "security@weldsecure.com"
+      },
+      subject: typeof blueprintDefaultForm.subject === "string" ? blueprintDefaultForm.subject : "",
+      body: typeof blueprintDefaultForm.body === "string" ? blueprintDefaultForm.body : "",
+      signalIds: Array.isArray(blueprintDefaultForm.signalIds)
+        ? blueprintDefaultForm.signalIds.slice()
+        : Array.isArray(blueprintDefaultForm.defaultSignals)
+        ? blueprintDefaultForm.defaultSignals.slice()
+        : [],
+      targetIds: Array.isArray(blueprintDefaultForm.targetIds)
+        ? blueprintDefaultForm.targetIds.slice()
+        : Array.isArray(blueprintDefaultForm.suggestedTargets)
+        ? blueprintDefaultForm.suggestedTargets.slice()
+        : [],
+      schedule:
+        typeof blueprintDefaultForm.schedule === "string" && blueprintDefaultForm.schedule.trim().length > 0
+          ? blueprintDefaultForm.schedule
+          : null,
+      ownerId:
+        typeof blueprintDefaultForm.ownerId === "string" && blueprintDefaultForm.ownerId.trim().length > 0
+          ? blueprintDefaultForm.ownerId.trim()
+          : blueprintDefaultSender.address || "amelia-reed"
+    };
+  })();
+  const DESIGNER_CHANNELS = (() => {
+    const list = resolveDefault("DESIGNER_CHANNELS");
+    if (Array.isArray(list) && list.length > 0) {
+      return list.slice();
+    }
+    const fallback =
+      designerDefaults && Array.isArray(designerDefaults.CHANNEL_OPTIONS) && designerDefaults.CHANNEL_OPTIONS.length > 0
+        ? designerDefaults.CHANNEL_OPTIONS
+        : AppData.PHISHING_CHANNELS || ["email", "sms", "teams", "slack", "qr"];
+    return fallback
+      .map(channel => (typeof channel === "string" ? channel.trim().toLowerCase() : channel))
+      .filter(Boolean);
+  })();
   const blueprintTemplates = Array.isArray(PHISHING_BLUEPRINTS.templates) ? PHISHING_BLUEPRINTS.templates : [];
   const designerTokens = Array.isArray(PHISHING_BLUEPRINTS.tokens) ? PHISHING_BLUEPRINTS.tokens : [];
   const designerId = prefix =>
@@ -80,53 +119,65 @@
       : `${prefix || "phish-draft"}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6)
           .toString(36)
           .padStart(4, "0")}`;
-  const normalizeDesignerKey = value => {
-    if (typeof value === "string") {
-      const trimmed = value.trim();
-      return trimmed.length > 0 ? trimmed : null;
-    }
-    if (Number.isFinite(value)) {
-      return String(value);
-    }
-    return null;
-  };
-  const normalizeDesignerChannel = (value, fallback = DESIGNER_CHANNELS[0] || "email") => {
-    if (typeof value === "string") {
-      const normalized = value.trim().toLowerCase();
-      if (DESIGNER_CHANNELS.includes(normalized)) {
-        return normalized;
-      }
-    }
-    return fallback;
-  };
-  const normalizeDesignerSchedule = value => {
-    if (!value) return null;
-    if (value instanceof Date && !Number.isNaN(value.getTime())) {
-      return value.toISOString();
-    }
-    if (typeof value === "string" && value.trim().length > 0) {
-      const parsed = new Date(value);
-      if (!Number.isNaN(parsed.getTime())) {
-        return parsed.toISOString();
-      }
-    }
-    return null;
-  };
-  const normalizeDesignerList = (list, fallback = []) => {
-    if (!Array.isArray(list)) {
-      return fallback.slice();
-    }
-    const seen = new Set();
-    const normalized = [];
-    list.forEach(item => {
-      const key = normalizeDesignerKey(item);
-      if (!key || seen.has(key)) return;
-      seen.add(key);
-      normalized.push(key);
-    });
-    return normalized;
-  };
-  const cloneDesignerForm = source => {
+  const normalizeDesignerKey =
+    designerDefaults && typeof designerDefaults.normalizeKey === "function"
+      ? designerDefaults.normalizeKey
+      : value => {
+          if (typeof value === "string") {
+            const trimmed = value.trim();
+            return trimmed.length > 0 ? trimmed : null;
+          }
+          if (Number.isFinite(value)) {
+            return String(value);
+          }
+          return null;
+        };
+  const normalizeDesignerChannel =
+    designerDefaults && typeof designerDefaults.normalizeChannel === "function"
+      ? designerDefaults.normalizeChannel
+      : (value, fallback = DESIGNER_CHANNELS[0] || "email") => {
+          if (typeof value === "string") {
+            const normalized = value.trim().toLowerCase();
+            if (DESIGNER_CHANNELS.includes(normalized)) {
+              return normalized;
+            }
+          }
+          return fallback;
+        };
+  const normalizeDesignerSchedule =
+    designerDefaults && typeof designerDefaults.normalizeSchedule === "function"
+      ? designerDefaults.normalizeSchedule
+      : value => {
+          if (!value) return null;
+          if (value instanceof Date && !Number.isNaN(value.getTime())) {
+            return value.toISOString();
+          }
+          if (typeof value === "string" && value.trim().length > 0) {
+            const parsed = new Date(value);
+            if (!Number.isNaN(parsed.getTime())) {
+              return parsed.toISOString();
+            }
+          }
+          return null;
+        };
+  const normalizeDesignerList =
+    designerDefaults && typeof designerDefaults.normalizeList === "function"
+      ? designerDefaults.normalizeList
+      : (list, fallback = []) => {
+          if (!Array.isArray(list)) {
+            return fallback.slice();
+          }
+          const seen = new Set();
+          const normalized = [];
+          list.forEach(item => {
+            const key = normalizeDesignerKey(item);
+            if (!key || seen.has(key)) return;
+            seen.add(key);
+            normalized.push(key);
+          });
+          return normalized;
+        };
+  const cloneDesignerFormImpl = source => {
     const base = {
       ...DEFAULT_DESIGNER_FORM,
       sender: { ...DEFAULT_DESIGNER_FORM.sender },
@@ -168,7 +219,11 @@
           : base.ownerId
     };
   };
-  const mergeDesignerForm = (current, patch) => {
+  const cloneDesignerForm =
+    designerDefaults && typeof designerDefaults.cloneForm === "function"
+      ? designerDefaults.cloneForm
+      : cloneDesignerFormImpl;
+  const mergeDesignerFormImpl = (current, patch) => {
     if (!patch || typeof patch !== "object") {
       return cloneDesignerForm(current);
     }
@@ -188,6 +243,10 @@
     }
     return cloneDesignerForm(merged);
   };
+  const mergeDesignerForm =
+    designerDefaults && typeof designerDefaults.mergeForm === "function"
+      ? designerDefaults.mergeForm
+      : mergeDesignerFormImpl;
   const ensureDesignerState = state => {
     if (!state.phishingDesigner || typeof state.phishingDesigner !== "object") {
       state.phishingDesigner = {

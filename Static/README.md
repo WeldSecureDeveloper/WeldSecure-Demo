@@ -29,6 +29,14 @@ Static/
 `-- app.js                 # renderApp orchestrator (registry lookup + feature lifecycle)
 ```
 
+## Runtime modules & entry points
+- `moduleLoader.js` – defines `window.WeldModules` (`modules.define/use/has`) so runtime helpers and persona chunks can register themselves lazily.
+- `main.js` – hydrates `window.Weld`, bootstraps the hash router, and invokes `renderApp` when the DOM is ready.
+- `registry.js` – registers each route slug with render/attach delegates (often referring to `WeldModules` exports such as `features/customer/hub`).
+- `app.js` – orchestrates service wrappers, header rendering, navigation, and `renderApp`/`renderAppPreservingScroll`. When you split helpers out, define them via `WeldModules` and keep thin fallbacks here.
+- `services/stateServices.js` – exposes `window.WeldServices` helpers that mutate state slices. Features only call these helpers (never mutate `window.Weld.state` directly).
+- `components/` – houses reusable UI modules (global nav, badge showcase, reporter sandbox shells) that can be consumed through `modules.use(...)`.
+
 Key guardrails (see `Static/docs/architecture-overview.md` for the full contract):
 - **Rendering pipeline:** `main.js` reads the hash, `registry.js` maps it to a feature, `app.js` calls `feature.render(state)` to get markup, then `feature.attach(container, state)` wires DOM events. No feature should manipulate the DOM outside its container.
 - **State flow:** Immutable datasets live under `data/` and are exposed via `window.AppData`. Mutable UI state sits in `state.js`; only functions in `services/stateServices.js` may mutate it. All features call those services instead of touching `window.Weld.state` directly.
@@ -57,12 +65,14 @@ Key guardrails (see `Static/docs/architecture-overview.md` for the full contract
 
 ## Validation & tooling
 - `pwsh ./Static/tools/sanity-check.ps1` - validates script ordering, duplicate IDs, and other glue expectations.
-- Manual QA: always smoke-test landing, customer hub, badges, reporter flows, and any persona touched by your change (light + dark theme). Record regressions in `Static/docs/fix-backlog.md`.
+- `node ./Static/tools/state-vm-smoke.js` - runs `WeldState.initialState()` inside a Node VM to ensure shared defaults stay browser-agnostic.
+- Manual QA: follow `Static/docs/manual-qa-checklist.md` (landing, customer hub tabs, reporter add-in & sandbox, client dashboards, admin, labs) in both themes. Log results in `Static/docs/fix-backlog.md`.
 - When touching layered CSS, verify key personas plus the badge gallery to catch cascade mistakes early.
 
 ## Living documentation
 - `Static/docs/architecture-overview.md` - canonical guardrails for structure, rendering, state, CSS, and contributor expectations.
 - `Static/docs/feature-backlog.md` - active enhancement ideas (newest first).
 - `Static/docs/fix-backlog.md` - outstanding issues + recently verified fixes.
+- `Static/docs/manual-qa-checklist.md` - smoke suite to run before merging.
 
 AI (and human) contributors should reference these docs instead of re-deriving context inside prompts. Call out specific file paths and sections when requesting additional context so only the necessary files are loaded.

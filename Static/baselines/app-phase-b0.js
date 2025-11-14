@@ -182,78 +182,6 @@ if (activeAchievementsModule && activeAchievementsModule.WeldAchievements) {
   window.WeldAchievements = fallbackWeldAchievements;
 }
 
-let renderAppModule = (() => {
-  const loader = window.WeldModules;
-  if (loader && typeof loader.has === "function") {
-    try {
-      if (loader.has("runtime/renderApp")) {
-        return loader.use("runtime/renderApp");
-      }
-    } catch (error) {
-      console.warn("runtime/renderApp module unavailable.", error);
-    }
-  }
-  if (typeof window.__WeldRenderAppModuleFactory === "function") {
-    try {
-      return window.__WeldRenderAppModuleFactory();
-    } catch (factoryError) {
-      console.warn("runtime/renderApp factory fallback failed.", factoryError);
-    }
-  }
-  return null;
-})();
-
-function ensureRenderAppModule() {
-  if (renderAppModule && typeof renderAppModule.renderApp === "function") {
-    return renderAppModule;
-  }
-  if (typeof window.__WeldRenderAppModuleFactory === "function") {
-    try {
-      renderAppModule = window.__WeldRenderAppModuleFactory();
-      return renderAppModule;
-    } catch (error) {
-      console.warn("Unable to instantiate runtime/renderApp via factory.", error);
-    }
-  }
-  return null;
-}
-
-function buildRenderAppContext(overrides = {}) {
-  return {
-    state,
-    routes: ROUTES,
-    applyTheme,
-    handleRouteAchievements,
-    teardownBadgeShowcase,
-    renderHeader,
-    attachHeaderEvents,
-    attachGlobalNav,
-    initializeSettingsUI,
-    ...overrides
-  };
-}
-
-function renderApp() {
-  const moduleApi = ensureRenderAppModule();
-  if (moduleApi && typeof moduleApi.renderApp === "function") {
-    moduleApi.renderApp(buildRenderAppContext());
-    return;
-  }
-  console.error("runtime/renderApp module unavailable; unable to render application shell.");
-}
-
-function renderAppPreservingScroll() {
-  const moduleApi = ensureRenderAppModule();
-  if (moduleApi && typeof moduleApi.renderAppPreservingScroll === "function") {
-    moduleApi.renderAppPreservingScroll(buildRenderAppContext());
-    return;
-  }
-  renderApp();
-}
-
-window.renderApp = renderApp;
-window.renderAppPreservingScroll = renderAppPreservingScroll;
-
 function invokeService(name, args = []) {
   if (activeServiceWrapperModule && typeof activeServiceWrapperModule.invokeService === "function") {
     return activeServiceWrapperModule.invokeService(name, args);
@@ -2787,4 +2715,210 @@ function badgeById(id) {
 }
 
 window.badgeById = badgeById;
+
+let lastRenderedRoute = null;
+
+function clearGuidedTourOverlay() {
+  if (window.WeldGuidedTour && typeof window.WeldGuidedTour.clear === "function") {
+    window.WeldGuidedTour.clear();
+  }
+}
+
+function scrollViewportToTop() {
+  if (typeof window === "undefined") return;
+  const doc = document.scrollingElement || document.documentElement || document.body;
+  let previousScrollBehavior;
+  if (doc && doc.style) {
+    previousScrollBehavior = doc.style.scrollBehavior;
+    doc.style.scrollBehavior = "auto";
+  }
+  if (doc && typeof doc.scrollTo === "function") {
+    doc.scrollTo(0, 0);
+  } else if (typeof window.scrollTo === "function") {
+    window.scrollTo(0, 0);
+  }
+  if (doc && doc.style) {
+    if (typeof previousScrollBehavior === "string" && previousScrollBehavior.length > 0) {
+      doc.style.scrollBehavior = previousScrollBehavior;
+    } else {
+      doc.style.removeProperty("scroll-behavior");
+    }
+  }
+}
+
+
+
+
+function ensureRouteSafety() {
+  const routeInfo = ROUTES[state.meta.route];
+  if (!routeInfo) {
+    state.meta.route = "landing";
+    state.meta.role = null;
+  } else if (routeInfo.requiresRole && state.meta.role !== routeInfo.requiresRole) {
+    state.meta.route = "landing";
+    state.meta.role = null;
+  }
+}
+
+function renderApp() {
+  ensureRouteSafety();
+  applyTheme(state?.meta?.theme);
+
+  const app = document.getElementById("app");
+  const route = state.meta.route;
+  const shouldResetScroll = lastRenderedRoute !== null && lastRenderedRoute !== route;
+  if (lastRenderedRoute && lastRenderedRoute !== route) {
+    clearGuidedTourOverlay();
+  }
+  handleRouteAchievements(route);
+
+  if (route !== "addin") {
+    teardownBadgeShowcase();
+  }
+
+  const registry = window.WeldRegistry || {};
+  const routeConfig = route ? registry[route] : undefined;
+
+  if (!routeConfig) {
+    if (route !== "landing") {
+      state.meta.route = "landing";
+      WeldState.saveState(state);
+      renderApp();
+    }
+    return;
+  }
+
+  const pageClass = routeConfig.pageClass || "page";
+  const innerClass = routeConfig.innerClass || "page__inner";
+  const contentClass = routeConfig.contentClass || "layout-content";
+  const contentId = routeConfig.contentId || "main-content";
+  const renderedContent =
+    typeof routeConfig.render === "function" ? routeConfig.render(state) : "";
+  const mainIdAttribute = contentId ? ` id="${contentId}"` : "";
+  app.innerHTML = `
+      <div class="${pageClass}">
+        ${renderHeader()}
+        <div class="${innerClass}">
+          <main class="${contentClass}"${mainIdAttribute}>${renderedContent}</main>
+        </div>
+      </div>
+    `;
+  attachHeaderEvents(app);
+  attachGlobalNav(app);
+  initializeSettingsUI(app);
+  const attachTarget =
+    (contentId && app.querySelector("#" + contentId)) || app.querySelector("main") || app;
+  if (typeof routeConfig.attach === "function") {
+    routeConfig.attach(attachTarget, state);
+  }
+  scheduleBadgeEdgeAlignment(app);
+  if (shouldResetScroll) {
+    scrollViewportToTop();
+  }
+  lastRenderedRoute = route;
+}
+
+function renderAppPreservingScroll() {
+  if (typeof window === "undefined") {
+    renderApp();
+    return;
+  }
+
+  const doc = document.scrollingElement || document.documentElement || document.body;
+  const scrollX = window.pageXOffset ?? window.scrollX ?? (doc ? doc.scrollLeft : 0) ?? 0;
+  const scrollY = window.pageYOffset ?? window.scrollY ?? (doc ? doc.scrollTop : 0) ?? 0;
+  let previousScrollBehavior;
+  if (doc && doc.style) {
+    previousScrollBehavior = doc.style.scrollBehavior;
+    doc.style.scrollBehavior = "auto";
+  }
+  renderApp();
+  if (doc && typeof doc.scrollTo === "function") {
+    doc.scrollTo(scrollX, scrollY);
+  } else {
+    window.scrollTo(scrollX, scrollY);
+  }
+  if (doc && doc.style) {
+    if (typeof previousScrollBehavior === "string" && previousScrollBehavior.length > 0) {
+      doc.style.scrollBehavior = previousScrollBehavior;
+    } else {
+      doc.style.removeProperty("scroll-behavior");
+    }
+  }
+}
+
+let badgeEdgeAlignmentFrame = null;
+let badgeEdgeAlignmentScope = null;
+let badgeEdgeResizeListenerAttached = false;
+
+function scheduleBadgeEdgeAlignment(scope) {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return;
+  }
+  const nextScope =
+    scope && typeof scope.querySelectorAll === "function" ? scope : document;
+  badgeEdgeAlignmentScope = nextScope;
+  if (badgeEdgeAlignmentFrame) return;
+  const requestFrame =
+    typeof window.requestAnimationFrame === "function"
+      ? window.requestAnimationFrame.bind(window)
+      : callback => window.setTimeout(callback, 16);
+  badgeEdgeAlignmentFrame = requestFrame(() => {
+    badgeEdgeAlignmentFrame = null;
+    const target =
+      badgeEdgeAlignmentScope && badgeEdgeAlignmentScope.isConnected
+        ? badgeEdgeAlignmentScope
+        : document;
+    applyBadgeEdgeAlignment(target);
+  });
+  if (!badgeEdgeResizeListenerAttached) {
+    badgeEdgeResizeListenerAttached = true;
+    window.addEventListener("resize", () => scheduleBadgeEdgeAlignment());
+  }
+}
+
+function applyBadgeEdgeAlignment(scope) {
+  if (!scope || typeof scope.querySelectorAll !== "function") return;
+  const badges = Array.from(scope.querySelectorAll(".catalogue-badge"));
+  if (badges.length === 0) return;
+  const viewportWidth = Math.max(
+    window.innerWidth || 0,
+    document.documentElement?.clientWidth || 0,
+    0
+  );
+  if (viewportWidth <= 0) return;
+  const safePadding = 16;
+  badges.forEach(badge => alignBadgeEdgesForBadge(badge, viewportWidth, safePadding));
+}
+
+function alignBadgeEdgesForBadge(badge, viewportWidth, safePadding) {
+  if (
+    !badge ||
+    typeof badge.querySelector !== "function" ||
+    typeof badge.classList?.remove !== "function"
+  ) {
+    return;
+  }
+  const edgeClass = "catalogue-badge--edge";
+  const edgeRightClass = "catalogue-badge--edge-right";
+  const edgeLeftClass = "catalogue-badge--edge-left";
+  badge.classList.remove(edgeClass, edgeRightClass, edgeLeftClass);
+  const card = badge.querySelector(".catalogue-badge-card");
+  if (!card || typeof card.getBoundingClientRect !== "function") return;
+  const cardRect = card.getBoundingClientRect();
+  if (!cardRect || !Number.isFinite(cardRect.left) || !Number.isFinite(cardRect.right)) {
+    return;
+  }
+  const thresholdLeft = safePadding;
+  const thresholdRight = viewportWidth - safePadding;
+  const overflowLeft = cardRect.left < thresholdLeft;
+  const overflowRight = cardRect.right > thresholdRight;
+  if (overflowRight) {
+    badge.classList.add(edgeClass, edgeRightClass);
+  }
+  if (overflowLeft) {
+    badge.classList.add(edgeLeftClass);
+  }
+}
+
 

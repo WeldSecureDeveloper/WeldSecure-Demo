@@ -1,4 +1,6 @@
 (function () {
+  const modules = window.WeldModules;
+  const hasModules = modules && typeof modules.define === "function";
   const registry = window.WeldRegistry || (window.WeldRegistry = {});
   const registerRoute =
     window.registerWeldRoute ||
@@ -61,6 +63,16 @@
     }
   }
 
+  function buildFeatureResolver(featureKey, getFeature) {
+    if (typeof getFeature === "function") {
+      return getFeature;
+    }
+    return state => {
+      if (featureKey === null || featureKey === undefined) return null;
+      return window.Weld?.features?.[featureKey] || null;
+    };
+  }
+
   function featureRoute(featureKey, options = {}) {
     const {
       pageClass,
@@ -80,16 +92,13 @@
       ...(contentId !== undefined ? { contentId } : {})
     };
 
-    const featureResolver =
-      typeof getFeature === "function"
-        ? getFeature
-        : () => {
-            if (featureKey === null || featureKey === undefined) return null;
-            return window.Weld?.features?.[featureKey] || null;
-          };
+    const featureResolver = buildFeatureResolver(featureKey, getFeature);
 
     return {
       ...shell,
+      templateMethods,
+      attachMethods,
+      getFeature: featureResolver,
       render(state) {
         const resolvedState = resolveState(state);
         const feature = featureResolver(resolvedState);
@@ -198,4 +207,12 @@
   Object.entries(routes).forEach(([name, config]) => {
     registerRoute(name, config);
   });
+
+  if (hasModules && (!modules.has || !modules.has("runtime/routes"))) {
+    modules.define("runtime/routes", () => ({
+      getRegistry: () => registry,
+      registerRoute,
+      featureRoute
+    }));
+  }
 })();

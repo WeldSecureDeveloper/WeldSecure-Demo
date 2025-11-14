@@ -3,6 +3,22 @@
   const appData = window.AppData || {};
   const STORAGE_KEY = appData.STORAGE_KEY || "WeldDemoState";
   const APP_DEFAULTS = appData.DEFAULTS && typeof appData.DEFAULTS === "object" ? appData.DEFAULTS : {};
+  const DEFAULTS_MODULE = (() => {
+    const loader = window.WeldModules;
+    if (loader && typeof loader.has === "function") {
+      try {
+        if (loader.has("data/state/defaults")) {
+          return loader.use("data/state/defaults");
+        }
+      } catch (error) {
+        console.warn("data/state/defaults module unavailable.", error);
+      }
+    }
+    if (window.WeldStateDefaults) {
+      return window.WeldStateDefaults;
+    }
+    return null;
+  })();
   const resolveStringDefault = (value, fallback) => {
     if (typeof value === "string") {
       const trimmed = value.trim();
@@ -14,29 +30,48 @@
     }
     return "";
   };
-  const cloneReasonList = source =>
-    Array.isArray(source) ? source.map(item => (item && typeof item === "object" ? { ...item } : item)) : [];
-  const DEFAULT_REPORTER_PROMPT_SAFE = resolveStringDefault(
-    appData.DEFAULT_REPORTER_PROMPT,
-    APP_DEFAULTS.REPORTER_PROMPT
-  );
-  const DEFAULT_EMERGENCY_LABEL_SAFE = resolveStringDefault(
-    appData.DEFAULT_EMERGENCY_LABEL,
-    APP_DEFAULTS.EMERGENCY_LABEL
-  );
-  const PREVIOUS_EMERGENCY_LABEL = resolveStringDefault(
-    appData.PREVIOUS_EMERGENCY_LABEL,
-    APP_DEFAULTS.PREVIOUS_EMERGENCY_LABEL
-  );
+  const resolveFallback = key => (DEFAULTS_MODULE && DEFAULTS_MODULE[key] !== undefined ? DEFAULTS_MODULE[key] : undefined);
+  const DEFAULT_REPORTER_PROMPT_SAFE = resolveFallback("DEFAULT_REPORTER_PROMPT") || "";
+  const DEFAULT_EMERGENCY_LABEL_SAFE = resolveFallback("DEFAULT_EMERGENCY_LABEL") || "";
+  const PREVIOUS_EMERGENCY_LABEL = resolveFallback("PREVIOUS_EMERGENCY_LABEL") || "";
   const DEFAULT_REPORTER_REASONS_SAFE = (() => {
-    if (Array.isArray(appData.DEFAULT_REPORTER_REASONS) && appData.DEFAULT_REPORTER_REASONS.length > 0) {
-      return cloneReasonList(appData.DEFAULT_REPORTER_REASONS);
-    }
-    if (Array.isArray(APP_DEFAULTS.REPORTER_REASONS) && APP_DEFAULTS.REPORTER_REASONS.length > 0) {
-      return cloneReasonList(APP_DEFAULTS.REPORTER_REASONS);
-    }
-    return [];
+    const list = resolveFallback("DEFAULT_REPORTER_REASONS");
+    return Array.isArray(list) ? list.map(item => (item && typeof item === "object" ? { ...item } : item)) : [];
   })();
+  const DEFAULT_PHISHING_FORM = (() => {
+    const base = resolveFallback("DEFAULT_PHISHING_FORM");
+    if (!base) {
+      return {};
+    }
+    return {
+      ...base,
+      sender: base.sender ? { ...base.sender } : undefined,
+      signalIds: Array.isArray(base.signalIds) ? base.signalIds.slice() : [],
+      targetIds: Array.isArray(base.targetIds) ? base.targetIds.slice() : []
+    };
+  })();
+  const DEFAULT_GUIDED_TOUR_META = resolveFallback("DEFAULT_GUIDED_TOUR_META") || {
+    enabled: true,
+    dismissedRoutes: {}
+  };
+  const DEFAULT_FEATURE_TOGGLES = resolveFallback("DEFAULT_FEATURE_TOGGLES") || {
+    badges: true,
+    leaderboards: true,
+    quests: true,
+    rewards: true
+  };
+  const CHANNEL_OPTIONS = (() => {
+    const list = resolveFallback("CHANNEL_OPTIONS");
+    if (Array.isArray(list) && list.length > 0) {
+      return list.slice();
+    }
+    const fallback =
+      Array.isArray(appData.PHISHING_CHANNELS) && appData.PHISHING_CHANNELS.length > 0
+        ? appData.PHISHING_CHANNELS
+        : ["email", "sms", "teams", "slack", "qr"];
+    return fallback.map(channel => (typeof channel === "string" ? channel.trim().toLowerCase() : channel)).filter(Boolean);
+  })();
+
   const BADGES = appData.BADGES || [];
   const rawBadgeDrafts = appData.BADGE_DRAFTS;
   const BADGE_DRAFTS = rawBadgeDrafts instanceof Set ? rawBadgeDrafts : new Set(rawBadgeDrafts || []);
@@ -45,62 +80,7 @@
   const ENGAGEMENT_PROGRAMS = appData.ENGAGEMENT_PROGRAMS || [];
   const MessageStatus = appData.MessageStatus || {};
   const THEME_OPTIONS = ["light", "dark"];
-  const DEFAULT_FEATURE_TOGGLES = {
-    badges: true,
-    leaderboards: true,
-    quests: true,
-    rewards: true
-  };
-  const DEFAULT_GUIDED_TOUR_META = {
-    enabled: true,
-    dismissedRoutes: {}
-  };
-  const blueprintConfig = appData.phishingBlueprints || {};
-  const CHANNEL_OPTIONS = Array.isArray(appData.PHISHING_CHANNELS) && appData.PHISHING_CHANNELS.length > 0
-    ? appData.PHISHING_CHANNELS.map(channel => (typeof channel === "string" ? channel.trim().toLowerCase() : channel)).filter(Boolean)
-    : ["email", "sms", "teams", "slack", "qr"];
-  const defaultBlueprintForm =
-    blueprintConfig.defaultForm && typeof blueprintConfig.defaultForm === "object"
-      ? blueprintConfig.defaultForm
-      : {};
-  const defaultBlueprintSender =
-    defaultBlueprintForm.sender && typeof defaultBlueprintForm.sender === "object"
-      ? defaultBlueprintForm.sender
-      : {};
-  const DEFAULT_PHISHING_FORM = {
-    id: null,
-    templateId:
-      typeof defaultBlueprintForm.templateId === "string" && defaultBlueprintForm.templateId.trim().length > 0
-        ? defaultBlueprintForm.templateId.trim()
-        : null,
-    name: resolveStringDefault(defaultBlueprintForm.name, ""),
-    status: "draft",
-    channel:
-      typeof defaultBlueprintForm.channel === "string" && defaultBlueprintForm.channel.trim().length > 0
-        ? defaultBlueprintForm.channel.trim().toLowerCase()
-        : CHANNEL_OPTIONS[0] || "email",
-    sender: {
-      displayName: resolveStringDefault(defaultBlueprintSender.displayName, "Security Desk"),
-      address: resolveStringDefault(defaultBlueprintSender.address, "security@weldsecure.com")
-    },
-    subject: resolveStringDefault(defaultBlueprintForm.subject, ""),
-    body: typeof defaultBlueprintForm.body === "string" ? defaultBlueprintForm.body : "",
-    signalIds: Array.isArray(defaultBlueprintForm.signalIds)
-      ? defaultBlueprintForm.signalIds.slice()
-      : Array.isArray(defaultBlueprintForm.defaultSignals)
-      ? defaultBlueprintForm.defaultSignals.slice()
-      : [],
-    targetIds: Array.isArray(defaultBlueprintForm.targetIds)
-      ? defaultBlueprintForm.targetIds.slice()
-      : Array.isArray(defaultBlueprintForm.suggestedTargets)
-      ? defaultBlueprintForm.suggestedTargets.slice()
-      : [],
-    schedule:
-      typeof defaultBlueprintForm.schedule === "string" && defaultBlueprintForm.schedule.trim().length > 0
-        ? new Date(defaultBlueprintForm.schedule).toISOString()
-        : null,
-    ownerId: resolveStringDefault(defaultBlueprintForm.ownerId, defaultBlueprintSender.address) || "amelia-reed"
-  };
+
   const getGenerateId =
     window.WeldUtil && typeof window.WeldUtil.generateId === "function"
       ? window.WeldUtil.generateId
@@ -210,6 +190,27 @@
     };
   }
 
+  function mergeDesignerForm(current, patch) {
+    if (!patch || typeof patch !== "object") {
+      return clonePhishingForm(current);
+    }
+    const merged = {
+      ...(current || {}),
+      ...patch,
+      sender: {
+        ...(current && current.sender ? current.sender : DEFAULT_PHISHING_FORM.sender),
+        ...(patch.sender && typeof patch.sender === "object" ? patch.sender : {})
+      }
+    };
+    if (patch.signalIds !== undefined) {
+      merged.signalIds = Array.isArray(patch.signalIds) ? patch.signalIds.slice() : [];
+    }
+    if (patch.targetIds !== undefined) {
+      merged.targetIds = Array.isArray(patch.targetIds) ? patch.targetIds.slice() : [];
+    }
+    return clonePhishingForm(merged);
+  }
+
   const parseIsoDate = value => {
     if (typeof value !== "string") return null;
     const trimmed = value.trim();
@@ -218,6 +219,18 @@
     if (Number.isNaN(parsed.getTime())) return null;
     return parsed.toISOString();
   };
+
+  window.WeldDesignerDefaults = Object.assign({}, window.WeldDesignerDefaults, {
+    CHANNEL_OPTIONS: CHANNEL_OPTIONS.slice(),
+    DEFAULT_FORM: DEFAULT_PHISHING_FORM,
+    normalizeKey: normalizeDesignerKey,
+    normalizeChannel: normalizeDesignerChannel,
+    normalizeSchedule: normalizeDesignerSchedule,
+    normalizeStatus: normalizeDesignerStatus,
+    normalizeList: normalizeDesignerList,
+    cloneForm: clonePhishingForm,
+    mergeForm: mergeDesignerForm
+  });
 
   const normalizeDesignerDraft = (source, fallbackStatus = "draft") => {
     const normalized = clonePhishingForm(source);

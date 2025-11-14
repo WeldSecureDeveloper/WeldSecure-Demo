@@ -23,20 +23,20 @@ Static/
 
 ---
 
-## 2. Rendering Pipeline
+## 2. Bootstrapping & Module Loader
 
-1. main.js bootstraps window.Weld, hydrates state, and reads the current route (hash).
-2. 
-egistry.js maps each route to a feature module via window.WeldRegistry.register(route, featureModule).
-3. app.js hosts 
-enderApp():
-   - Fetches the active entry from the registry.
-   - Asks the feature for 
-ender() markup.
-   - Injects the markup into <div id="app"> and calls the feature's attach() hook for DOM wiring.
-4. Features register any cleanup via optional destroy/teardown hooks.
+1. `index.html` loads data, utilities, and `moduleLoader.js` before any route code. The loader defines `window.WeldModules` so every runtime/feature module can register itself lazily via `modules.define(id, factory)`.
+2. `main.js` bootstraps `window.Weld`, hydrates/persists the state slice, and reads the current hash route. It calls `renderApp` once the DOM is ready and re-renders on `hashchange`.
+3. `registry.js` maps each slug to a feature orchestrator by calling `window.WeldRegistry.register(route, config)` (and also exports the registry via `WeldModules.define("runtime/routes", ...)`). Each entry delegates to a specific `WeldModules` export (e.g., `features/customer/hub`) for render/attach methods, so runtime helpers (like `runtime/renderApp`) can pull route metadata without reaching for globals.
+4. `app.js` hosts `renderApp()` and its helpers:
+   - Look up the active route from the registry.
+   - Ask the feature for HTML by calling `feature.template` or `feature.render`.
+   - Inject the markup into `<div id="app">`, then run the feature's `attach()` hook for DOM wiring.
+   - Invoke optional `destroy()` hooks before switching routes.
 
-**Guardrail:** When adding a feature, expose { render, attach, destroy? } (mirroring existing modules) and register it through the registry rather than branching inside app.js.
+**Guardrails**
+- Register new behaviour through the registry instead of branching in `app.js`.
+- Whenever possible, wrap reusable runtime logic (service wrappers, achievements overlay, badge alignment) in dedicated `WeldModules` exports so features can depend on narrow APIs.
 
 ---
 
@@ -48,7 +48,7 @@ ender() markup.
 
 **Guardrails:**
 - Add new datasets in data/ and export them through window.AppData instead of hard-coding arrays inside features.
-- Extend stateServices when a new mutation is required. Keep method names declarative (awardPoints, 	oggleQuest, etc.).
+- Extend stateServices when a new mutation is required. Keep method names declarative (awardPoints, toggleQuest, etc.).
 - Route every UI mutation through a `WeldServices` helper (via the `window.<service>` wrappers) instead of mutating `window.Weld.state` or `state.meta` directly.
 - Always persist through the window.Weld.state helpers so the "Reset demo data" button remains accurate.
 
@@ -56,7 +56,7 @@ ender() markup.
 
 ## 4. Feature Modules
 
-Each feature file should follow this shape:
+Each feature file should follow this shape (or define a similar API inside `WeldModules`):
 
 `js
 (function () {
@@ -72,11 +72,10 @@ Each feature file should follow this shape:
 `
 
 **Expectations:**
-- Keep DOM selectors scoped to feature-specific prefixes (e.g., .customer-, .landing__).
-- Read static copy/data from window.AppData; read mutable values from the provided state.
-- Use helpers (WeldUtil, WeldServices) for shared logic.
-- Register the route in 
-egistry.js with a human-friendly label and default route pointer.
+- Keep DOM selectors scoped to feature-specific prefixes (e.g., `.customer-`, `.landing__`). Shared widgets belong in `components/`.
+- Read static copy/data from `window.AppData`; read mutable values from the `state` argument passed into `render/attach`.
+- Use helpers (`WeldUtil`, `WeldServices`, `modules.use(...)`) instead of re-implementing utilities.
+- Register your route in `registry.js` with the right page chrome (page class, container ID, template/attach method names).
 
 ---
 
@@ -103,12 +102,10 @@ egistry.js with a human-friendly label and default route pointer.
 ## 6. Adding New Functionality
 
 1. **Define the feature:**
-   - Create features/<name>.js with 
-ender/attach.
+   - Create `features/<name>.js` with `render/attach` or register a module via `WeldModules.define`.
    - Add any required datasets under data/ and state defaults in state.js.
 2. **Update routing:**
-   - Register the feature and label in 
-egistry.js.
+   - Register the feature and label in `registry.js`.
    - Add navigation affordances in components/appShell.js if necessary.
 3. **Style responsibly:**
    - Add base/component CSS if reusable; otherwise create styles/features/<name>.css.
@@ -117,8 +114,8 @@ egistry.js.
    - Extend stateServices for mutations.
    - Add helpers to util.js if multiple features share logic.
 5. **Document + test:**
-   - Update relevant docs/backlog items.
-   - Manually QA the new route plus affected shared components (header, nav, filters, etc.).
+   - Update relevant docs/backlog items (including the QA checklist once Phase A lands).
+   - Manually QA the new route plus affected shared components (header, nav, filters, etc.) in both themes and document the run in `Static/docs/fix-backlog.md`.
 
 ---
 
