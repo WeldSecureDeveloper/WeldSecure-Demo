@@ -29,3 +29,7 @@
 Log future manual QA runs (route coverage + theme) here before marking plan phases complete.
 | 2025-11-15 | Quest data modularization | Phase C - Data & State Deduplication | 
 ode Static/tools/state-vm-smoke.js + manual hub/catalog check; quests now sourced via data/quests/*.js modules. |
+| 2025-11-15 | Leaderboard data modularization | Phase C - Data & State Deduplication | data/leaderboards/departments.js + VM smoke (
+ode Static/tools/state-vm-smoke.js) - hub leaderboards verified. |
+| 2025-11-15 | Directory presets modularized | Phase C - Data & State Deduplication | data/directory/presets.js + VM smoke (
+ode Static/tools/state-vm-smoke.js); directory globals still exposed via module. |

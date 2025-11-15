@@ -122,24 +122,7 @@ Object.assign(AppData, {
 ],
   PHISHING_CHANNELS: phishingChannelsEnum,
   PHISHING_SIGNAL_CATEGORIES: phishingSignalCategories,
-  DIRECTORY_PRESETS: (() => {
-    const directoryData = window.DirectoryData || {};
-    const cloneList = source => (Array.isArray(source) ? source.map(entry => ({ ...entry })) : []);
-    const cloneObject = source =>
-      source && typeof source === "object" ? { ...source } : {};
-    return {
-      integrations: cloneObject(directoryData.integrations),
-      departments: cloneList(directoryData.departments),
-      teams: cloneList(directoryData.teams),
-      users: cloneList(directoryData.users)
-    };
-  })()
-
 });
 
-// Expose routes for legacy hash navigation helpers.
 window.ROUTES = window.AppData.ROUTES;
-
-// Surface directory data for easier reuse across features.
-window.AppData.DIRECTORY = window.AppData.DIRECTORY_PRESETS;
 
