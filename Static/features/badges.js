@@ -2,9 +2,27 @@
   if (!window.Weld) return;
 
   const features = window.Weld.features || (window.Weld.features = {});
-  const badgeTones = (window.AppData && window.AppData.BADGE_TONES) || {};
-  const badgeIconBackdrops = (window.AppData && window.AppData.BADGE_ICON_BACKDROPS) || {};
-  const badgeCategoryOrder = (window.AppData && window.AppData.BADGE_CATEGORY_ORDER) || [];
+  const badgeMeta = (() => {
+    const loader = window.WeldModules;
+    if (loader && typeof loader.has === "function") {
+      try {
+        if (loader.has("data/catalog/badgeMeta")) {
+          return loader.use("data/catalog/badgeMeta");
+        }
+      } catch (error) {
+        console.warn("features/badges: data/catalog/badgeMeta unavailable.", error);
+      }
+    }
+    if (window.WeldBadgeMeta) {
+      return window.WeldBadgeMeta;
+    }
+    return window.AppData || {};
+  })();
+  const badgeTones = badgeMeta.BADGE_TONES || (window.AppData && window.AppData.BADGE_TONES) || {};
+  const badgeIconBackdrops =
+    badgeMeta.BADGE_ICON_BACKDROPS || (window.AppData && window.AppData.BADGE_ICON_BACKDROPS) || {};
+  const badgeCategoryOrder =
+    badgeMeta.BADGE_CATEGORY_ORDER || (window.AppData && window.AppData.BADGE_CATEGORY_ORDER) || [];
 
   features.badges = {
     render(container, appState) {

@@ -1,10 +1,26 @@
 (function () {
   const AppData = window.AppData || {};
+  const badgeMeta = (() => {
+    const loader = window.WeldModules;
+    if (loader && typeof loader.has === "function") {
+      try {
+        if (loader.has("data/catalog/badgeMeta")) {
+          return loader.use("data/catalog/badgeMeta");
+        }
+      } catch (error) {
+        console.warn("badgeLabTheme: data/catalog/badgeMeta unavailable.", error);
+      }
+    }
+    if (window.WeldBadgeMeta) {
+      return window.WeldBadgeMeta;
+    }
+    return {};
+  })();
   const defaultIcons = {
     basePath: "svg/Laura_Reen",
     names: ["activity", "award", "cup", "finish", "mountain", "ok", "podium", "smartwatch", "torch", "watch"]
   };
-  const iconConfig = AppData.BADGE_LAB_ICONS || {};
+  const iconConfig = badgeMeta.BADGE_LAB_ICONS || AppData.BADGE_LAB_ICONS || {};
   const iconBasePath =
     typeof iconConfig.basePath === "string" && iconConfig.basePath.trim().length > 0
       ? iconConfig.basePath.trim()
@@ -20,7 +36,9 @@
     { id: "vigilant", label: "Vigilant", reference: "Obsidian", gradient: "linear-gradient(135deg, #434343 0%, #000000 100%)", shadow: "0 18px 32px rgba(0, 0, 0, 0.45)" }
   ];
   const tiers =
-    Array.isArray(AppData.BADGE_PROGRESSION_TIERS) && AppData.BADGE_PROGRESSION_TIERS.length > 0
+    Array.isArray(badgeMeta.BADGE_PROGRESSION_TIERS) && badgeMeta.BADGE_PROGRESSION_TIERS.length > 0
+      ? badgeMeta.BADGE_PROGRESSION_TIERS.slice()
+      : Array.isArray(AppData.BADGE_PROGRESSION_TIERS) && AppData.BADGE_PROGRESSION_TIERS.length > 0
       ? AppData.BADGE_PROGRESSION_TIERS.slice()
       : defaultTiers;
 

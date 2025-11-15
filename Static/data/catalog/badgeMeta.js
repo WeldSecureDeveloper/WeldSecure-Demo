@@ -192,20 +192,21 @@
   { id: "hub-hopper", achievedAt: "2025-03-18T12:05:00Z", highlight: "recent" }
 ],
   });
+  const badgeMeta = {
+    ICON_PATHS: AppData.ICON_PATHS,
+    BADGE_LAB_ICONS: AppData.BADGE_LAB_ICONS,
+    BADGE_PROGRESSION_TIERS: AppData.BADGE_PROGRESSION_TIERS,
+    METRIC_TONES: AppData.METRIC_TONES,
+    BADGE_TONES: AppData.BADGE_TONES,
+    BADGE_ICON_BACKDROPS: AppData.BADGE_ICON_BACKDROPS,
+    POINTS_CARD_ICONS: AppData.POINTS_CARD_ICONS,
+    BADGE_CATEGORY_ORDER: AppData.BADGE_CATEGORY_ORDER,
+    BADGE_DRAFTS: AppData.BADGE_DRAFTS,
+    CUSTOMER_BADGE_UNLOCKS: AppData.CUSTOMER_BADGE_UNLOCKS
+  };
+  window.WeldBadgeMeta = badgeMeta;
   const modules = window.WeldModules;
   if (modules && (!modules.has || !modules.has("data/catalog/badgeMeta"))) {
-    modules.define("data/catalog/badgeMeta", () => ({
-      ICON_PATHS: AppData.ICON_PATHS,
-      BADGE_LAB_ICONS: AppData.BADGE_LAB_ICONS,
-      BADGE_PROGRESSION_TIERS: AppData.BADGE_PROGRESSION_TIERS,
-      METRIC_TONES: AppData.METRIC_TONES,
-      BADGE_TONES: AppData.BADGE_TONES,
-      BADGE_ICON_BACKDROPS: AppData.BADGE_ICON_BACKDROPS,
-      POINTS_CARD_ICONS: AppData.POINTS_CARD_ICONS,
-      BADGE_CATEGORY_ORDER: AppData.BADGE_CATEGORY_ORDER,
-      BADGE_DRAFTS: AppData.BADGE_DRAFTS,
-      CUSTOMER_BADGE_UNLOCKS: AppData.CUSTOMER_BADGE_UNLOCKS
-    }));
+    modules.define("data/catalog/badgeMeta", () => window.WeldBadgeMeta || badgeMeta);
   }
 })();
-

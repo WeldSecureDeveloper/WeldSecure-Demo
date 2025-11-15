@@ -30,8 +30,8 @@ _Status: draft (2025-11-15). Applies to `Static/data/catalog/*`, `Static/data/qu
    - Update runtime modules (achievements, badge showcase) to use the module as well.  
    - Remove badge-specific exports from `data/quests/meta.js`.
 
-3. **C.2.3 – Quest-only Metadata**  
-   - Move `QUEST_DIFFICULTY_ORDER`, quest filters, and engagement presets into a slim `data/quests/config.js`.  
+3. **C.2.3 – Quest-only Metadata** _(in progress; config module created)_  
+   - Move `QUEST_DIFFICULTY_ORDER`, quest filters, and engagement presets into a slim `data/quests/config.js` ✅ order split complete.  
    - Ensure `data/quests/meta.js` becomes a compatibility façade pointing to the new file, allowing eventual removal.
 
 4. **C.2.4 – Cleanup & Validation**  

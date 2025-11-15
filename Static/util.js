@@ -2,8 +2,26 @@
 (function () {
   const WeldUtil = window.WeldUtil || {};
   const AppData = window.AppData || {};
-  const QUEST_DIFFICULTY_ORDER =
-    Array.isArray(AppData.QUEST_DIFFICULTY_ORDER) ? AppData.QUEST_DIFFICULTY_ORDER : [];
+  const resolveQuestConfig = () => {
+    const modules = window.WeldModules;
+    if (modules && typeof modules.has === "function" && modules.has("data/quests/config")) {
+      try {
+        return modules.use("data/quests/config");
+      } catch (error) {
+        console.warn("util: data/quests/config unavailable.", error);
+      }
+    }
+    if (window.WeldQuestConfig) {
+      return window.WeldQuestConfig;
+    }
+    return {};
+  };
+  const questConfig = resolveQuestConfig();
+  const QUEST_DIFFICULTY_ORDER = Array.isArray(questConfig.QUEST_DIFFICULTY_ORDER)
+    ? questConfig.QUEST_DIFFICULTY_ORDER
+    : Array.isArray(AppData.QUEST_DIFFICULTY_ORDER)
+    ? AppData.QUEST_DIFFICULTY_ORDER
+    : [];
   const ICON_PATHS = AppData.ICON_PATHS || {};
   const METRIC_TONES = AppData.METRIC_TONES || {};
 

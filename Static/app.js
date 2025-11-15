@@ -2,15 +2,61 @@ const ROLE_LABELS = window.AppData.ROLE_LABELS;
 const ROUTES = window.AppData.ROUTES;
 const MessageStatus = window.AppData.MessageStatus;
 const NAV_GROUPS = window.AppData.NAV_GROUPS;
-const QUEST_DIFFICULTY_ORDER = window.AppData.QUEST_DIFFICULTY_ORDER;
+const questConfigSource = (() => {
+  const loader = window.WeldModules;
+  if (loader && typeof loader.has === "function") {
+    try {
+      if (loader.has("data/quests/config")) {
+        return loader.use("data/quests/config");
+      }
+    } catch (error) {
+      console.warn("data/quests/config module unavailable.", error);
+    }
+  }
+  if (window.WeldQuestConfig) {
+    return window.WeldQuestConfig;
+  }
+  return { QUEST_DIFFICULTY_ORDER: window.AppData.QUEST_DIFFICULTY_ORDER || [] };
+})();
+const QUEST_DIFFICULTY_ORDER =
+  questConfigSource.QUEST_DIFFICULTY_ORDER || window.AppData.QUEST_DIFFICULTY_ORDER || [];
 const METRIC_TONES = window.AppData.METRIC_TONES;
-const BADGE_TONES = window.AppData.BADGE_TONES;
-const BADGE_ICON_BACKDROPS = window.AppData.BADGE_ICON_BACKDROPS;
-const POINTS_CARD_ICONS = window.AppData.POINTS_CARD_ICONS;
 const BadgeLabTheme = window.BadgeLabTheme || {};
+const badgeMetaSource = (() => {
+  const loader = window.WeldModules;
+  if (loader && typeof loader.has === "function") {
+    try {
+      if (loader.has("data/catalog/badgeMeta")) {
+        return loader.use("data/catalog/badgeMeta");
+      }
+    } catch (error) {
+      console.warn("data/catalog/badgeMeta module unavailable.", error);
+    }
+  }
+  if (window.WeldBadgeMeta) {
+    return window.WeldBadgeMeta;
+  }
+  const appData = window.AppData || {};
+  return {
+    BADGE_TONES: appData.BADGE_TONES || {},
+    BADGE_ICON_BACKDROPS: appData.BADGE_ICON_BACKDROPS || {},
+    POINTS_CARD_ICONS: appData.POINTS_CARD_ICONS || {},
+    BADGE_CATEGORY_ORDER: appData.BADGE_CATEGORY_ORDER || [],
+    BADGE_DRAFTS: appData.BADGE_DRAFTS || []
+  };
+})();
+const BADGE_TONES = badgeMetaSource.BADGE_TONES || window.AppData.BADGE_TONES || {};
+const BADGE_ICON_BACKDROPS =
+  badgeMetaSource.BADGE_ICON_BACKDROPS || window.AppData.BADGE_ICON_BACKDROPS || {};
+const POINTS_CARD_ICONS = badgeMetaSource.POINTS_CARD_ICONS || window.AppData.POINTS_CARD_ICONS || {};
 const BADGES = window.AppData.BADGES;
-const BADGE_CATEGORY_ORDER = window.AppData.BADGE_CATEGORY_ORDER;
-const BADGE_DRAFTS = new Set(window.AppData.BADGE_DRAFTS);
+const BADGE_CATEGORY_ORDER =
+  badgeMetaSource.BADGE_CATEGORY_ORDER || window.AppData.BADGE_CATEGORY_ORDER || [];
+const BADGE_DRAFTS = new Set(
+  Array.isArray(badgeMetaSource.BADGE_DRAFTS)
+    ? badgeMetaSource.BADGE_DRAFTS
+    : window.AppData.BADGE_DRAFTS || []
+);
 const DEFAULT_QUESTS = window.AppData.DEFAULT_QUESTS;
 const DEPARTMENT_LEADERBOARD = window.AppData.DEPARTMENT_LEADERBOARD;
 const ENGAGEMENT_PROGRAMS = window.AppData.ENGAGEMENT_PROGRAMS;

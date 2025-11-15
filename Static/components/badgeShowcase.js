@@ -4,7 +4,22 @@
 
   modules.define("components/badgeShowcase", function () {
     const AppData = window.AppData || {};
-    const BADGE_ICON_BACKDROPS = AppData.BADGE_ICON_BACKDROPS || {};
+    const badgeMeta = (() => {
+      if (modules && typeof modules.has === "function") {
+        try {
+          if (modules.has("data/catalog/badgeMeta")) {
+            return modules.use("data/catalog/badgeMeta");
+          }
+        } catch (error) {
+          console.warn("badgeShowcase: data/catalog/badgeMeta unavailable.", error);
+        }
+      }
+      if (window.WeldBadgeMeta) {
+        return window.WeldBadgeMeta;
+      }
+      return {};
+    })();
+    const BADGE_ICON_BACKDROPS = badgeMeta.BADGE_ICON_BACKDROPS || AppData.BADGE_ICON_BACKDROPS || {};
     const BadgeLabTheme = window.BadgeLabTheme || {};
     const WeldUtil = window.WeldUtil || {};
 

@@ -3,6 +3,23 @@
   function factory() {
     const WeldState = window.WeldState || {};
     const getAppState = () => (window.Weld && window.Weld.state) || window.state || {};
+    const badgeMeta = (() => {
+      if (modules && typeof modules.has === "function") {
+        try {
+          if (modules.has("data/catalog/badgeMeta")) {
+            return modules.use("data/catalog/badgeMeta");
+          }
+        } catch (error) {
+          console.warn("achievements: data/catalog/badgeMeta unavailable.", error);
+        }
+      }
+      if (window.WeldBadgeMeta) {
+        return window.WeldBadgeMeta;
+      }
+      return window.AppData || {};
+    })();
+    const BADGE_ICON_BACKDROPS =
+      badgeMeta.BADGE_ICON_BACKDROPS || (window.AppData && window.AppData.BADGE_ICON_BACKDROPS) || {};
 const ACHIEVEMENT_EYEBROW = "";
 const ACHIEVEMENT_TRIGGER_DELAY = 600;
 const ACHIEVEMENT_DISPLAY_MS = 6200;
