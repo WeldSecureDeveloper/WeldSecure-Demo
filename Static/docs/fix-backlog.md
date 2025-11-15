@@ -32,3 +32,4 @@ Log future manual QA runs (route coverage + theme) here before marking plan phas
 | 2025-11-15 | Directory presets modularized | Phase C - Data & State Deduplication | `node Static/tools/state-vm-smoke.js`; directory presets served via `data/directory/presets.js`. |
 | 2025-11-15 | Rewards data modularized | Phase C - Data & State Deduplication | `node Static/tools/state-vm-smoke.js`; rewards load from `data/rewards/list.js` (catalog + redemption flows spot-checked). |
 | 2025-11-15 | Achievement API split | Phase B - Runtime Core Modularization | `node Static/tools/state-vm-smoke.js`; badge toast + hub queues now proxied via `runtime/achievementsApi.js` (manual checklist pending). |
+| 2025-11-15 | App data enums split | Phase C - Data & State Deduplication | `node Static/tools/state-vm-smoke.js`; `data.js` trimmed to shim, enums now load via `data/app/enums.js` (nav/routes/settings verified in app). |

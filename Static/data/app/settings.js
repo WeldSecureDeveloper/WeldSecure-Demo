@@ -25,4 +25,8 @@
       disabled: true
     }
   ];
+  const modules = window.WeldModules;
+  if (modules && (!modules.has || !modules.has("data/app/settings"))) {
+    modules.define("data/app/settings", () => AppData.SETTINGS_CATEGORIES);
+  }
 })();

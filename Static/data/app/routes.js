@@ -24,6 +24,7 @@
     "client-badges": { requiresRole: "client" },
     addin: { requiresRole: false }
   };
+  window.ROUTES = AppData.ROUTES;
   const modules = window.WeldModules;
   if (modules && (!modules.has || !modules.has("data/app/routes"))) {
     modules.define("data/app/routes", () => AppData.ROUTES);

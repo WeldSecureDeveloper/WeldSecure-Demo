@@ -1,5 +1,12 @@
 (function () {
   const AppData = window.AppData || (window.AppData = {});
+  const reporterDefaults =
+    AppData.DEFAULTS && typeof AppData.DEFAULTS === "object" ? AppData.DEFAULTS : {};
+  const normalizedReporterReasons = Array.isArray(reporterDefaults.REPORTER_REASONS)
+    ? reporterDefaults.REPORTER_REASONS.map(reason =>
+        reason && typeof reason === "object" ? { ...reason } : reason
+      )
+    : [];
   Object.assign(AppData, {
   QUEST_DIFFICULTY_ORDER: ["starter", "intermediate", "advanced"],
   SETTINGS_CATEGORIES: [
