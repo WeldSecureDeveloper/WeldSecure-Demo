@@ -104,6 +104,27 @@ const activeServiceWrapperModule = (() => {
   return null;
 })();
 
+const achievementsApiModule = (() => {
+  const loader = window.WeldModules;
+  if (loader && typeof loader.has === "function") {
+    try {
+      if (loader.has("runtime/achievementsApi")) {
+        return loader.use("runtime/achievementsApi");
+      }
+    } catch (error) {
+      console.warn("runtime/achievementsApi module unavailable.", error);
+    }
+  }
+  if (typeof window.__WeldAchievementsApiFactory === "function") {
+    try {
+      return window.__WeldAchievementsApiFactory();
+    } catch (factoryError) {
+      console.warn("runtime/achievementsApi factory fallback failed.", factoryError);
+    }
+  }
+  return null;
+})();
+
 const activeAchievementsModule = (() => {
   const loader = window.WeldModules;
   if (!loader || typeof loader.has !== "function") return null;
@@ -118,7 +139,11 @@ const activeAchievementsModule = (() => {
 })();
 
 const queueAchievementToast =
-  activeAchievementsModule && typeof activeAchievementsModule.queueAchievementToast === "function"
+  achievementsApiModule && typeof achievementsApiModule.queueAchievementToast === "function"
+    ? function queueAchievementToast(entry) {
+        achievementsApiModule.queueAchievementToast(entry);
+      }
+    : activeAchievementsModule && typeof activeAchievementsModule.queueAchievementToast === "function"
     ? function queueAchievementToast(entry) {
         activeAchievementsModule.queueAchievementToast(entry);
       }
@@ -128,7 +153,11 @@ const queueAchievementToast =
       };
 
 const queueBadgeAchievements =
-  activeAchievementsModule && typeof activeAchievementsModule.queueBadgeAchievements === "function"
+  achievementsApiModule && typeof achievementsApiModule.queueBadgeAchievements === "function"
+    ? function queueBadgeAchievements(badgeInput, options) {
+        achievementsApiModule.queueBadgeAchievements(badgeInput, options);
+      }
+    : activeAchievementsModule && typeof activeAchievementsModule.queueBadgeAchievements === "function"
     ? function queueBadgeAchievements(badgeInput, options) {
         activeAchievementsModule.queueBadgeAchievements(badgeInput, options);
       }
@@ -139,14 +168,22 @@ const queueBadgeAchievements =
       };
 
 const handleRouteAchievements =
-  activeAchievementsModule && typeof activeAchievementsModule.handleRouteAchievements === "function"
+  achievementsApiModule && typeof achievementsApiModule.handleRouteAchievements === "function"
+    ? function handleRouteAchievements(route) {
+        achievementsApiModule.handleRouteAchievements(route);
+      }
+    : activeAchievementsModule && typeof activeAchievementsModule.handleRouteAchievements === "function"
     ? function handleRouteAchievements(route) {
         activeAchievementsModule.handleRouteAchievements(route);
       }
     : function handleRouteAchievements() {};
 
 const unlockHubWelcomeAchievement =
-  activeAchievementsModule && typeof activeAchievementsModule.unlockHubWelcomeAchievement === "function"
+  achievementsApiModule && typeof achievementsApiModule.unlockHubWelcomeAchievement === "function"
+    ? function unlockHubWelcomeAchievement() {
+        achievementsApiModule.unlockHubWelcomeAchievement();
+      }
+    : activeAchievementsModule && typeof activeAchievementsModule.unlockHubWelcomeAchievement === "function"
     ? function unlockHubWelcomeAchievement() {
         activeAchievementsModule.unlockHubWelcomeAchievement();
       }
@@ -161,9 +198,19 @@ const renderBadgeLabOrb =
         return null;
       };
 
-if (activeAchievementsModule && activeAchievementsModule.WeldAchievements) {
-  window.WeldAchievements = activeAchievementsModule.WeldAchievements;
-} else {
+const ensureWeldAchievementsBinding = () => {
+  if (achievementsApiModule && typeof achievementsApiModule.getWeldAchievements === "function") {
+    try {
+      achievementsApiModule.getWeldAchievements();
+      return;
+    } catch (error) {
+      console.warn("runtime/achievementsApi getWeldAchievements failed.", error);
+    }
+  }
+  if (activeAchievementsModule && activeAchievementsModule.WeldAchievements) {
+    window.WeldAchievements = activeAchievementsModule.WeldAchievements;
+    return;
+  }
   const fallbackWeldAchievements = window.WeldAchievements || {};
   fallbackWeldAchievements.queue = function fallbackQueue(entry) {
     queueAchievementToast(entry);
@@ -180,7 +227,9 @@ if (activeAchievementsModule && activeAchievementsModule.WeldAchievements) {
     };
   }
   window.WeldAchievements = fallbackWeldAchievements;
-}
+};
+
+ensureWeldAchievementsBinding();
 
 let renderAppModule = (() => {
   const loader = window.WeldModules;
