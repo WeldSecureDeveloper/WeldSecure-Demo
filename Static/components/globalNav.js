@@ -4,9 +4,52 @@
 
   modules.define("components/globalNav", function () {
     const AppData = window.AppData || {};
-    const ROLE_LABELS = AppData.ROLE_LABELS || {};
-    const NAV_GROUPS = Array.isArray(AppData.NAV_GROUPS) ? AppData.NAV_GROUPS : [];
-    const ROUTES = AppData.ROUTES || {};
+
+    const resolveRoleLabels = () => {
+      if (modules && typeof modules.has === "function" && modules.has("data/app/enums")) {
+        try {
+          const enums = modules.use("data/app/enums");
+          if (enums && enums.roleLabels) {
+            return enums.roleLabels;
+          }
+        } catch (error) {
+          console.warn("globalNav: data/app/enums unavailable.", error);
+        }
+      }
+      return AppData.ROLE_LABELS || {};
+    };
+
+    const resolveNavGroups = () => {
+      if (modules && typeof modules.has === "function" && modules.has("data/app/nav")) {
+        try {
+          const navModule = modules.use("data/app/nav");
+          if (Array.isArray(navModule)) {
+            return navModule;
+          }
+        } catch (error) {
+          console.warn("globalNav: data/app/nav unavailable.", error);
+        }
+      }
+      return Array.isArray(AppData.NAV_GROUPS) ? AppData.NAV_GROUPS : [];
+    };
+
+    const resolveRoutes = () => {
+      if (modules && typeof modules.has === "function" && modules.has("data/app/routes")) {
+        try {
+          const routesModule = modules.use("data/app/routes");
+          if (routesModule && typeof routesModule === "object") {
+            return routesModule;
+          }
+        } catch (error) {
+          console.warn("globalNav: data/app/routes unavailable.", error);
+        }
+      }
+      return AppData.ROUTES || {};
+    };
+
+    const ROLE_LABELS = resolveRoleLabels();
+    const NAV_GROUPS = resolveNavGroups();
+    const ROUTES = resolveRoutes();
     const WeldUtil = window.WeldUtil || {};
     const THEME_TOGGLE_LABELS = {
       light: "Switch to dark mode",
