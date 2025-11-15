@@ -27,3 +27,5 @@
 | 2025-11-07 | CSS layering | Pre-plan reference | `styles.css` now import-only with base/components/features stacks verified in both themes. |
 
 Log future manual QA runs (route coverage + theme) here before marking plan phases complete.
+| 2025-11-15 | Quest data modularization | Phase C - Data & State Deduplication | 
+ode Static/tools/state-vm-smoke.js + manual hub/catalog check; quests now sourced via data/quests/*.js modules. |
