@@ -932,21 +932,21 @@ Object.assign(AppData, {
       },
       storyBeats: [
         {
-          title: "Beat 1 ï¿½ Pop-up coworking chaos",
+          title: "Beat 1 — Pop-up coworking chaos",
           scenario: "Will squeezes into shared seating minutes before a customer renewal call.",
           prompt: "Quiz asks whether to continue on the open floor, hunt for a focus room, or drop to audio only.",
           idealAction: "Choose the focus room option and mention the in-quest reminder about badge access and privacy screens.",
           callout: "Emphasise that the side panel presents the remote work checklist the moment the answer is submitted."
         },
         {
-          title: "Beat 2 ï¿½ Shoulder surfing risk",
+          title: "Beat 2 — Shoulder surfing risk",
           scenario: "A passer-by glances at pipeline dashboards while screen share is still active.",
           prompt: "Learners decide between pausing the share, enabling blur, or continuing because the call is internal.",
           idealAction: "Select 'Pause share + trigger WeldSecure alert' to show how the quest nudges the escalation flow.",
           callout: "Point to the copy that reassures them a pre-filled Teams message is ready in the add-in."
         },
         {
-          title: "Beat 3 ï¿½ VPN drop mid-call",
+          title: "Beat 3 — VPN drop mid-call",
           scenario: "The cafe Wi-Fi blips and the device quietly falls back to a hotspot.",
           prompt: "Options include ignoring the change, reconnecting later, or re-authenticating immediately.",
           idealAction: "Pick the immediate re-auth option to surface the fast finish tip for staying under four minutes.",

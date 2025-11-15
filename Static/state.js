@@ -244,6 +244,7 @@
     return normalized;
   };
 
+  const blueprintConfig = appData.phishingBlueprints || {};
   const blueprintTemplates = Array.isArray(blueprintConfig.templates) ? blueprintConfig.templates : [];
 
   const seedPhishingDrafts = () => {

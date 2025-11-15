@@ -78,7 +78,7 @@ This plan captures every follow-up from the top-to-bottom review so Codex (opera
 
 | Task | Status | Notes |
 | --- | --- | --- |
-| Break `Static/data.js` into domain-specific files (for example `data/app/meta.js`, `data/app/badges.js`, `data/app/quests.js`). | todo | Update `index.html` script order accordingly. |
+| Break `Static/data.js` into domain-specific files (for example `data/app/meta.js`, `data/app/badges.js`, `data/app/quests.js`). | in-progress | Meta + routes/nav staging modules exist; gradually wiring consumers before dropping the legacy payload. |
 | Replace the hard-coded default payloads in `state.js` with imports from `data/state/defaults.js`; expose helpers like `cloneDefaultState()`. | done | Shared defaults now live in `data/state/defaults.js`; both `state.js` and the render shim load them via `WeldModules`. |
 | Refactor phishing designer defaults so both `state.js` and `services/stateServices.js` import from `data/state/defaults.js`. | done | `DEFAULT_PHISHING_FORM` / `DEFAULT_DESIGNER_FORM` now come from the shared module with fallbacks. |
 | Add a lightweight data validation script (for example `Static/tools/validate-data.js`) that checks the new modules for duplicate IDs and missing fields. | todo | Hook it into the QA checklist as a preflight step (VM smoke harness already covers `WeldState.initialState()`). |

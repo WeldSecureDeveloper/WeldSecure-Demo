@@ -208,11 +208,19 @@
     registerRoute(name, config);
   });
 
-  if (hasModules && (!modules.has || !modules.has("runtime/routes"))) {
-    modules.define("runtime/routes", () => ({
-      getRegistry: () => registry,
-      registerRoute,
-      featureRoute
-    }));
+  if (modules) {
+    if (!modules.has || !modules.has("data/app/routes")) {
+      modules.define("data/app/routes", () => AppData.ROUTES || {});
+    }
+    if (!modules.has || !modules.has("data/app/nav")) {
+      modules.define("data/app/nav", () => AppData.NAV_GROUPS || []);
+    }
+    if (!modules.has || !modules.has("runtime/routes")) {
+      modules.define("runtime/routes", () => ({
+        getRegistry: () => registry,
+        registerRoute,
+        featureRoute
+      }));
+    }
   }
 })();

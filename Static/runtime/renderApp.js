@@ -23,9 +23,20 @@
       return { meta: { route: "landing", role: null } };
     }
 
-    function resolveRoutes(overrides) {
+    function resolveRoutes(context) {
+      const overrides = context.routes;
       if (overrides && typeof overrides === "object") {
         return overrides;
+      }
+      if (modules && typeof modules.has === "function" && modules.has("data/app/routes")) {
+        try {
+          const routesModule = modules.use("data/app/routes");
+          if (routesModule && typeof routesModule === "object") {
+            return routesModule;
+          }
+        } catch (error) {
+          console.warn("renderApp: failed to load data/app/routes.", error);
+        }
       }
       if (window.ROUTES && typeof window.ROUTES === "object") {
         return window.ROUTES;
@@ -213,7 +224,7 @@
 
     function renderApp(context = {}) {
       const state = resolveState(context.state);
-      const routes = resolveRoutes(context.routes);
+      const routes = resolveRoutes(context);
 
       ensureRouteSafety(state, routes);
 
