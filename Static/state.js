@@ -867,10 +867,30 @@
 
     const cloneArray = (source, mapper = entry => ({ ...entry })) =>
       Array.isArray(source) ? source.map(mapper) : [];
+    const resolveRewardsSource = () => {
+      if (Array.isArray(base.rewards) && base.rewards.length > 0) {
+        return base.rewards;
+      }
+      if (Array.isArray(appData.REWARDS) && appData.REWARDS.length > 0) {
+        return appData.REWARDS;
+      }
+      const modules = window.WeldModules;
+      if (modules && typeof modules.has === "function" && modules.has("data/rewards/list")) {
+        try {
+          const moduleRewards = modules.use("data/rewards/list");
+          if (Array.isArray(moduleRewards) && moduleRewards.length > 0) {
+            return moduleRewards;
+          }
+        } catch (error) {
+          console.warn("data/rewards/list module unavailable.", error);
+        }
+      }
+      return [];
+    };
 
     const teamMembers = cloneArray(base.teamMembers);
     const recognitions = cloneArray(base.recognitions);
-    const rewards = cloneArray(base.rewards);
+    const rewards = cloneArray(resolveRewardsSource());
     const clients = cloneArray(base.clients);
     const rewardRedemptions = cloneArray(base.rewardRedemptions);
 

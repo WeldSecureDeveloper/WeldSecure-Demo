@@ -100,7 +100,7 @@
 ],
   });
   const modules = window.WeldModules;
-  if (modules && (!modules.has || !modules.has(\"data/leaderboards/departments\"))) {
-    modules.define(\"data/leaderboards/departments\", () => AppData.DEPARTMENT_LEADERBOARD || []);
+  if (modules && (!modules.has || !modules.has("data/leaderboards/departments"))) {
+    modules.define("data/leaderboards/departments", () => AppData.DEPARTMENT_LEADERBOARD || []);
   }
 })();
